@@ -28,3 +28,14 @@ vite.config.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Java & Maven
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+uploads/
+**/uploads/
+
