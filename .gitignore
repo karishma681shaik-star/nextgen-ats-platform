@@ -1,41 +1,53 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
+**/node_modules/
 
-node_modules
-dist
-dist-ssr
+# Production builds
+dist/
+**/dist/
+dist-ssr/
 *.local
 *.tsbuildinfo
-vite.config.js
-vite.config.d.ts
-.env
-.env.*
-!.env.example
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Java & Maven
+# Java & Maven Build Artifacts
 target/
 **/target/
 *.class
 *.jar
 *.war
 *.ear
+.mvn/
+
+# Environment Variables & Secrets
+.env
+*.env
+!.env.example
+backend/.env
+frontend/.env.local
+frontend/.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Uploads & Temporary Files
 uploads/
 **/uploads/
+scratch/
+.system_generated/
 
+# Editor & IDE Directories
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
