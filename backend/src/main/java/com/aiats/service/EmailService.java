@@ -2,7 +2,6 @@ package com.aiats.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,43 +12,53 @@ public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
 
     @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.from:${spring.mail.username:}}")
     private String mailFrom;
 
-    public void sendPasswordResetEmail(String toEmail, String token) {
-        String resetUrl = "http://localhost:5173/reset-password?token=" + token;
-        String subject = "AI ATS Platform — Password Reset Instructions";
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    public void sendPasswordResetVerificationCode(String toEmail, String verificationCode) {
+        String subject = "AI ATS Platform - Password Reset Verification Code";
+
         String content = "Hello,\n\n"
-                + "You have requested to reset your password on the AI ATS Platform.\n\n"
-                + "Please use the following secure link to set your new password (valid for 1 hour):\n"
-                + resetUrl + "\n\n"
-                + "Security Token: " + token + "\n\n"
-                + "If you did not request this reset, you can safely ignore this email.\n\n"
-                + "Best regards,\n"
-                + "The AI ATS Platform Security Team";
+                + "Your AI ATS verification code is:\n\n"
+                + verificationCode + "\n\n"
+                + "This code expires in 10 minutes.\n\n"
+                + "If you did not request this code, please ignore this email.\n\n"
+                + "Regards,\n"
+                + "AI ATS Platform Security Team";
 
-        logger.info("========== DISPATCHING PASSWORD RESET EMAIL ==========");
-        logger.info("To: {}", toEmail);
-        logger.info("Subject: {}", subject);
-        logger.info("Reset Link: {}", resetUrl);
-        logger.info("Token: {}", token);
-        logger.info("=====================================================");
+        logger.info("Sending password reset verification code to: {}", toEmail);
 
-        if (mailSender != null && mailFrom != null && !mailFrom.isBlank() && !mailFrom.equals("test")) {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setFrom(mailFrom);
-                message.setTo(toEmail);
-                message.setSubject(subject);
-                message.setText(content);
-                mailSender.send(message);
-                logger.info("Password reset email sent successfully via SMTP to {}", toEmail);
-            } catch (Exception e) {
-                logger.warn("SMTP delivery attempt failed (falling back to logged secure token): {}", e.getMessage());
-            }
+        String fromAddress = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom : mailUsername;
+        if (fromAddress == null || fromAddress.isBlank()) {
+            throw new IllegalStateException("MAIL_USERNAME / MAIL_FROM is not configured.");
         }
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(toEmail);
+            message.setSubject(subject);
+            message.setText(content);
+
+            mailSender.send(message);
+
+            logger.info("Password reset verification code sent successfully to {}", toEmail);
+        } catch (Exception e) {
+            logger.error("FAILED TO SEND PASSWORD RESET EMAIL: {}", e.getMessage(), e);
+            throw new RuntimeException("Unable to send password reset email. Check SMTP configuration.", e);
+        }
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String codeOrToken) {
+        sendPasswordResetVerificationCode(toEmail, codeOrToken);
     }
 }

@@ -21,13 +21,17 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
     long countByStatus(ApplicationStatus status);
     long countByJobRecruiterId(UUID recruiterId);
     long countByJobRecruiterIdAndStatus(UUID recruiterId, ApplicationStatus status);
+    long countByCandidateId(UUID candidateId);
+    long countByCandidateIdAndStatus(UUID candidateId, ApplicationStatus status);
 
     @Query("SELECT a FROM Application a WHERE " +
            "a.job.recruiter.id = :recruiterId AND " +
            "(:jobId IS NULL OR a.job.id = :jobId) AND " +
            "(:status IS NULL OR a.status = :status) AND " +
            "(:minAtsScore IS NULL OR a.atsScore >= :minAtsScore) AND " +
-           "(:search IS NULL OR LOWER(a.candidate.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.candidate.email) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.job.title) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "(:search IS NULL OR LOWER(a.candidate.fullName) LIKE CONCAT('%', LOWER(CAST(:search AS String)), '%') " +
+           "OR LOWER(a.candidate.email) LIKE CONCAT('%', LOWER(CAST(:search AS String)), '%') " +
+           "OR LOWER(a.job.title) LIKE CONCAT('%', LOWER(CAST(:search AS String)), '%'))")
     List<Application> filterApplicants(@Param("recruiterId") UUID recruiterId,
                                        @Param("jobId") UUID jobId,
                                        @Param("status") ApplicationStatus status,

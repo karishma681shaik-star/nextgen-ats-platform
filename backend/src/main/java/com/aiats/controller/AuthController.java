@@ -44,12 +44,30 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.requestPasswordReset(request);
-        return ResponseEntity.ok(ApiResponse.ok("If an account exists with that email, a password reset link has been dispatched.", null));
+        return ResponseEntity.ok(ApiResponse.ok("If an account exists with that email, a 6-digit verification code has been dispatched.", null));
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<ApiResponse<Void>> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request) {
+        authService.verifyResetCode(request);
+        return ResponseEntity.ok(ApiResponse.ok("Verification code is valid.", null));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.ok("Password has been successfully updated. You may now sign in.", null));
+    }
+
+    @PutMapping("/avatar")
+    public ResponseEntity<ApiResponse<UserDTO>> updateAvatar(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody java.util.Map<String, String> request) {
+        if (userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthenticated"));
+        }
+        String avatarUrl = request.get("avatar");
+        UserDTO updated = authService.updateAvatar(userPrincipal.getId(), avatarUrl);
+        return ResponseEntity.ok(ApiResponse.ok("Avatar updated successfully", updated));
     }
 }

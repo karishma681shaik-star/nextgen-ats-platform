@@ -50,14 +50,18 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/", "/api", "/api/health", "/error", "/favicon.ico", "/index.html").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/{id}").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/recruiter/**").hasAnyRole("RECRUITER", "ADMIN")
                 .requestMatchers("/api/candidate/**").hasAnyRole("CANDIDATE", "ADMIN", "RECRUITER")
+                .requestMatchers("/api/resumes/**").hasAnyRole("CANDIDATE", "ADMIN")
+                .requestMatchers("/api/applications/**").authenticated()
+                .requestMatchers("/api/issues/**").authenticated()
+                .requestMatchers("/api/copilot/**").authenticated()
                 .anyRequest().authenticated()
             );
 

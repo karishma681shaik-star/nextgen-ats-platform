@@ -7,6 +7,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,7 +21,30 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:5173", "http://localhost:3000"));
+
+        List<String> originPatterns = new ArrayList<>();
+        originPatterns.add("http://localhost:*");
+        originPatterns.add("http://127.0.0.1:*");
+        originPatterns.add("http://192.168.*:*");
+        originPatterns.add("http://10.*:*");
+        originPatterns.add("http://172.16.*:*");
+        originPatterns.add("http://172.17.*:*");
+        originPatterns.add("http://172.18.*:*");
+        originPatterns.add("http://172.19.*:*");
+        originPatterns.add("http://172.2*.*:*");
+        originPatterns.add("http://172.3*.*:*");
+        originPatterns.add("http://*.local:*");
+
+        if (allowedOrigin != null && !allowedOrigin.isBlank()) {
+            for (String origin : allowedOrigin.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty() && !originPatterns.contains(trimmed)) {
+                    originPatterns.add(trimmed);
+                }
+            }
+        }
+
+        config.setAllowedOriginPatterns(originPatterns);
         config.setAllowedHeaders(Arrays.asList(
                 "Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "Access-Control-Request-Method", "Access-Control-Request-Headers"
         ));

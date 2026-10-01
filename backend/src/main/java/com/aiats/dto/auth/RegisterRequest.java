@@ -18,9 +18,11 @@ public class RegisterRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    private String role; // "candidate" or "recruiter"
+    private String role; // "candidate", "recruiter", or "admin"
 
     private String companyName;
+
+    private String adminRegistrationCode;
 
     public RegisterRequest() {}
 
@@ -62,5 +64,13 @@ public class RegisterRequest {
 
     public void setCompanyName(String companyName) {
         this.companyName = companyName;
+    }
+
+    public String getAdminRegistrationCode() {
+        return adminRegistrationCode;
+    }
+
+    public void setAdminRegistrationCode(String adminRegistrationCode) {
+        this.adminRegistrationCode = adminRegistrationCode;
     }
 }

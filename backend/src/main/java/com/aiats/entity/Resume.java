@@ -51,6 +51,9 @@ public class Resume {
     @Column(name = "extracted_certifications", columnDefinition = "TEXT")
     private String extractedCertifications;
 
+    @Column(name = "resume_data", columnDefinition = "TEXT")
+    private String resumeData;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -188,5 +191,13 @@ public class Resume {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getResumeData() {
+        return resumeData;
+    }
+
+    public void setResumeData(String resumeData) {
+        this.resumeData = resumeData;
     }
 }

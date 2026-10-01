@@ -19,7 +19,7 @@ public class Company {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @Column(name = "logo", length = 500)
+    @Column(name = "logo", columnDefinition = "TEXT")
     private String logo;
 
     @Column(name = "tagline", length = 250)

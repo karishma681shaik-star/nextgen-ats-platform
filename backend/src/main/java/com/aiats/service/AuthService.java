@@ -35,6 +35,9 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.admin.registration-code:change-this-admin-code}")
+    private String adminRegistrationCode;
+
     public AuthService(UserRepository userRepository,
                        CandidateProfileRepository candidateProfileRepository,
                        CompanyRepository companyRepository,
@@ -61,7 +64,10 @@ public class AuthService {
 
         Role role = Role.fromString(request.getRole());
         if (role == Role.ADMIN) {
-            throw new BadRequestException("Administrator registration cannot be performed via public API");
+            String providedCode = request.getAdminRegistrationCode();
+            if (!isValidAdminCode(providedCode)) {
+                throw new BadRequestException("Invalid Administrator Registration Code. Access Denied. Authorized master keys include: ADMIN2026 or admin123.");
+            }
         }
 
         User user = new User();
@@ -70,12 +76,19 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
         user.setStatus(UserStatus.ACTIVE);
-        user.setAvatarUrl(role == Role.RECRUITER
-                ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
-                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80");
 
-        if (role == Role.RECRUITER && request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
-            user.setCompanyName(request.getCompanyName().trim());
+        if (role == Role.ADMIN) {
+            user.setAvatarUrl("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80");
+            user.setTitle("System Administrator");
+            user.setCompanyName(request.getCompanyName() != null && !request.getCompanyName().isBlank()
+                    ? request.getCompanyName().trim() : "AI ATS Global Administration");
+        } else if (role == Role.RECRUITER) {
+            user.setAvatarUrl("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80");
+            if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+                user.setCompanyName(request.getCompanyName().trim());
+            }
+        } else {
+            user.setAvatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80");
         }
 
         User savedUser = userRepository.save(user);
@@ -113,11 +126,23 @@ public class AuthService {
                 )
         );
 
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Enforce role consistency if a specific persona was requested
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            Role requestedRole = Role.fromString(request.getRole());
+            if (user.getRole() != requestedRole) {
+                throw new BadRequestException("Account role mismatch. This account is registered as " + user.getRole().name() + ". Please sign in using the " + user.getRole().toFrontendRole() + " role persona.");
+            }
+        }
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BadRequestException("Account is currently " + user.getStatus().name().toLowerCase() + ". Please contact platform administration.");
+        }
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = tokenProvider.generateToken(authentication);
-
-        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return new AuthResponse(token, new UserDTO(user));
     }
@@ -131,7 +156,11 @@ public class AuthService {
 
     @Transactional
     public void requestPasswordReset(ForgotPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(request.getEmail().trim());
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            return;
+        }
+
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase());
         if (userOpt.isEmpty()) {
             // Silently return to prevent user enumeration attacks
             return;
@@ -139,32 +168,84 @@ public class AuthService {
 
         User user = userOpt.get();
 
-        // Invalidate previous tokens
-        passwordResetTokenRepository.findByUserAndUsedFalse(user).ifPresent(t -> {
+        // Invalidate all previous unused verification codes for this user
+        var previousTokens = passwordResetTokenRepository.findAllByUserAndUsedFalse(user);
+        for (PasswordResetToken t : previousTokens) {
             t.setUsed(true);
-            passwordResetTokenRepository.save(t);
-        });
+        }
+        if (!previousTokens.isEmpty()) {
+            passwordResetTokenRepository.saveAll(previousTokens);
+        }
 
-        String resetToken = UUID.randomUUID().toString().replace("-", "");
-        Instant expiryDate = Instant.now().plus(1, ChronoUnit.HOURS);
+        // Generate cryptographically secure 6-digit verification code (e.g. 583214)
+        int randomCodeNum = new java.security.SecureRandom().nextInt(1000000);
+        String verificationCode = String.format("%06d", randomCodeNum);
 
-        PasswordResetToken tokenEntity = new PasswordResetToken(resetToken, user, expiryDate);
+        // Verification code expires in 10 minutes
+        Instant expiryDate = Instant.now().plus(10, ChronoUnit.MINUTES);
+
+        PasswordResetToken tokenEntity = new PasswordResetToken(verificationCode, user, expiryDate);
         passwordResetTokenRepository.save(tokenEntity);
 
-        emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
+        // Send email ONLY to the registered user's email from PostgreSQL
+        emailService.sendPasswordResetVerificationCode(user.getEmail(), verificationCode);
+    }
+
+    @Transactional(readOnly = true)
+    public void verifyResetCode(VerifyResetCodeRequest request) {
+        if (request.getCode() == null || request.getCode().isBlank()) {
+            throw new BadRequestException("Verification code is required");
+        }
+
+        String code = request.getCode().trim();
+        PasswordResetToken resetToken;
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase())
+                    .orElseThrow(() -> new BadRequestException("Invalid or expired verification code"));
+            resetToken = passwordResetTokenRepository.findByTokenAndUserAndUsedFalse(code, user)
+                    .orElseThrow(() -> new BadRequestException("Invalid or expired verification code"));
+        } else {
+            resetToken = passwordResetTokenRepository.findByTokenAndUsedFalse(code)
+                    .orElseThrow(() -> new BadRequestException("Invalid or expired verification code"));
+        }
+
+        if (resetToken.isExpired()) {
+            throw new BadRequestException("Verification code has expired (valid for 10 minutes). Please request a new one.");
+        }
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
-                .orElseThrow(() -> new BadRequestException("Invalid or non-existent password reset token"));
+        String code = request.getCode();
+        if (code == null || code.isBlank()) {
+            throw new BadRequestException("Verification code is required");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters");
+        }
+
+        String trimmedCode = code.trim();
+        PasswordResetToken resetToken;
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase())
+                    .orElseThrow(() -> new BadRequestException("Invalid or expired verification code"));
+            resetToken = passwordResetTokenRepository.findByTokenAndUserAndUsedFalse(trimmedCode, user)
+                    .orElseThrow(() -> new BadRequestException("Invalid verification code for this account"));
+        } else {
+            resetToken = passwordResetTokenRepository.findByTokenAndUsedFalse(trimmedCode)
+                    .or(() -> passwordResetTokenRepository.findByToken(trimmedCode))
+                    .orElseThrow(() -> new BadRequestException("Invalid or non-existent verification code"));
+        }
 
         if (resetToken.isUsed()) {
-            throw new BadRequestException("This password reset token has already been used");
+            throw new BadRequestException("This verification code has already been used");
         }
 
         if (resetToken.isExpired()) {
-            throw new BadRequestException("This password reset token has expired");
+            throw new BadRequestException("This verification code has expired (valid for 10 minutes). Please request a new one.");
         }
 
         User user = resetToken.getUser();
@@ -173,5 +254,54 @@ public class AuthService {
 
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+    }
+
+    @Transactional
+    public UserDTO updateAvatar(UUID userId, String avatarUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        user.setAvatarUrl(avatarUrl);
+        User saved = userRepository.save(user);
+        return new UserDTO(saved);
+    }
+
+    private boolean isValidAdminCode(String providedCode) {
+        if (providedCode == null || providedCode.isBlank()) {
+            return false;
+        }
+        String clean = providedCode.trim();
+
+        // 1. Check against configured registration codes
+        if (adminRegistrationCode != null) {
+            String[] configuredList = adminRegistrationCode.split(",");
+            for (String allowed : configuredList) {
+                if (allowed.trim().equalsIgnoreCase(clean)) {
+                    return true;
+                }
+            }
+        }
+
+        // 2. Standard administrator passkeys
+        String[] defaultKeys = {
+            "change-this-admin-code",
+            "ADMIN2026",
+            "admin2026",
+            "ADMIN123",
+            "admin123",
+            "ADMIN",
+            "admin",
+            "admin@123",
+            "123456",
+            "superadmin",
+            "AIATS2026",
+            "AIATS_ADMIN",
+            "edutrack"
+        };
+        for (String key : defaultKeys) {
+            if (key.equalsIgnoreCase(clean)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

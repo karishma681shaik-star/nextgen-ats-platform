@@ -16,5 +16,6 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, UUID> {
     List<SavedJob> findByCandidateIdOrderBySavedAtDesc(UUID candidateId);
     Optional<SavedJob> findByCandidateIdAndJobId(UUID candidateId, UUID jobId);
     boolean existsByCandidateIdAndJobId(UUID candidateId, UUID jobId);
+    long countByCandidateId(UUID candidateId);
     void deleteByCandidateIdAndJobId(UUID candidateId, UUID jobId);
 }
