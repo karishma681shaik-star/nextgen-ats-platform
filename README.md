@@ -1,22 +1,38 @@
-# AI ATS — Intelligent Recruitment & Applicant Tracking Platform
+# NextGen AI ATS — Intelligent Recruitment & Applicant Tracking Platform
 
-![AI ATS Banner](https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80)
+![NextGen AI ATS Banner](./docs/images/nextgen-ai-ats-banner.jpg)
 
-> **Enterprise-grade Intelligent Applicant Tracking System & Recruitment Suite with AI-Driven ATS Score Modeling, Resume Entity Extraction, Recruiter Pipeline Kanban, and Multi-Role Governance.**
+> **Enterprise-grade Intelligent Applicant Tracking System & Recruitment Suite with AI-Driven ATS Score Modeling, Resume Entity Extraction, Recruiter Pipeline Kanban, TalentPilot Copilot, and Multi-Role Governance.**
 
 ---
 
 ## 📌 Project Overview
 
-**AI ATS** is a modern, placement-ready recruitment platform engineered for fast-growing technology companies, staffing agencies, and global talent. It solves the fragmentation between candidate resume optimization and recruiter talent screening by providing real-time ATS match scoring, automated entity extraction, applicant pipeline tracking, and administrative moderation.
-
-> [!IMPORTANT]
-> **Current Development Phase**: **PHASE 1 (Frontend-First Architecture)**
-> In this phase, the complete, commercial-grade UI/UX is driven by an asynchronous mock service architecture with `localStorage` persistence. No Java backend, Spring Boot server, or PostgreSQL database is created yet. The frontend service abstractions are designed to directly integrate with Spring Boot REST APIs in **Phase 2**.
+**NextGen AI ATS** is a full-stack, enterprise-grade recruitment platform engineered for modern talent acquisition teams, recruitment agencies, and job candidates. It bridges the gap between candidate resume optimization and recruiter talent screening by providing real-time ATS match scoring, automated entity extraction, applicant pipeline tracking, AI assistant copilot, and administrative governance.
 
 ---
 
-## 🎯 Dual & Triple Role Architecture
+## ⚡ Tech Stack Architecture
+
+### 🌐 Frontend (`/frontend`)
+- **Framework**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS + Custom Design Tokens + Glassmorphism + Dynamic Glow Accents
+- **Icons**: Lucide React
+- **Routing**: React Router v7
+- **State & Context**: AuthContext, ToastContext, Role Switching
+- **HTTP Client**: Typed API client with automatic JWT token management & fallback resiliency
+
+### ⚙️ Backend (`/backend`)
+- **Framework**: Spring Boot 3.3.4 (Java 21)
+- **Database**: PostgreSQL with Hibernate / Spring Data JPA
+- **Security**: Spring Security 6 with JWT Token Provider & Role-Based Access Control (RBAC)
+- **Document Extraction**: Apache PDFBox 3.0.3 & Apache POI 5.3.0 for PDF/DOCX Resume Parsing
+- **Email Service**: Spring Boot Mail (SMTP / Gmail App Password) for transactional verification & password reset
+- **AI Engine**: Google Gemini API integration for TalentPilot Recruitment Copilot
+
+---
+
+## 🎯 Multi-Role Architecture
 
 The platform provides dedicated, custom-tailored interfaces for three core personas:
 
@@ -24,11 +40,10 @@ The platform provides dedicated, custom-tailored interfaces for three core perso
 - **Dashboard**: ATS benchmark gauge, profile completion progress, recommended jobs carousel, and live application timeline.
 - **Candidate Profile Management**: Multi-section editor for Personal Info, Technical/Soft Skills tags, Education, Work History, Featured Projects, and Certifications.
 - **Resume Management**: Drag-and-drop file uploader (PDF/DOCX), format validator, primary resume switcher, and preview modal.
-- **AI Resume Parser**: Multi-phase visual entity extractor with laser scan line animation that syncs extracted entities directly to the user profile.
+- **AI Resume Parser**: Multi-phase visual entity extractor with laser scan line animation that syncs extracted entities directly to the candidate profile.
 - **ATS Analysis & Feedback**: Radial gauge score analyzer (overall + technical score), score vector breakdown (Keywords, Skills, Experience, Education, Formatting), missing keyword cloud, and strengths/weaknesses insights.
 - **Job Discovery & Recommendations**: Multi-faceted filter system (Department, Experience Level, Job Type, Min Match %) with 1-click **Easy Apply** modal.
 - **Application Tracker**: Visual pipeline tracker with milestone dates and recruiter notes.
-- **Saved Jobs**: Bookmark management.
 
 ### 2. 🏢 Recruiter Portal
 - **Recruiter Command Center**: Metrics for Active Jobs, Total Applicants, In Interview, and Hires This Month.
@@ -37,92 +52,92 @@ The platform provides dedicated, custom-tailored interfaces for three core perso
 - **Post New Job Wizard**: Multi-section requisition builder with salary ranges, requirements, and skill tags for ATS matching.
 - **Applicant Pipeline & Screening**: Dual **Kanban Pipeline Board** and **Table View** with ATS score sorting, resume reviews, status transitions, and recruiter evaluation notes.
 
-### 3. 🛡️ Admin Governance
+### 3. 🛡️ Administrator Governance
 - **System Overview**: Platform KPIs (total candidates, recruiters, placement rate, system health).
 - **User Account Management**: Search, filter, and 1-click suspend/activate account actions.
 - **Recruiter Verification**: Verify legitimate employer organizations to safeguard candidate data.
 - **Job Moderation**: Audit and approve/remove job postings.
 - **Platform Analytics**: Visual recruitment funnel conversions and top in-demand technical skills breakdown.
+- **Security Access Passkeys**: Authorized keys (`ADMIN2026`, `admin123`) with instant auto-fill and validation.
 
 ---
 
-## ⚡ Tech Stack
-
-| Domain | Technology |
-|---|---|
-| **Core Framework** | React 19 + TypeScript + Vite |
-| **Routing** | React Router v7 |
-| **Styling & Design System** | Tailwind CSS + Custom Design Tokens + Glassmorphism |
-| **Icons** | Lucide React |
-| **State & Services** | React Context API + Modular Mock Service Architecture + `localStorage` |
-| **Typography** | Plus Jakarta Sans & Inter (Google Fonts) |
-
----
-
-## 📁 Frontend Architecture & Folder Structure
+## 📁 Repository Structure
 
 ```
-src/
-├── assets/                  # Brand vectors, icons, and illustrations
-├── components/
-│   ├── common/              # Header, Sidebar, Footer, RoleSwitcher, NotificationsDropdown
-│   ├── ui/                  # Reusable Design System Kit (Button, Input, Card, Modal, Tabs, Table, etc.)
-│   └── ...
-├── context/                 # AuthContext, ToastContext
-├── data/                    # Initial seed data for mock services
-├── layouts/                 # PublicLayout, CandidateLayout, RecruiterLayout, AdminLayout, ProtectedRoute
-├── pages/
-│   ├── public/              # LandingPage
-│   ├── auth/                # Login, Register, ForgotPassword, ResetPassword, EmailVerification
-│   ├── candidate/           # Dashboard, Profile, Resumes, Parser, ATS Analysis, Jobs, Details, Applications, Saved
-│   ├── recruiter/           # Dashboard, CompanyProfile, JobManagement, CreateJob, ApplicantPipeline
-│   └── admin/               # Dashboard, UserManagement, RecruiterVerification, JobModeration, PlatformAnalytics
-├── routes/                  # AppRoutes (Centralized route hierarchy)
-├── services/
-│   ├── mock/                # authService, candidateService, jobService, recruiterService, adminService, storage
-│   └── index.ts             # Unified service exports
-├── types/                   # TypeScript interfaces (User, Job, CandidateProfile, Application, Resume, ATSAnalysis)
-├── utils/                   # cn utility, formatters, score coloring
-├── App.tsx
-├── main.tsx
-└── index.css                # Tailwind directives + design system variables
+.
+├── backend/                  # Java Spring Boot 3 Backend
+│   ├── src/main/java/com/aiats/
+│   │   ├── config/           # Security, CORS, DataInitializer
+│   │   ├── controller/       # Auth, Candidate, Recruiter, Admin, Job, Copilot
+│   │   ├── dto/              # Request / Response Data Transfer Objects
+│   │   ├── entity/           # JPA Entities (User, Job, Application, Resume, etc.)
+│   │   ├── repository/       # Spring Data JPA Repositories
+│   │   └── service/          # Business logic, AI parsing, JWT token generation
+│   ├── src/main/resources/   # application.properties & database schemas
+│   ├── .env.example          # Sample environment configuration template
+│   └── pom.xml               # Maven dependencies configuration
+├── frontend/                 # React 19 + TypeScript + Vite Frontend
+│   ├── src/
+│   │   ├── components/       # UI & common layout elements
+│   │   ├── context/          # AuthContext, ToastContext
+│   │   ├── pages/            # Candidate, Recruiter, Admin, Public, Auth pages
+│   │   ├── routes/           # Centralized Route hierarchy
+│   │   ├── services/         # API clients with JWT token handlers
+│   │   └── types/            # TypeScript entity models
+│   ├── package.json
+│   └── vite.config.ts
+├── .gitignore                # Production ignore rules
+└── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Setup & Run Instructions
 
-### 1. Installation
+### 1. Database Setup (PostgreSQL)
+Create a PostgreSQL database named `ai_ats_db`:
+```sql
+CREATE DATABASE ai_ats_db;
+```
+
+### 2. Configure Backend Environment
+Copy the example environment template in `backend/`:
 ```bash
+cp backend/.env.example backend/.env
+```
+Update your PostgreSQL credentials, JWT secret, and optional Gmail SMTP / Gemini API keys in `backend/.env`.
+
+### 3. Run Backend (Spring Boot)
+```bash
+cd backend
+mvn clean compile
+mvn spring-boot:run
+```
+Backend runs at `http://localhost:8080`.
+
+### 4. Run Frontend (React + Vite)
+In a separate terminal:
+```bash
+cd frontend
 npm install
-```
-
-### 2. Run Local Development Server
-```bash
 npm run dev
 ```
-Open your browser at `http://localhost:5173`.
-
-### 3. Build for Production
-```bash
-npm run build
-```
+Frontend runs at `http://localhost:5173`.
 
 ---
 
-## 🎮 Quick Testing & Role Switching
+## 🔑 Default Credentials & Quick Login
 
-In the top navigation bar, use the **Persona Switcher** to instantly switch between:
-1. **Candidate** (`Alex Rivera` — Senior Full Stack Engineer)
-2. **Recruiter** (`Sarah Jenkins` — Head of Talent, CloudScale AI)
-3. **Admin** (`Marcus Vance` — Principal Platform Administrator)
+| Role | Email | Password |
+|---|---|---|
+| **Candidate** | `karishma681shaik@gmail.com` | `Password123!` |
+| **Recruiter** | `talent@coursera.org` | `Password123!` |
+| **Administrator** | `admin@ai-ats.internal` | `Password123!` |
+
+*(Admin registration passkey: `ADMIN2026` or `admin123`)*
 
 ---
 
-## 🗺️ Roadmap to Phase 2 (Spring Boot Backend)
-
-- [x] **Phase 1: Complete Frontend Architecture & Mock Services** (Done)
-- [ ] **Phase 2: Java Spring Boot Backend REST APIs**
-- [ ] **Phase 3: PostgreSQL Database & JPA Repositories**
-- [ ] **Phase 4: Frontend ↔ Backend Integration (JWT Auth + Spring Security)**
-- [ ] **Phase 5: Advanced AI Semantic Embedding Matching (BERT/SBERT) & Deployment**
+## 📄 License
+This project is licensed under the MIT License.
