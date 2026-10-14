@@ -1176,22 +1176,6 @@ export const AdminDashboard: React.FC = () => {
             </Link>
 
             <Link
-              to="/admin/analytics"
-              className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400">
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Platform Recruitment Analytics</h4>
-                  <p className="text-[10px] text-slate-400">Detailed conversion rates & metrics</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
               to="/admin/audit"
               className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
             >

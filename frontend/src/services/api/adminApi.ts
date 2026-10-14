@@ -24,6 +24,7 @@ import {
   CandidateReport,
   CandidateReportReviewRequest,
   AiRiskFlagItem,
+  PlatformHealthResponse,
 } from '../../types';
 import { jobApi, mapJobDtoToJob } from './jobApi';
 
@@ -35,8 +36,9 @@ export interface UserFilters {
 
 
 export const adminApi = {
-  async getStats(): Promise<AdminStats> {
-    const raw = await apiClient<any>('/admin/stats');
+  async getStats(period?: string): Promise<AdminStats> {
+    const url = period && period !== 'ALL' ? `/admin/stats?period=${encodeURIComponent(period)}` : '/admin/stats';
+    const raw = await apiClient<any>(url);
     return {
       totalUsers: Number(raw.totalUsers ?? 0),
       totalCandidates: Number(raw.totalCandidates ?? 0),
@@ -60,6 +62,31 @@ export const adminApi = {
       rejectedCount: Number(raw.rejectedCount ?? 0),
       placementRate: raw.placementRate !== undefined && raw.placementRate !== null ? Number(raw.placementRate) : null,
       systemHealth: raw.systemHealth || 'Operational (PostgreSQL Connected)',
+      totalCompanies: Number(raw.totalCompanies ?? 0),
+
+      // Platform Intelligence 2.0 Additions
+      publishedJobsEligible: Number(raw.publishedJobsEligible ?? 0),
+      candidatesInActivePipeline: Number(raw.candidatesInActivePipeline ?? 0),
+      candidatesWithApplications: Number(raw.candidatesWithApplications ?? 0),
+      candidatesShortlisted: Number(raw.candidatesShortlisted ?? 0),
+      candidatesWithInterviews: Number(raw.candidatesWithInterviews ?? 0),
+      candidatesWithOffers: Number(raw.candidatesWithOffers ?? 0),
+      candidatesHired: Number(raw.candidatesHired ?? 0),
+      interviewsScheduled: Number(raw.interviewsScheduled ?? 0),
+      offersExtended: Number(raw.offersExtended ?? 0),
+      reportingPeriod: raw.reportingPeriod || 'ALL',
+      periodTotalApplications: Number(raw.periodTotalApplications ?? 0),
+      periodNewUsers: Number(raw.periodNewUsers ?? 0),
+      periodNewJobs: Number(raw.periodNewJobs ?? 0),
+      periodSecurityAlerts: Number(raw.periodSecurityAlerts ?? 0),
+
+      // Verification Categories (mutually exclusive)
+      verificationPendingCount: Number(raw.verificationPendingCount ?? 0),
+      verificationInReviewCount: Number(raw.verificationInReviewCount ?? 0),
+      verificationEvidenceRequiredCount: Number(raw.verificationEvidenceRequiredCount ?? 0),
+      verificationVerifiedCount: Number(raw.verificationVerifiedCount ?? 0),
+      verificationRejectedCount: Number(raw.verificationRejectedCount ?? 0),
+      verificationSuspendedCount: Number(raw.verificationSuspendedCount ?? 0),
 
       // Section 1.B Company Verification Overview
       companiesAwaitingReview: Number(raw.companiesAwaitingReview ?? 0),
@@ -428,6 +455,14 @@ export const adminApi = {
 
   async getRecruitmentAnalytics(): Promise<RecruitmentAnalytics> {
     return apiClient<RecruitmentAnalytics>('/admin/analytics/recruitment');
+  },
+
+  async getPlatformHealth(): Promise<PlatformHealthResponse> {
+    return apiClient<PlatformHealthResponse>('/admin/analytics/health');
+  },
+
+  async getRecentActivity(limit = 15): Promise<SystemActivityLog[]> {
+    return apiClient<SystemActivityLog[]>(`/admin/analytics/recent-activity?limit=${limit}`);
   },
 
   async getSecurityAlerts(filters?: { status?: string; riskLevel?: string; search?: string }): Promise<SecurityAlert[]> {

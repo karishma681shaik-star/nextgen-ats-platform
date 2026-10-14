@@ -44,7 +44,6 @@ import { AdminDashboard } from '../pages/admin/AdminDashboard';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { RecruiterVerificationPage } from '../pages/admin/RecruiterVerificationPage';
 import { JobModerationPage } from '../pages/admin/JobModerationPage';
-import { PlatformAnalyticsPage } from '../pages/admin/PlatformAnalyticsPage';
 import { AuditLogPage } from '../pages/admin/AuditLogPage';
 
 export const AppRoutes: React.FC = () => {
@@ -140,7 +139,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="users" element={<UserManagementPage />} />
         <Route path="recruiters" element={<RecruiterVerificationPage />} />
         <Route path="jobs" element={<JobModerationPage />} />
-        <Route path="analytics" element={<PlatformAnalyticsPage />} />
+        <Route path="analytics" element={<Navigate to="/admin" replace />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="audit-log" element={<AuditLogPage />} />
       </Route>

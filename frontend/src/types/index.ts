@@ -312,6 +312,7 @@ export interface AdminStats {
   rejectedCount: number;
   placementRate: number | null;
   systemHealth: string;
+  totalCompanies?: number;
 
   // Section 1.B Company Verification Overview
   companiesAwaitingReview?: number;
@@ -335,6 +336,47 @@ export interface AdminStats {
   unresolvedAssociationChecksCount?: number;
   repeatedModerationViolationsCount?: number;
   openCandidateComplaintsCount?: number;
+
+  // Platform Intelligence 2.0 Additions
+  publishedJobsEligible?: number;
+  candidatesInActivePipeline?: number;
+  candidatesWithApplications?: number;
+  candidatesShortlisted?: number;
+  candidatesWithInterviews?: number;
+  candidatesWithOffers?: number;
+  candidatesHired?: number;
+  interviewsScheduled?: number;
+  offersExtended?: number;
+  reportingPeriod?: string;
+  periodTotalApplications?: number;
+  periodNewUsers?: number;
+  periodNewJobs?: number;
+  periodSecurityAlerts?: number;
+
+  // Verification Categories (mutually exclusive)
+  verificationPendingCount?: number;
+  verificationInReviewCount?: number;
+  verificationEvidenceRequiredCount?: number;
+  verificationVerifiedCount?: number;
+  verificationRejectedCount?: number;
+  verificationSuspendedCount?: number;
+}
+
+export interface PlatformHealthItem {
+  serviceName: string;
+  category: string;
+  status: 'OPERATIONAL' | 'DEGRADED' | 'UNAVAILABLE' | 'MONITORING_UNAVAILABLE';
+  latencyMs?: number | null;
+  lastChecked: string;
+  details: string;
+}
+
+export interface PlatformHealthResponse {
+  overallStatus: 'OPERATIONAL' | 'DEGRADED' | 'UNAVAILABLE';
+  checkedAt: string;
+  totalServicesMonitored: number;
+  healthyServicesCount: number;
+  services: PlatformHealthItem[];
 }
 
 export interface RecruiterStats {
@@ -589,6 +631,11 @@ export interface RecruiterVerificationDetail {
   recruiterEmail?: string;
   email?: string;
   recruiterPhone?: string;
+  phone?: string;
+  recruiterTitle?: string;
+  title?: string;
+  department?: string;
+  professionalProfileUrl?: string;
   verificationStatus: VerificationStatus;
   verified: boolean;
   rejectionCategory?: string;
@@ -601,6 +648,7 @@ export interface RecruiterVerificationDetail {
   verifiedBy?: string;
   resubmittedAt?: string;
   updatedAt?: string;
+  createdAt?: string;
   company?: Company;
   companyName?: string;
   companyWebsite?: string;
@@ -615,6 +663,12 @@ export interface RecruiterVerificationDetail {
   verificationEvidenceNotes?: string;
   authorizationDocumentUrl?: string;
   authorizationNotes?: string;
+  registrationCheckStatus?: string;
+  associationCheckStatus?: string;
+  associationVerified?: boolean;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  reviewDate?: string;
   history?: VerificationHistoryItem[];
 }
 

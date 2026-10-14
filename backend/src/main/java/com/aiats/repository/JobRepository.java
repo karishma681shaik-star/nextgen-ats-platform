@@ -21,6 +21,14 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
     long countByRecruiterId(UUID recruiterId);
     long countByRecruiterIdAndStatus(UUID recruiterId, JobStatus status);
 
+    @Query("SELECT COUNT(j) FROM Job j WHERE " +
+           "j.status = com.aiats.entity.JobStatus.ACTIVE AND " +
+           "j.recruiter.verificationStatus = com.aiats.entity.VerificationStatus.VERIFIED AND " +
+           "j.recruiter.status = com.aiats.entity.UserStatus.ACTIVE")
+    long countPublicActiveJobs();
+
+    long countByCreatedAtAfter(java.time.Instant date);
+
     @Query("SELECT j FROM Job j WHERE " +
            "j.status = com.aiats.entity.JobStatus.ACTIVE AND " +
            "j.recruiter.verificationStatus = com.aiats.entity.VerificationStatus.VERIFIED AND " +

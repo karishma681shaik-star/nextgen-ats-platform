@@ -52,6 +52,30 @@ public class AdminStatsDTO {
     private long repeatedModerationViolationsCount;
     private long openCandidateComplaintsCount;
 
+    // Platform Intelligence 2.0 Additions
+    private long publishedJobsEligible;
+    private long candidatesInActivePipeline;
+    private long candidatesWithApplications;
+    private long candidatesShortlisted;
+    private long candidatesWithInterviews;
+    private long candidatesWithOffers;
+    private long candidatesHired;
+    private long interviewsScheduled;
+    private long offersExtended;
+    private String reportingPeriod = "ALL";
+    private long periodTotalApplications;
+    private long periodNewUsers;
+    private long periodNewJobs;
+    private long periodSecurityAlerts;
+
+    // Verification Category Counts (mutually exclusive)
+    private long verificationPendingCount;
+    private long verificationInReviewCount;
+    private long verificationEvidenceRequiredCount;
+    private long verificationVerifiedCount;
+    private long verificationRejectedCount;
+    private long verificationSuspendedCount;
+
     public AdminStatsDTO() {}
 
     public long getTotalCompanies() { return totalCompanies; }
@@ -180,4 +204,64 @@ public class AdminStatsDTO {
 
     public long getOpenCandidateComplaintsCount() { return openCandidateComplaintsCount; }
     public void setOpenCandidateComplaintsCount(long openCandidateComplaintsCount) { this.openCandidateComplaintsCount = openCandidateComplaintsCount; }
+
+    public long getPublishedJobsEligible() { return publishedJobsEligible; }
+    public void setPublishedJobsEligible(long publishedJobsEligible) { this.publishedJobsEligible = publishedJobsEligible; }
+
+    public long getCandidatesInActivePipeline() { return candidatesInActivePipeline; }
+    public void setCandidatesInActivePipeline(long candidatesInActivePipeline) { this.candidatesInActivePipeline = candidatesInActivePipeline; }
+
+    public long getCandidatesWithApplications() { return candidatesWithApplications; }
+    public void setCandidatesWithApplications(long candidatesWithApplications) { this.candidatesWithApplications = candidatesWithApplications; }
+
+    public long getCandidatesShortlisted() { return candidatesShortlisted; }
+    public void setCandidatesShortlisted(long candidatesShortlisted) { this.candidatesShortlisted = candidatesShortlisted; }
+
+    public long getCandidatesWithInterviews() { return candidatesWithInterviews; }
+    public void setCandidatesWithInterviews(long candidatesWithInterviews) { this.candidatesWithInterviews = candidatesWithInterviews; }
+
+    public long getCandidatesWithOffers() { return candidatesWithOffers; }
+    public void setCandidatesWithOffers(long candidatesWithOffers) { this.candidatesWithOffers = candidatesWithOffers; }
+
+    public long getCandidatesHired() { return candidatesHired; }
+    public void setCandidatesHired(long candidatesHired) { this.candidatesHired = candidatesHired; }
+
+    public long getInterviewsScheduled() { return interviewsScheduled; }
+    public void setInterviewsScheduled(long interviewsScheduled) { this.interviewsScheduled = interviewsScheduled; }
+
+    public long getOffersExtended() { return offersExtended; }
+    public void setOffersExtended(long offersExtended) { this.offersExtended = offersExtended; }
+
+    public String getReportingPeriod() { return reportingPeriod; }
+    public void setReportingPeriod(String reportingPeriod) { this.reportingPeriod = reportingPeriod; }
+
+    public long getPeriodTotalApplications() { return periodTotalApplications; }
+    public void setPeriodTotalApplications(long periodTotalApplications) { this.periodTotalApplications = periodTotalApplications; }
+
+    public long getPeriodNewUsers() { return periodNewUsers; }
+    public void setPeriodNewUsers(long periodNewUsers) { this.periodNewUsers = periodNewUsers; }
+
+    public long getPeriodNewJobs() { return periodNewJobs; }
+    public void setPeriodNewJobs(long periodNewJobs) { this.periodNewJobs = periodNewJobs; }
+
+    public long getPeriodSecurityAlerts() { return periodSecurityAlerts; }
+    public void setPeriodSecurityAlerts(long periodSecurityAlerts) { this.periodSecurityAlerts = periodSecurityAlerts; }
+
+    public long getVerificationPendingCount() { return verificationPendingCount; }
+    public void setVerificationPendingCount(long verificationPendingCount) { this.verificationPendingCount = verificationPendingCount; }
+
+    public long getVerificationInReviewCount() { return verificationInReviewCount; }
+    public void setVerificationInReviewCount(long verificationInReviewCount) { this.verificationInReviewCount = verificationInReviewCount; }
+
+    public long getVerificationEvidenceRequiredCount() { return verificationEvidenceRequiredCount; }
+    public void setVerificationEvidenceRequiredCount(long verificationEvidenceRequiredCount) { this.verificationEvidenceRequiredCount = verificationEvidenceRequiredCount; }
+
+    public long getVerificationVerifiedCount() { return verificationVerifiedCount; }
+    public void setVerificationVerifiedCount(long verificationVerifiedCount) { this.verificationVerifiedCount = verificationVerifiedCount; }
+
+    public long getVerificationRejectedCount() { return verificationRejectedCount; }
+    public void setVerificationRejectedCount(long verificationRejectedCount) { this.verificationRejectedCount = verificationRejectedCount; }
+
+    public long getVerificationSuspendedCount() { return verificationSuspendedCount; }
+    public void setVerificationSuspendedCount(long verificationSuspendedCount) { this.verificationSuspendedCount = verificationSuspendedCount; }
 }

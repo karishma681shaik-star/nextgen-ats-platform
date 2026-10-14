@@ -2,6 +2,7 @@ package com.aiats.dto.recruiter;
 
 public class VerificationResubmitRequest {
     private String name;
+    private String title;
     private String tagline;
     private String industry;
     private String website;
@@ -15,6 +16,7 @@ public class VerificationResubmitRequest {
     private String taxId;
     private String officialEmailDomain;
     private String verificationDocumentUrl;
+    private String verificationEvidenceNotes;
     private String authorizationDocumentUrl;
     private String authorizationNotes;
     private String recruiterNotes;
@@ -23,6 +25,9 @@ public class VerificationResubmitRequest {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
     public String getTagline() { return tagline; }
     public void setTagline(String tagline) { this.tagline = tagline; }
@@ -62,6 +67,9 @@ public class VerificationResubmitRequest {
 
     public String getVerificationDocumentUrl() { return verificationDocumentUrl; }
     public void setVerificationDocumentUrl(String verificationDocumentUrl) { this.verificationDocumentUrl = verificationDocumentUrl; }
+
+    public String getVerificationEvidenceNotes() { return verificationEvidenceNotes; }
+    public void setVerificationEvidenceNotes(String verificationEvidenceNotes) { this.verificationEvidenceNotes = verificationEvidenceNotes; }
 
     public String getAuthorizationDocumentUrl() { return authorizationDocumentUrl; }
     public void setAuthorizationDocumentUrl(String authorizationDocumentUrl) { this.authorizationDocumentUrl = authorizationDocumentUrl; }

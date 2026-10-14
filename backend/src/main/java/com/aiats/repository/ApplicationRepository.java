@@ -25,6 +25,22 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
     long countByCandidateId(UUID candidateId);
     long countByCandidateIdAndStatus(UUID candidateId, ApplicationStatus status);
 
+    @Query("SELECT COUNT(DISTINCT a.candidate.id) FROM Application a WHERE a.status IN (" +
+           "com.aiats.entity.ApplicationStatus.APPLIED, " +
+           "com.aiats.entity.ApplicationStatus.UNDER_REVIEW, " +
+           "com.aiats.entity.ApplicationStatus.SHORTLISTED, " +
+           "com.aiats.entity.ApplicationStatus.INTERVIEW, " +
+           "com.aiats.entity.ApplicationStatus.OFFERED)")
+    long countDistinctCandidatesInActivePipeline();
+
+    @Query("SELECT COUNT(DISTINCT a.candidate.id) FROM Application a")
+    long countDistinctCandidatesWithApplications();
+
+    @Query("SELECT COUNT(DISTINCT a.candidate.id) FROM Application a WHERE a.status = :status")
+    long countDistinctCandidatesByStatus(@Param("status") ApplicationStatus status);
+
+    long countByAppliedDateAfter(java.time.Instant date);
+
     @Query("SELECT a FROM Application a WHERE " +
            "a.job.recruiter.id = :recruiterId AND " +
            "(:jobId IS NULL OR a.job.id = :jobId) AND " +

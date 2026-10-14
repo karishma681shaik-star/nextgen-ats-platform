@@ -23,6 +23,8 @@ public interface SecurityAlertRepository extends JpaRepository<SecurityAlert, UU
 
     boolean existsByAccountEmailAndRiskCategoryAndReviewStatus(String email, String category, String reviewStatus);
 
+    long countByCreatedAtAfter(java.time.Instant date);
+
     @Query("SELECT a FROM SecurityAlert a WHERE " +
            "(:reviewStatus IS NULL OR a.reviewStatus = :reviewStatus) AND " +
            "(:riskLevel IS NULL OR a.riskLevel = :riskLevel) AND " +

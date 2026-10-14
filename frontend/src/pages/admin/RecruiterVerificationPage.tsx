@@ -49,6 +49,7 @@ import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { formatFullDate } from '../../utils/formatters';
 import { cn } from '../../utils/cn';
+import { RecruiterVerificationWorkspaceModal } from '../../components/admin/RecruiterVerificationWorkspaceModal';
 
 const REJECTION_CATEGORIES = [
   'Business registration could not be verified',
@@ -76,6 +77,8 @@ export const RecruiterVerificationPage: React.FC = () => {
   const [reactivateConfirm, setReactivateConfirm] = useState<RecruiterVerificationItem | null>(null);
   const [viewReasonItem, setViewReasonItem] = useState<RecruiterVerificationItem | null>(null);
   const [detailsItem, setDetailsItem] = useState<RecruiterVerificationItem | null>(null);
+  const [workspaceStep, setWorkspaceStep] = useState<1 | 2>(1);
+  const [workspaceDecision, setWorkspaceDecision] = useState<'APPROVE' | 'REQUEST_EVIDENCE' | 'REJECT' | 'REFER_REVIEW'>('APPROVE');
   const [historyItem, setHistoryItem] = useState<RecruiterVerificationItem | null>(null);
   const [historyList, setHistoryList] = useState<VerificationHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -327,18 +330,14 @@ export const RecruiterVerificationPage: React.FC = () => {
     }
   };
 
-  const openWorkspaceModal = (item: RecruiterVerificationItem) => {
+  const openWorkspaceModal = (
+    item: RecruiterVerificationItem,
+    step: 1 | 2 = 1,
+    decision: 'APPROVE' | 'REQUEST_EVIDENCE' | 'REJECT' | 'REFER_REVIEW' = 'APPROVE'
+  ) => {
     setDetailsItem(item);
-    setWorkspaceTab('overview');
-    setEditChecks({
-      associationVerified: !!item.associationVerified,
-      associationCheckStatus: item.associationCheckStatus || 'Pending',
-      registrationCheckStatus: item.registrationCheckStatus || 'Pending',
-      websiteConsistencyStatus: item.websiteConsistencyStatus || 'Pending',
-      reverificationRequired: !!item.reverificationRequired,
-      phoneVerified: !!item.phoneVerified,
-      independentConfirmationNotes: item.independentConfirmationNotes || ''
-    });
+    setWorkspaceStep(step);
+    setWorkspaceDecision(decision);
   };
 
   const handleSaveChecks = async () => {
@@ -676,7 +675,7 @@ export const RecruiterVerificationPage: React.FC = () => {
                         variant="glow"
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
-                        onClick={() => setApproveConfirm(r)}
+                        onClick={() => openWorkspaceModal(r, 2, 'APPROVE')}
                       >
                         <Check className="w-3.5 h-3.5 mr-1" />
                         Approve Recruiter
@@ -685,12 +684,7 @@ export const RecruiterVerificationPage: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
-                        onClick={() => {
-                          setRequestEvidenceItem(r);
-                          setEvidenceCategory('Business registration & tax ID documentation');
-                          setEvidenceReason('');
-                          setEvidenceGuidance('');
-                        }}
+                        onClick={() => openWorkspaceModal(r, 2, 'REQUEST_EVIDENCE')}
                       >
                         <HelpCircle className="w-3.5 h-3.5 mr-1" />
                         Request Evidence
@@ -700,7 +694,7 @@ export const RecruiterVerificationPage: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className="border-rose-500/40 text-rose-300 hover:bg-rose-500/10"
-                        onClick={() => openRejectModal(r)}
+                        onClick={() => openWorkspaceModal(r, 2, 'REJECT')}
                       >
                         <XCircle className="w-3.5 h-3.5 mr-1" />
                         Reject Application
@@ -739,14 +733,14 @@ export const RecruiterVerificationPage: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className="border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10"
-                        onClick={() => setReopenConfirm(r)}
+                        onClick={() => openWorkspaceModal(r, 2, 'REFER_REVIEW')}
                       >
                         Reopen for Review
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => openRejectModal(r)}
+                        onClick={() => openWorkspaceModal(r, 2, 'REJECT')}
                       >
                         Edit Decision
                       </Button>
@@ -1224,479 +1218,18 @@ export const RecruiterVerificationPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* ADMIN RECRUITER VERIFICATION WORKSPACE */}
-      <Modal
+      {/* INTELLIGENT RECRUITER VERIFICATION WORKSPACE 2.0 */}
+      <RecruiterVerificationWorkspaceModal
         isOpen={!!detailsItem}
         onClose={() => setDetailsItem(null)}
-        title={detailsItem?.companyName ? `Verification Workspace: ${detailsItem.companyName}` : 'Recruiter Verification Workspace'}
-        description="Comprehensive evidence-based review across identity, company authenticity, corporate association, and explainable AI risk assessments."
-        maxWidth="4xl"
-      >
-        {detailsItem && (
-          <div className="space-y-5 text-xs">
-            {/* Telemetry Header Pill */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-950/70 border border-slate-800">
-              <div className="flex items-center gap-3">
-                {detailsItem.companyLogo ? (
-                  <img src={detailsItem.companyLogo} alt={detailsItem.companyName} className="w-12 h-12 rounded-xl object-cover border border-slate-700 shrink-0" />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                    <Building2 className="w-6 h-6 text-slate-400" />
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white">{detailsItem.companyName}</h3>
-                    {getStatusBadge(detailsItem.verificationStatus)}
-                  </div>
-                  <p className="text-slate-400 text-xs mt-0.5">
-                    Representative: <strong className="text-purple-300">{detailsItem.recruiterName}</strong> · Account ID: <span className="font-mono text-slate-500">{detailsItem.recruiterId}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Badges: Readiness & Risk */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-right">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Verification Readiness</span>
-                  <span className="font-bold text-indigo-300 text-xs">
-                    {detailsItem.verificationReadinessStatus || 'Mandatory Check Incomplete'} ({detailsItem.verificationReadinessScore ?? 0}/5)
-                  </span>
-                </div>
-                <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-right">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">AI Risk Assessment</span>
-                  <span className={`font-bold text-xs ${
-                    detailsItem.riskLevel === 'HIGH' ? 'text-rose-400' : detailsItem.riskLevel === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'
-                  }`}>
-                    {detailsItem.riskLevel || 'LOW'} ({detailsItem.riskScore ?? 0}/100)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Workspace Section Navigation */}
-            <div className="flex flex-wrap gap-1.5 border-b border-slate-800 pb-2">
-              {[
-                { id: 'overview', label: 'Sec A & B: Account & Company' },
-                { id: 'authenticity', label: 'Sec C & D: Identity & Authenticity' },
-                { id: 'association', label: 'Sec E: Corporate Association' },
-                { id: 'aiRisk', label: `Explainable AI Flags (${(detailsItem.aiRiskFlags || []).length})` },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setWorkspaceTab(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
-                    workspaceTab === tab.id
-                      ? 'bg-violet-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* TAB: SECTION A & B: ACCOUNT & COMPANY INFORMATION */}
-            {workspaceTab === 'overview' && (
-              <div className="space-y-4 animate-fade-in">
-                {/* SECTION A: ACCOUNT INFORMATION */}
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
-                    <User className="w-3.5 h-3.5" />
-                    <span>Section A: Recruiter Account Telemetry</span>
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300">
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Recruiter Name</span>
-                      <strong className="text-white text-xs">{detailsItem.recruiterName}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Registered Email</span>
-                      <strong className="text-white text-xs font-mono">{detailsItem.recruiterEmail}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Phone Status</span>
-                      <span className={detailsItem.phoneVerified ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
-                        {detailsItem.phoneVerified ? '✓ Verified' : (detailsItem.recruiterPhone || 'Not verified')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Registration Date</span>
-                      <span className="text-white">{detailsItem.createdAt ? formatFullDate(detailsItem.createdAt) : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SECTION B: COMPANY INFORMATION */}
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Section B: Company Profile & Business Credentials</span>
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300">
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Official Website</span>
-                      {detailsItem.website ? (
-                        <a href={detailsItem.website.startsWith('http') ? detailsItem.website : `https://${detailsItem.website}`} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline flex items-center gap-1 font-mono">
-                          {detailsItem.website} <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : <span className="text-slate-500">Not provided</span>}
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Corporate Email Domain</span>
-                      <span className="font-mono text-cyan-300">{detailsItem.officialEmailDomain ? `@${detailsItem.officialEmailDomain}` : 'Not registered'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Business Reg. Number</span>
-                      <span className="font-mono text-white">{detailsItem.businessRegistrationNumber || 'None specified'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Tax / Employer ID</span>
-                      <span className="font-mono text-white">{detailsItem.taxId || 'None specified'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Business Address / Location</span>
-                      <span className="text-slate-300">{detailsItem.location || 'Not provided'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase">Submitted Supporting Document</span>
-                      {detailsItem.verificationDocumentUrl ? (
-                        <a href={detailsItem.verificationDocumentUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline flex items-center gap-1">
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>View Evidence Document ({detailsItem.verificationDocumentUrl})</span>
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">No external document URL uploaded</span>
-                      )}
-                    </div>
-                  </div>
-                  {detailsItem.description && (
-                    <div className="pt-2 border-t border-slate-800">
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase mb-1">Company Description</span>
-                      <p className="text-slate-300 leading-relaxed bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                        {detailsItem.description}
-                      </p>
-                    </div>
-                  )}
-                  {detailsItem.verificationEvidenceNotes && (
-                    <div className="pt-2 border-t border-slate-800">
-                      <span className="text-slate-500 font-semibold block text-[10px] uppercase mb-1">Recruiter Supporting Notes</span>
-                      <p className="text-indigo-200 leading-relaxed bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-500/20">
-                        {detailsItem.verificationEvidenceNotes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB: SECTION C & D: IDENTITY & COMPANY AUTHENTICITY */}
-            {workspaceTab === 'authenticity' && (
-              <div className="space-y-4 animate-fade-in">
-                {/* SECTION C: IDENTITY VERIFICATION */}
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Section C: Recruiter Identity Verification</span>
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <span className="text-slate-500 text-[10px] font-semibold uppercase block">Email Verification Result</span>
-                      <p className="font-bold text-emerald-400 mt-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Email Authenticated ({detailsItem.recruiterEmail})</span>
-                      </p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Note: Email verification alone never grants full approval.</p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <span className="text-slate-500 text-[10px] font-semibold uppercase block">Phone Verification Status</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editChecks.phoneVerified}
-                            onChange={(e) => setEditChecks({ ...editChecks, phoneVerified: e.target.checked })}
-                            className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0"
-                          />
-                          <span className={editChecks.phoneVerified ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
-                            {editChecks.phoneVerified ? 'Phone Verified' : 'Unverified Phone'}
-                          </span>
-                        </label>
-                      </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{detailsItem.recruiterPhone || 'No telephone submitted'}</p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <span className="text-slate-500 text-[10px] font-semibold uppercase block">Professional Identity Review</span>
-                      <p className="font-semibold text-slate-200 mt-1">Single Designated Account</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">No duplicate account identified with this identity.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SECTION D: COMPANY AUTHENTICITY */}
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Section D: Company Authenticity & Registration Checks</span>
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase block">Registration Check Status</label>
-                      <select
-                        value={editChecks.registrationCheckStatus}
-                        onChange={(e) => setEditChecks({ ...editChecks, registrationCheckStatus: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Verified">Verified</option>
-                        <option value="Additional Evidence Required">Additional Evidence Required</option>
-                        <option value="Unable to Verify">Unable to Verify</option>
-                        <option value="Not Applicable">Not Applicable</option>
-                      </select>
-                      <p className="text-[10px] text-slate-500">Public registry check outcome</p>
-                    </div>
-
-                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase block">Website Consistency</label>
-                      <select
-                        value={editChecks.websiteConsistencyStatus}
-                        onChange={(e) => setEditChecks({ ...editChecks, websiteConsistencyStatus: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                      >
-                        <option value="Consistent">Consistent</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Discrepancy Detected">Discrepancy Detected</option>
-                        <option value="Unverified">Unverified</option>
-                      </select>
-                      <p className="text-[10px] text-slate-500">Consistency with business profile</p>
-                    </div>
-
-                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase block">Re-verification Flag</label>
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editChecks.reverificationRequired}
-                          onChange={(e) => setEditChecks({ ...editChecks, reverificationRequired: e.target.checked })}
-                          className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0"
-                        />
-                        <span className={editChecks.reverificationRequired ? 'text-amber-400 font-bold' : 'text-slate-400'}>
-                          {editChecks.reverificationRequired ? 'Re-verification Required' : 'Current & Valid'}
-                        </span>
-                      </label>
-                      <p className="text-[10px] text-slate-500">Flag for periodic re-audit</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: SECTION E: COMPANY ASSOCIATION */}
-            {workspaceTab === 'association' && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Section E: Recruiter-Company Association & Authorization Checks</span>
-                    </h4>
-                    <span className="text-[10px] text-slate-500 font-mono">Backend Enforced</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Authorized Representative Status</span>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editChecks.associationVerified}
-                          onChange={(e) => setEditChecks({ ...editChecks, associationVerified: e.target.checked })}
-                          className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 w-4 h-4"
-                        />
-                        <span className={`text-xs font-bold ${editChecks.associationVerified ? 'text-emerald-300' : 'text-slate-400'}`}>
-                          {editChecks.associationVerified ? '✓ Authorized Representative Confirmed' : 'Association Pending / Unconfirmed'}
-                        </span>
-                      </label>
-                      <p className="text-[10px] text-slate-500">
-                        Confirms whether this recruiter is authorized to represent {detailsItem.companyName} on the platform.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Association Review Status</label>
-                      <select
-                        value={editChecks.associationCheckStatus}
-                        onChange={(e) => setEditChecks({ ...editChecks, associationCheckStatus: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                      >
-                        <option value="Verified">Verified</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Authorization Required">Authorization Required</option>
-                        <option value="Unable to Verify">Unable to Verify</option>
-                        <option value="Unauthorized">Unauthorized</option>
-                      </select>
-                      <p className="text-[10px] text-slate-500">Review status of submitted representation proof</p>
-                    </div>
-
-                    <div className="col-span-1 sm:col-span-2 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Supporting Authorization Document</span>
-                      {detailsItem.authorizationDocumentUrl ? (
-                        <a href={detailsItem.authorizationDocumentUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline flex items-center gap-1 font-mono">
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>{detailsItem.authorizationDocumentUrl}</span>
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">No authorization letter URL submitted</span>
-                      )}
-                      {detailsItem.authorizationNotes && (
-                        <p className="text-slate-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800 mt-1">
-                          {detailsItem.authorizationNotes}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="col-span-1 sm:col-span-2 space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Independent Confirmation Notes</label>
-                      <textarea
-                        rows={3}
-                        value={editChecks.independentConfirmationNotes}
-                        onChange={(e) => setEditChecks({ ...editChecks, independentConfirmationNotes: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500"
-                        placeholder="Document any phone calls, registry checks, or official company confirmations conducted..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleSaveChecks}
-                      isLoading={isSavingChecks}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
-                    >
-                      Save Company Checks
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: EXPLAINABLE AI RISK ASSESSMENT */}
-            {workspaceTab === 'aiRisk' && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Explainable AI Risk Telemetry & Heuristic Flags</span>
-                    </h4>
-                    <span className="text-[10px] text-slate-500">Human-In-The-Loop Enforced</span>
-                  </div>
-
-                  {(!detailsItem.aiRiskFlags || detailsItem.aiRiskFlags.length === 0) ? (
-                    <div className="py-6 text-center space-y-1">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                      <p className="font-bold text-white text-xs">No active risk flags detected</p>
-                      <p className="text-[10px] text-slate-400">Company registration, domain, and profile data satisfy baseline consistency rules.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {detailsItem.aiRiskFlags.map((flag, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3.5 rounded-xl border space-y-2 ${
-                            flag.severity === 'CRITICAL' || flag.severity === 'HIGH'
-                              ? 'bg-rose-950/20 border-rose-500/30'
-                              : flag.severity === 'MEDIUM'
-                              ? 'bg-amber-950/20 border-amber-500/30'
-                              : 'bg-slate-950/60 border-slate-800'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                flag.severity === 'CRITICAL' || flag.severity === 'HIGH'
-                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                  : flag.severity === 'MEDIUM'
-                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                  : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                              }`}>
-                                {flag.severity} SEVERITY
-                              </span>
-                              <strong className="text-white text-xs">{flag.category}</strong>
-                            </div>
-                            <span className="text-[10px] font-mono text-slate-400">{flag.reviewStatus}</span>
-                          </div>
-
-                          <div className="space-y-1 text-[11px]">
-                            <p className="text-slate-300"><strong className="text-slate-400">Issue: </strong>{flag.reason}</p>
-                            <p className="text-slate-400"><strong className="text-slate-500">Telemetry Evidence: </strong>{flag.evidence}</p>
-                            <p className="text-indigo-300 pt-1"><strong className="text-indigo-400">Recommended Administrative Action: </strong>{flag.recommendedAction}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[10px] text-slate-400 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>
-                      Notice: AI-generated risk signals provide investigative assistance and do not automatically approve, decline, or suspend accounts without human administrator validation.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* WORKSPACE ACTION BAR */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
-              <Button variant="secondary" size="sm" onClick={() => setDetailsItem(null)}>
-                Close Workspace
-              </Button>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
-                  onClick={() => {
-                    setRequestEvidenceItem(detailsItem);
-                    setEvidenceCategory('Business registration & tax ID documentation');
-                    setEvidenceReason('');
-                    setEvidenceGuidance('');
-                  }}
-                >
-                  <HelpCircle className="w-3.5 h-3.5 mr-1" />
-                  Request Evidence
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-rose-500/40 text-rose-300 hover:bg-rose-500/10"
-                  onClick={() => openRejectModal(detailsItem)}
-                >
-                  <XCircle className="w-3.5 h-3.5 mr-1" />
-                  Reject
-                </Button>
-
-                <Button
-                  variant="glow"
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
-                  onClick={() => setApproveConfirm(detailsItem)}
-                >
-                  <Check className="w-3.5 h-3.5 mr-1" />
-                  Approve Verification
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+        item={detailsItem}
+        initialStep={workspaceStep}
+        initialDecision={workspaceDecision}
+        onSuccess={() => {
+          setDetailsItem(null);
+          loadQueue();
+        }}
+      />
 
       {/* REQUEST ADDITIONAL EVIDENCE MODAL */}
       <Modal

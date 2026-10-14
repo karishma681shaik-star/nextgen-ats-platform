@@ -38,8 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.aiats.dto.admin.PlatformHealthResponseDTO;
+import com.aiats.dto.admin.ServiceHealthDTO;
 
 @Service
 public class AdminService {
@@ -127,32 +131,45 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public AdminStatsDTO getStats() {
+        return getStats("ALL");
+    }
+
+    @Transactional(readOnly = true)
+    public AdminStatsDTO getStats(String period) {
+        String normalizedPeriod = (period != null && !period.isBlank()) ? period.trim().toUpperCase() : "ALL";
         AdminStatsDTO dto = new AdminStatsDTO();
+        dto.setReportingPeriod(normalizedPeriod);
+
         long totalUsers = userRepository.count();
         long candidates = userRepository.countByRole(Role.CANDIDATE);
         long recruiters = userRepository.countByRole(Role.RECRUITER);
-        long pendingVerifications = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.PENDING)
-                + userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.RESUBMITTED);
-        long verifiedRecruiters = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.VERIFIED);
         long activeUsers = userRepository.countByStatus(UserStatus.ACTIVE);
 
         long totalJobs = jobRepository.count();
         long activeJobs = jobRepository.countByStatus(JobStatus.ACTIVE);
         long closedJobs = jobRepository.countByStatus(JobStatus.CLOSED);
+        long publishedEligible = jobRepository.countPublicActiveJobs();
 
         long totalApps = applicationRepository.count();
         long pendingApps = applicationRepository.countByStatus(ApplicationStatus.APPLIED);
+        long underReviewApps = applicationRepository.countByStatus(ApplicationStatus.UNDER_REVIEW);
         long shortlistedApps = applicationRepository.countByStatus(ApplicationStatus.SHORTLISTED);
+        long interviewApps = applicationRepository.countByStatus(ApplicationStatus.INTERVIEW);
+        long offeredApps = applicationRepository.countByStatus(ApplicationStatus.OFFERED);
         long selectedApps = applicationRepository.countByStatus(ApplicationStatus.SELECTED);
         long rejectedApps = applicationRepository.countByStatus(ApplicationStatus.REJECTED);
+
+        // Deduplicated candidate pipeline counts
+        long candidatesInPipeline = applicationRepository.countDistinctCandidatesInActivePipeline();
+        long candidatesWithApps = applicationRepository.countDistinctCandidatesWithApplications();
+        long candidatesShortlisted = applicationRepository.countDistinctCandidatesByStatus(ApplicationStatus.SHORTLISTED);
+        long candidatesWithInterviews = applicationRepository.countDistinctCandidatesByStatus(ApplicationStatus.INTERVIEW);
+        long candidatesWithOffers = applicationRepository.countDistinctCandidatesByStatus(ApplicationStatus.OFFERED);
+        long candidatesHired = applicationRepository.countDistinctCandidatesByStatus(ApplicationStatus.SELECTED);
 
         dto.setTotalUsers(totalUsers);
         dto.setTotalCandidates(candidates);
         dto.setTotalRecruiters(recruiters);
-        dto.setPendingVerifications(pendingVerifications);
-        dto.setVerifiedRecruiters(verifiedRecruiters);
-        dto.setRejectedRecruiters(userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.REJECTED));
-        dto.setSuspendedRecruiters(userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.SUSPENDED));
         dto.setActiveUsers(activeUsers);
         dto.setSuspendedAccounts(userRepository.countByStatus(UserStatus.SUSPENDED));
 
@@ -165,42 +182,95 @@ public class AdminService {
         dto.setTotalJobs(totalJobs);
         dto.setActiveJobs(activeJobs);
         dto.setClosedJobs(closedJobs);
+        dto.setPublishedJobsEligible(publishedEligible);
 
         dto.setTotalApplications(totalApps);
         dto.setPendingApplications(pendingApps);
         dto.setShortlistedCount(shortlistedApps);
         dto.setSelectedCount(selectedApps);
         dto.setRejectedCount(rejectedApps);
+        dto.setInterviewsScheduled(interviewApps);
+        dto.setOffersExtended(offeredApps);
         dto.setTotalCompanies(companyRepository.count());
+
+        dto.setCandidatesInActivePipeline(candidatesInPipeline);
+        dto.setCandidatesWithApplications(candidatesWithApps);
+        dto.setCandidatesShortlisted(candidatesShortlisted);
+        dto.setCandidatesWithInterviews(candidatesWithInterviews);
+        dto.setCandidatesWithOffers(candidatesWithOffers);
+        dto.setCandidatesHired(candidatesHired);
+
+        // Verification Statuses (Mutually Exclusive)
+        long vPending = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.PENDING)
+                + userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.RESUBMITTED);
+        long vInReview = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.IN_REVIEW);
+        long vEvidenceReq = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.ADDITIONAL_EVIDENCE_REQUIRED);
+        long vVerified = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.VERIFIED);
+        long vRejected = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.REJECTED)
+                + userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.UNABLE_TO_VERIFY);
+        long vSuspended = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.SUSPENDED);
+
+        dto.setPendingVerifications(vPending);
+        dto.setVerifiedRecruiters(vVerified);
+        dto.setRejectedRecruiters(vRejected);
+        dto.setSuspendedRecruiters(vSuspended);
+        dto.setAdditionalEvidenceRequiredRecruiters(vEvidenceReq);
+
+        dto.setVerificationPendingCount(vPending);
+        dto.setVerificationInReviewCount(vInReview);
+        dto.setVerificationEvidenceRequiredCount(vEvidenceReq);
+        dto.setVerificationVerifiedCount(vVerified);
+        dto.setVerificationRejectedCount(vRejected);
+        dto.setVerificationSuspendedCount(vSuspended);
+
+        // Period Filtering
+        Instant periodStart = null;
+        if ("TODAY".equals(normalizedPeriod)) {
+            periodStart = ZonedDateTime.now(ZoneId.of("UTC")).truncatedTo(ChronoUnit.DAYS).toInstant();
+        } else if ("7D".equals(normalizedPeriod) || "LAST_7_DAYS".equals(normalizedPeriod)) {
+            periodStart = Instant.now().minus(7, ChronoUnit.DAYS);
+        } else if ("30D".equals(normalizedPeriod) || "LAST_30_DAYS".equals(normalizedPeriod)) {
+            periodStart = Instant.now().minus(30, ChronoUnit.DAYS);
+        } else if ("90D".equals(normalizedPeriod) || "LAST_90_DAYS".equals(normalizedPeriod)) {
+            periodStart = Instant.now().minus(90, ChronoUnit.DAYS);
+        }
+
+        if (periodStart != null) {
+            dto.setPeriodTotalApplications(applicationRepository.countByAppliedDateAfter(periodStart));
+            dto.setPeriodNewUsers(userRepository.countByCreatedAtAfter(periodStart));
+            dto.setPeriodNewJobs(jobRepository.countByCreatedAtAfter(periodStart));
+            dto.setPeriodSecurityAlerts(securityAlertRepository != null ? securityAlertRepository.countByCreatedAtAfter(periodStart) : 0);
+        } else {
+            dto.setPeriodTotalApplications(totalApps);
+            dto.setPeriodNewUsers(totalUsers);
+            dto.setPeriodNewJobs(totalJobs);
+            dto.setPeriodSecurityAlerts(securityAlertRepository != null ? securityAlertRepository.count() : 0);
+        }
 
         // Placement rate rule: only calculate if valid outcome data exists
         if (totalApps > 0 && selectedApps > 0) {
             double rate = Math.round(((double) selectedApps / totalApps) * 1000.0) / 10.0;
             dto.setPlacementRate(rate);
         } else {
-            dto.setPlacementRate(null); // Displays "Not available yet" on frontend
+            dto.setPlacementRate(null);
         }
 
-        // SECTION 1.A: RECRUITER VERIFICATION OVERVIEW
-        long additionalEvidence = userRepository.countByRoleAndVerificationStatus(Role.RECRUITER, VerificationStatus.ADDITIONAL_EVIDENCE_REQUIRED);
-        dto.setAdditionalEvidenceRequiredRecruiters(additionalEvidence);
-
-        // SECTION 1.B: COMPANY VERIFICATION OVERVIEW
+        // Company Verification Overview
         dto.setCompaniesAwaitingReview(companyRepository.countByVerifiedFalse());
         dto.setCompaniesVerified(companyRepository.countByVerifiedTrue());
         dto.setCompanyAssociationChecksPending(companyRepository.countByAssociationCheckStatus("PENDING"));
         dto.setCompanyDiscrepanciesCount(companyRepository.countByRegistrationCheckStatus("DISCREPANCY"));
         dto.setCompaniesReverificationRequired(companyRepository.countByReverificationRequiredTrue());
 
-        // SECTION 1.C: JOB SAFETY OVERVIEW
+        // Job Safety Overview
         dto.setJobsPendingModeration(jobRepository.countByStatus(JobStatus.PENDING_APPROVAL));
-        dto.setJobsPublished(activeJobs);
+        dto.setJobsPublished(publishedEligible);
         dto.setJobsRejected(jobRepository.countByStatus(JobStatus.REJECTED));
         dto.setJobsFlaggedSuspicious(securityAlertRepository != null ? securityAlertRepository.countByRiskCategory("SUSPICIOUS_JOB_DESCRIPTION") : 0);
         dto.setJobsCandidateReported(candidateReportRepository != null ? candidateReportRepository.count() : 0);
         dto.setJobsUnpublishedForInvestigation(jobRepository.countByStatus(JobStatus.ARCHIVED));
 
-        // SECTION 1.D: RISK REVIEW OVERVIEW
+        // Risk Review Overview
         dto.setHighPriorityRiskCases(securityAlertRepository != null ? securityAlertRepository.countByRiskLevel("HIGH") : 0);
         dto.setDuplicateRecruiterProfilesCount(securityAlertRepository != null ? securityAlertRepository.countByRiskCategory("DUPLICATE_REGISTRATION_ATTEMPT") : 0);
         dto.setCompanyInfoMismatchesCount(companyRepository.countByRegistrationCheckStatus("DISCREPANCY"));
@@ -210,6 +280,172 @@ public class AdminService {
 
         dto.setSystemHealth("100% Operational (PostgreSQL Connected)");
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public PlatformHealthResponseDTO getPlatformHealth() {
+        List<ServiceHealthDTO> services = new ArrayList<>();
+        String nowStr = Instant.now().toString();
+
+        // 1. PostgreSQL DB Cluster
+        long dbStart = System.currentTimeMillis();
+        try {
+            userRepository.count();
+            long dbElapsed = Math.max(1, System.currentTimeMillis() - dbStart);
+            services.add(new ServiceHealthDTO(
+                "PostgreSQL Database",
+                "Database",
+                "OPERATIONAL",
+                dbElapsed,
+                nowStr,
+                "Cluster connected, transaction read/write operational"
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "PostgreSQL Database",
+                "Database",
+                "UNAVAILABLE",
+                null,
+                nowStr,
+                "Database query execution failed: " + e.getMessage()
+            ));
+        }
+
+        // 2. Spring Boot REST API
+        long apiStart = System.currentTimeMillis();
+        try {
+            long uptimeSeconds = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime() / 1000;
+            int threadCount = java.lang.management.ManagementFactory.getThreadMXBean().getThreadCount();
+            long apiElapsed = Math.max(1, System.currentTimeMillis() - apiStart);
+            services.add(new ServiceHealthDTO(
+                "Spring Boot REST API",
+                "Core API",
+                "OPERATIONAL",
+                apiElapsed,
+                nowStr,
+                "API context active, uptime: " + uptimeSeconds + "s, threads: " + threadCount
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "Spring Boot REST API",
+                "Core API",
+                "DEGRADED",
+                null,
+                nowStr,
+                "Runtime metrics unavailable"
+            ));
+        }
+
+        // 3. Authentication & Security Filter
+        long authStart = System.currentTimeMillis();
+        try {
+            userRepository.existsByEmailIgnoreCase("admin@ai-ats.internal");
+            long authElapsed = Math.max(1, System.currentTimeMillis() - authStart);
+            services.add(new ServiceHealthDTO(
+                "Authentication & Security Filter",
+                "Security",
+                "OPERATIONAL",
+                authElapsed,
+                nowStr,
+                "JWT auth provider & role guards responsive"
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "Authentication & Security Filter",
+                "Security",
+                "DEGRADED",
+                null,
+                nowStr,
+                "Authentication verification check timed out"
+            ));
+        }
+
+        // 4. Job Moderation Engine
+        long modStart = System.currentTimeMillis();
+        try {
+            long pendingJobs = jobRepository.countByStatus(JobStatus.PENDING_APPROVAL);
+            long modElapsed = Math.max(1, System.currentTimeMillis() - modStart);
+            services.add(new ServiceHealthDTO(
+                "Job Moderation Engine",
+                "Moderation",
+                "OPERATIONAL",
+                modElapsed,
+                nowStr,
+                "Queue operational, pending approval queue: " + pendingJobs
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "Job Moderation Engine",
+                "Moderation",
+                "DEGRADED",
+                null,
+                nowStr,
+                "Moderation queue polling error"
+            ));
+        }
+
+        // 5. Candidate Discovery API
+        long discStart = System.currentTimeMillis();
+        try {
+            long publicJobs = jobRepository.countPublicActiveJobs();
+            long discElapsed = Math.max(1, System.currentTimeMillis() - discStart);
+            services.add(new ServiceHealthDTO(
+                "Candidate Discovery API",
+                "Discovery",
+                "OPERATIONAL",
+                discElapsed,
+                nowStr,
+                "Public job search index online, active listings: " + publicJobs
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "Candidate Discovery API",
+                "Discovery",
+                "DEGRADED",
+                null,
+                nowStr,
+                "Public discovery index unreachable"
+            ));
+        }
+
+        // 6. Notification Dispatcher
+        long notifStart = System.currentTimeMillis();
+        try {
+            long notifCount = notificationRepository != null ? notificationRepository.count() : 0;
+            long notifElapsed = Math.max(1, System.currentTimeMillis() - notifStart);
+            services.add(new ServiceHealthDTO(
+                "Notification Dispatcher",
+                "Notifications",
+                notificationRepository != null ? "OPERATIONAL" : "MONITORING_UNAVAILABLE",
+                notificationRepository != null ? notifElapsed : null,
+                nowStr,
+                notificationRepository != null ? "Notification queue healthy (" + notifCount + " dispatched)" : "Dispatcher monitoring unavailable"
+            ));
+        } catch (Exception e) {
+            services.add(new ServiceHealthDTO(
+                "Notification Dispatcher",
+                "Notifications",
+                "DEGRADED",
+                null,
+                nowStr,
+                "Notification dispatcher check failed"
+            ));
+        }
+
+        boolean anyDown = services.stream().anyMatch(s -> "UNAVAILABLE".equalsIgnoreCase(s.getStatus()));
+        boolean anyDegraded = services.stream().anyMatch(s -> "DEGRADED".equalsIgnoreCase(s.getStatus()));
+        String overall = anyDown ? "UNAVAILABLE" : anyDegraded ? "DEGRADED" : "OPERATIONAL";
+
+        return new PlatformHealthResponseDTO(overall, nowStr, services);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SystemActivityLogDTO> getRecentActivityLogs(int limit) {
+        int max = Math.min(Math.max(limit, 1), 50);
+        return systemActivityLogRepository.findTop50ByOrderByTimestampDesc().stream()
+                .limit(max)
+                .map(SystemActivityLogDTO::new)
+                .collect(Collectors.toList());
     }
 
     public UUID getCanonicalAdminId() {

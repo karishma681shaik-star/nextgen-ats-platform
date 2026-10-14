@@ -14,7 +14,6 @@ import {
   Users,
   ShieldCheck,
   CheckCircle,
-  BarChart3,
   Sparkles,
   ChevronRight,
   Zap,
@@ -68,7 +67,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'User Management', path: '/admin/users', icon: Users, group: 'users' },
     { label: 'Recruiter Verification', path: '/admin/recruiters', icon: ShieldCheck, group: 'users' },
     { label: 'Job Moderation', path: '/admin/jobs', icon: CheckCircle, group: 'content' },
-    { label: 'Platform Analytics', path: '/admin/analytics', icon: BarChart3, highlight: true, badge: 'LIVE', group: 'content' },
     { label: 'Audit & Security', path: '/admin/audit', icon: ShieldAlert, highlight: true, badge: 'SEC', group: 'security' },
   ];
 

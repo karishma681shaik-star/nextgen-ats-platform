@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByRoleAndStatus(Role role, UserStatus status);
     long countByRoleAndVerificationStatus(Role role, com.aiats.entity.VerificationStatus verificationStatus);
     long countByRoleAndRiskLevel(Role role, String riskLevel);
+    long countByCreatedAtAfter(java.time.Instant date);
+    long countByRoleAndCreatedAtAfter(Role role, java.time.Instant date);
     List<User> findByRoleAndCompanyNameIgnoreCase(Role role, String companyName);
     List<User> findByRoleAndVerificationStatusOrderByCreatedAtDesc(Role role, com.aiats.entity.VerificationStatus verificationStatus);
     List<User> findByVerificationStatusOrderByCreatedAtDesc(com.aiats.entity.VerificationStatus verificationStatus);

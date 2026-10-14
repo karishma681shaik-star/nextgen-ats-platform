@@ -15,6 +15,7 @@ import com.aiats.dto.job.JobDTO;
 import com.aiats.dto.admin.JobModerationDecisionRequest;
 import com.aiats.dto.admin.RecruiterPerformanceDTO;
 import com.aiats.dto.admin.CandidatePerformanceDTO;
+import com.aiats.dto.admin.PlatformHealthResponseDTO;
 import com.aiats.dto.auth.UserDTO;
 import com.aiats.dto.common.ApiResponse;
 import com.aiats.security.UserPrincipal;
@@ -47,8 +48,20 @@ public class AdminController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<AdminStatsDTO>> getStats() {
-        return ResponseEntity.ok(ApiResponse.success(adminService.getStats()));
+    public ResponseEntity<ApiResponse<AdminStatsDTO>> getStats(
+            @RequestParam(required = false, defaultValue = "ALL") String period) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getStats(period)));
+    }
+
+    @GetMapping("/analytics/health")
+    public ResponseEntity<ApiResponse<PlatformHealthResponseDTO>> getPlatformHealth() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getPlatformHealth()));
+    }
+
+    @GetMapping("/analytics/recent-activity")
+    public ResponseEntity<ApiResponse<List<SystemActivityLogDTO>>> getRecentActivity(
+            @RequestParam(required = false, defaultValue = "15") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getRecentActivityLogs(limit)));
     }
 
     @GetMapping("/analytics/recruitment")

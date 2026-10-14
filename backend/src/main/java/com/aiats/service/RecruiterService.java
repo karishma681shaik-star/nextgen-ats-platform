@@ -211,6 +211,12 @@ public class RecruiterService {
                 company.setName(request.getName().trim());
                 recruiter.setCompanyName(request.getName().trim());
             }
+            if (request.getTitle() != null && !request.getTitle().isBlank()) {
+                recruiter.setTitle(request.getTitle().trim());
+            }
+            if (request.getContactPhone() != null && !request.getContactPhone().isBlank()) {
+                recruiter.setPhone(request.getContactPhone().trim());
+            }
             if (request.getTagline() != null) company.setTagline(request.getTagline().trim());
             if (request.getIndustry() != null) company.setIndustry(request.getIndustry().trim());
             if (request.getWebsite() != null) company.setWebsite(request.getWebsite().trim());
@@ -224,6 +230,7 @@ public class RecruiterService {
             if (request.getTaxId() != null) company.setTaxId(request.getTaxId().trim());
             if (request.getOfficialEmailDomain() != null) company.setOfficialEmailDomain(request.getOfficialEmailDomain().trim());
             if (request.getVerificationDocumentUrl() != null) company.setVerificationDocumentUrl(request.getVerificationDocumentUrl().trim());
+            if (request.getVerificationEvidenceNotes() != null) company.setVerificationEvidenceNotes(request.getVerificationEvidenceNotes().trim());
             if (request.getAuthorizationDocumentUrl() != null) company.setAuthorizationDocumentUrl(request.getAuthorizationDocumentUrl().trim());
             if (request.getAuthorizationNotes() != null) company.setAuthorizationNotes(request.getAuthorizationNotes().trim());
         }
@@ -280,6 +287,12 @@ public class RecruiterService {
         dto.setRecruiterName(recruiter.getFullName());
         dto.setRecruiterEmail(recruiter.getEmail());
         dto.setRecruiterPhone(recruiter.getPhone());
+        dto.setRecruiterTitle(recruiter.getTitle());
+        dto.setTitle(recruiter.getTitle());
+        dto.setCreatedAt(recruiter.getCreatedAt() != null ? recruiter.getCreatedAt().toString() : null);
+        dto.setUpdatedAt(recruiter.getUpdatedAt() != null ? recruiter.getUpdatedAt().toString() : null);
+        dto.setEmailVerified(recruiter.getEmailVerified());
+        dto.setPhoneVerified(recruiter.getPhoneVerified());
 
         VerificationStatus vs = recruiter.getVerificationStatus() != null ? recruiter.getVerificationStatus() : VerificationStatus.PENDING;
         dto.setVerificationStatus(vs.toFrontendStatus());
@@ -293,6 +306,19 @@ public class RecruiterService {
         dto.setVerifiedAt(recruiter.getVerifiedAt() != null ? recruiter.getVerifiedAt().toString() : null);
         dto.setVerifiedBy(recruiter.getVerifiedBy());
         dto.setResubmittedAt(recruiter.getResubmittedAt() != null ? recruiter.getResubmittedAt().toString() : null);
+        
+        if (company != null) {
+            dto.setCompanyName(company.getName());
+            dto.setRegistrationCheckStatus(company.getRegistrationCheckStatus());
+            dto.setAssociationCheckStatus(company.getAssociationCheckStatus());
+            dto.setAssociationVerified(company.getAssociationVerified());
+        } else {
+            dto.setCompanyName(recruiter.getCompanyName());
+            dto.setRegistrationCheckStatus("PENDING");
+            dto.setAssociationCheckStatus("PENDING");
+            dto.setAssociationVerified(false);
+        }
+
         dto.setCompany(toDTO(company));
 
         if (verificationHistoryRepository != null) {

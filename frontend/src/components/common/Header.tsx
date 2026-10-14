@@ -251,12 +251,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                   )}
                   {role === 'admin' && (
                     <Link
-                      to="/admin/analytics"
+                      to="/admin/audit"
                       onClick={() => setIsProfileMenuOpen(false)}
                       className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
                     >
                       <Shield className="w-4 h-4 text-emerald-400" />
-                      <span>Platform Analytics</span>
+                      <span>Audit & Security</span>
                     </Link>
                   )}
                 </div>
