@@ -85,6 +85,10 @@ export const candidateApi = {
     return apiClient<CandidateProfile>('/candidate/profile');
   },
 
+  async getUserProfile(userId: string): Promise<CandidateProfile> {
+    return apiClient<CandidateProfile>(`/candidate/${userId}/profile`);
+  },
+
   async updateProfile(updates: Partial<CandidateProfile>): Promise<CandidateProfile> {
     return apiClient<CandidateProfile>('/candidate/profile', {
       method: 'PUT',
@@ -248,5 +252,12 @@ export const candidateApi = {
       storage.setSavedJobs(updated);
       return !isSaved;
     }
+  },
+
+  async submitReport(request: { jobId: string; category: string; description: string }): Promise<any> {
+    return apiClient<any>('/candidate/reports', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   },
 };

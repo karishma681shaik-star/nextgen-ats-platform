@@ -24,13 +24,31 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
     );
   }
 
-  // Not authenticated -> redirect to login
+  // Not authenticated -> redirect to appropriate login portal
   if (!isAuthenticated || !user) {
+    if (location.pathname.startsWith('/admin')) {
+      return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    }
+    if (location.pathname.startsWith('/recruiter')) {
+      return <Navigate to="/login/recruiter" state={{ from: location }} replace />;
+    }
+    if (location.pathname.startsWith('/candidate')) {
+      return <Navigate to="/login/candidate" state={{ from: location }} replace />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Role checking
   if (allowedRoles && !allowedRoles.includes(role)) {
+    // Deny non-admin access to admin routes
+    if (location.pathname.startsWith('/admin')) {
+      if (role === 'candidate') {
+        return <Navigate to="/candidate" replace state={{ error: 'Access denied: Administrator privileges required.' }} />;
+      }
+      if (role === 'recruiter') {
+        return <Navigate to="/recruiter" replace state={{ error: 'Access denied: Administrator privileges required.' }} />;
+      }
+    }
     if (role === 'candidate') return <Navigate to="/candidate" replace />;
     if (role === 'recruiter') return <Navigate to="/recruiter" replace />;
     if (role === 'admin') return <Navigate to="/admin" replace />;

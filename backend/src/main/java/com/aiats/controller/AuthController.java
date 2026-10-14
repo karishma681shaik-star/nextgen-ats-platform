@@ -32,6 +32,20 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
     }
 
+    @PostMapping("/admin/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> adminLogin(
+            @Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = httpRequest.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest.getRemoteAddr();
+        } else {
+            clientIp = clientIp.split(",")[0].trim();
+        }
+        AuthResponse response = authService.adminLogin(request, clientIp);
+        return ResponseEntity.ok(ApiResponse.ok("Admin authenticated successfully", response));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         if (userPrincipal == null) {

@@ -13,6 +13,10 @@ public class UserDTO {
     private String phone;
     private String companyName;
     private String title;
+    private String verificationStatus;
+    private String verifiedAt;
+    private String verifiedBy;
+    private String rejectionReason;
 
     public UserDTO() {}
 
@@ -27,6 +31,14 @@ public class UserDTO {
         this.phone = user.getPhone();
         this.companyName = user.getCompanyName();
         this.title = user.getTitle();
+        if (user.getVerificationStatus() != null) {
+            this.verificationStatus = user.getVerificationStatus().toFrontendStatus();
+        }
+        if (user.getVerifiedAt() != null) {
+            this.verifiedAt = user.getVerifiedAt().toString();
+        }
+        this.verifiedBy = user.getVerifiedBy();
+        this.rejectionReason = user.getRejectionReason();
     }
 
     public String getId() {
@@ -107,5 +119,37 @@ public class UserDTO {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getVerificationStatus() {
+        return verificationStatus;
+    }
+
+    public void setVerificationStatus(String verificationStatus) {
+        this.verificationStatus = verificationStatus;
+    }
+
+    public String getVerifiedAt() {
+        return verifiedAt;
+    }
+
+    public void setVerifiedAt(String verifiedAt) {
+        this.verifiedAt = verifiedAt;
+    }
+
+    public String getVerifiedBy() {
+        return verifiedBy;
+    }
+
+    public void setVerifiedBy(String verifiedBy) {
+        this.verifiedBy = verifiedBy;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

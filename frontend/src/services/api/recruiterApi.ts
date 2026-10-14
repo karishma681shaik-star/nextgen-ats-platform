@@ -4,7 +4,8 @@ import {
   Company,
   Job,
   Application,
-  ApplicationStatus
+  ApplicationStatus,
+  RecruiterVerificationDetail,
 } from '../../types';
 import { mapJobDtoToJob } from './jobApi';
 import { storage } from '../mock/storage';
@@ -32,6 +33,17 @@ export const recruiterApi = {
       body: JSON.stringify(updates),
     });
     return mapCompany(raw);
+  },
+
+  async getVerificationDetail(): Promise<RecruiterVerificationDetail> {
+    return apiClient<RecruiterVerificationDetail>('/recruiter/verification');
+  },
+
+  async resubmitVerification(payload: any): Promise<RecruiterVerificationDetail> {
+    return apiClient<RecruiterVerificationDetail>('/recruiter/verification/resubmit', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async getPostedJobs(): Promise<Job[]> {
@@ -146,6 +158,19 @@ function mapCompany(raw: any): Company {
     contactEmail: raw.contactEmail || 'contact@example.com',
     contactPhone: raw.contactPhone || '+1 (555) 000-0000',
     verified: Boolean(raw.verified),
+    businessRegistrationNumber: raw.businessRegistrationNumber,
+    taxId: raw.taxId,
+    officialEmailDomain: raw.officialEmailDomain,
+    verificationDocumentUrl: raw.verificationDocumentUrl,
+    verificationEvidenceNotes: raw.verificationEvidenceNotes,
+    registrationCheckStatus: raw.registrationCheckStatus,
+    websiteConsistencyStatus: raw.websiteConsistencyStatus,
+    associationVerified: Boolean(raw.associationVerified),
+    associationCheckStatus: raw.associationCheckStatus,
+    authorizationDocumentUrl: raw.authorizationDocumentUrl,
+    authorizationNotes: raw.authorizationNotes,
+    independentConfirmationNotes: raw.independentConfirmationNotes,
+    reverificationRequired: Boolean(raw.reverificationRequired),
   };
 }
 

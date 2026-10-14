@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface ResumeRepository extends JpaRepository<Resume, UUID> {
     List<Resume> findByUserIdOrderByCreatedAtDesc(UUID userId);
     Optional<Resume> findByUserIdAndPrimaryTrue(UUID userId);
+    boolean existsByUserId(UUID userId);
 }

@@ -44,6 +44,15 @@ public class ApplicationController {
                 applicationService.getCandidateApplications(principal.getId())));
     }
 
+    @PatchMapping("/{applicationId}/withdraw")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<ApplicationDTO>> withdraw(
+            @PathVariable UUID applicationId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        ApplicationDTO withdrawn = applicationService.withdrawApplication(principal.getId(), applicationId);
+        return ResponseEntity.ok(ApiResponse.success(withdrawn, "Application withdrawn successfully"));
+    }
+
     // ─── RECRUITER ──────────────────────────────────────────────────────────
 
     @GetMapping("/recruiter")

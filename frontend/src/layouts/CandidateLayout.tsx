@@ -10,7 +10,7 @@ export const CandidateLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 flex relative overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-slate-100 flex relative overflow-x-hidden">
       <AICursor />
       <BackgroundEffects role="candidate" />
 

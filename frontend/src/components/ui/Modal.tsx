@@ -75,13 +75,13 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Dialog */}
       <div
         className={cn(
-          'relative w-full bg-[#0a0f1d] border border-white/10 rounded-3xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200 my-8 glass-card-elevated',
+          'relative w-full max-h-[90vh] flex flex-col bg-[#0a0f1d] border border-white/10 rounded-3xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200 my-auto glass-card-elevated',
           resolvedMaxWidth
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between p-6 pb-4 border-b border-white/[0.08]">
+          <div className="flex items-start justify-between p-6 pb-4 border-b border-white/[0.08] shrink-0">
             <div>
               {title && <h3 className="text-lg font-bold text-white tracking-tight font-display">{title}</h3>}
               {description && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{description}</p>}
@@ -97,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>,
     document.body

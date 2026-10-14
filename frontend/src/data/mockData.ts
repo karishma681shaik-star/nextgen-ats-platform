@@ -255,7 +255,7 @@ export const INITIAL_RESUMES: Resume[] = [
   {
     id: '8e5cd806-7a11-4074-af40-0caa6ad03a28',
     userId: 'usr-cand-1',
-    fileName: 'KARISHMA-RESUME.pdf',
+    fileName: 'ALEX-RIVERA-RESUME.pdf',
     fileSize: '1.2 MB',
     uploadDate: '2026-02-28T14:30:00Z',
     isPrimary: true,
@@ -280,22 +280,22 @@ export const INITIAL_RESUMES: Resume[] = [
       extractedCertifications: ['Java Full Stack Development']
     },
     resumeData: JSON.stringify({
-      name: 'KARISHMA SHAIK',
-      firstName: 'KARISHMA',
-      lastName: 'SHAIK',
+      name: 'ALEX RIVERA',
+      firstName: 'ALEX',
+      lastName: 'RIVERA',
       headline: 'Computer Science and Engineering student focused on Java Full Stack Development',
-      phone: '+919347840962',
-      email: 'karishma681shaik@gmail.com',
-      city: 'Nandyal',
-      state: '',
-      country: '',
-      location: 'Nandyal',
+      phone: '+1 (555) 234-5678',
+      email: 'alex.rivera@example.com',
+      city: 'San Francisco',
+      state: 'CA',
+      country: 'USA',
+      location: 'San Francisco, CA',
       socialLinks: [
-        { id: 'link-li', platform: 'LinkedIn', url: 'https://linkedin.com/in/karishmashaik681', customLabel: 'karishmashaik681' },
-        { id: 'link-gh', platform: 'GitHub', url: 'https://github.com/karishmashaik-star', customLabel: 'karishmashaik-star' }
+        { id: 'link-li', platform: 'LinkedIn', url: 'https://linkedin.com/in/alexrivera-dev', customLabel: 'alexrivera-dev' },
+        { id: 'link-gh', platform: 'GitHub', url: 'https://github.com/alexrivera-dev', customLabel: 'alexrivera-dev' }
       ],
-      linkedinUrl: 'https://linkedin.com/in/karishmashaik681',
-      githubUrl: 'https://github.com/karishmashaik-star',
+      linkedinUrl: 'https://linkedin.com/in/alexrivera-dev',
+      githubUrl: 'https://github.com/alexrivera-dev',
       summary:
         'Computer Science and Engineering student focused on Java Full Stack Development, with knowledge of Java, Spring Boot, Hibernate, React.js, and REST APIs. Strong foundation in Data Structures and Algorithms, OOP, DBMS, and Computer Networks, with hands-on experience building responsive and database-driven web applications. Seeking opportunities to apply Java full-stack skills in real-world software engineering environments.',
       activeSections: [
@@ -357,7 +357,7 @@ export const INITIAL_RESUMES: Resume[] = [
           description:
             '• Developed a real-time web application with responsive interfaces and database-driven functionality.\n• Implemented real-time messaging and RESTful backend communication for seamless user interactions.\n• Designed user-focused interfaces with authentication and chat management features.',
           technologies: 'Java, Spring Boot, React.js',
-          link: 'https://github.com/karishmashaik-star/vibe-chat'
+          link: 'https://github.com/alexrivera-dev/vibe-chat'
         },
         {
           id: 'proj-2',
@@ -367,7 +367,7 @@ export const INITIAL_RESUMES: Resume[] = [
           description:
             '• Developed a full-stack complaint registration and tracking platform for streamlined complaint management.\n• Built responsive user and administrator interfaces with RESTful API integration.\n• Integrated database functionality for user, complaint, and status management.',
           technologies: 'Java, Spring Boot, React.js',
-          link: 'https://github.com/karishmashaik-star/online-complaint-system'
+          link: 'https://github.com/alexrivera-dev/online-complaint-system'
         }
       ],
       skills: {
@@ -907,8 +907,17 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
 export const INITIAL_SAVED_JOB_IDS: string[] = [];
 
 export const INITIAL_ADMIN_STATS: AdminStats = {
+  totalUsers: 1697,
   totalCandidates: 1482,
   totalRecruiters: 214,
+  pendingVerifications: 12,
+  verifiedRecruiters: 202,
+  rejectedRecruiters: 0,
+  suspendedRecruiters: 0,
+  suspendedAccounts: 0,
+  activeAdmins: 1,
+  totalAdmins: 1,
+  multipleAdminsFlag: false,
   activeUsers: 890,
   totalJobs: 326,
   activeJobs: 248,
@@ -918,8 +927,9 @@ export const INITIAL_ADMIN_STATS: AdminStats = {
   selectedCount: 312,
   rejectedCount: 654,
   placementRate: 74.2,
-  systemHealth: '100% Operational (0.01s latency)'
+  systemHealth: '100% Operational (PostgreSQL Connected)'
 };
+
 
 export const INITIAL_RECRUITER_STATS: RecruiterStats = {
   activeJobs: 6,

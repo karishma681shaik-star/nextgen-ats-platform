@@ -29,6 +29,22 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+        String msg = (ex.getMessage() != null ? ex.getMessage() : "") + " " + (ex.getRootCause() != null ? ex.getRootCause().getMessage() : "");
+        String msgLower = msg.toLowerCase();
+        if (msgLower.contains("email") || msgLower.contains("unique") || msgLower.contains("idx_users_email")) {
+            ErrorResponse error = new ErrorResponse(HttpStatus.CONFLICT.value(), "Conflict",
+                    "An account with this email address already exists. Please sign in or use the supported account recovery process.",
+                    request.getRequestURI());
+            return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+        }
+        ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "Database integrity violation",
+                request.getRequestURI());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex, HttpServletRequest request) {
         ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage(), request.getRequestURI());
@@ -43,9 +59,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Forbidden", "You do not have permission to access this resource", request.getRequestURI());
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "You do not have permission to access this resource";
+        ErrorResponse error = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Forbidden", message, request.getRequestURI());
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {

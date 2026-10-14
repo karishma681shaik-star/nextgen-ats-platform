@@ -111,7 +111,7 @@ export const IntelligenceFlow: React.FC = () => {
       description:
         'Automatically sorts applicant cohorts by objective alignment, skill breadth, and verified experience depth to eliminate manual resume screening.',
       inputExample: '48 total applicants sorted for Requisition #REQ-409',
-      outputExample: 'Top Ranked: Karishma Shaik (Score 98) → Auto-flagged for recruiter fast-track',
+      outputExample: 'Top Ranked: Alex Rivera (Score 98) → Auto-flagged for recruiter fast-track',
       metrics: [
         { label: 'Cohort Rank', value: '#1 / 48' },
         { label: 'Time Saved', value: '85%' },

@@ -12,10 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.Optional;
 import java.util.Set;
 
 @Component
+@Order(2)
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
@@ -27,7 +30,14 @@ public class DataInitializer implements CommandLineRunner {
     private final SavedJobRepository savedJobRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final CandidateSkillRepository candidateSkillRepository;
+    private final SystemActivityLogRepository systemActivityLogRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.admin.email:admin@ai-ats.internal}")
+    private String configuredAdminEmail;
+
+    @Value("${app.admin.initial-password:Password123!}")
+    private String configuredAdminInitialPassword;
 
     public DataInitializer(UserRepository userRepository,
                            CompanyRepository companyRepository,
@@ -36,6 +46,7 @@ public class DataInitializer implements CommandLineRunner {
                            SavedJobRepository savedJobRepository,
                            CandidateProfileRepository candidateProfileRepository,
                            CandidateSkillRepository candidateSkillRepository,
+                           SystemActivityLogRepository systemActivityLogRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
@@ -44,6 +55,7 @@ public class DataInitializer implements CommandLineRunner {
         this.savedJobRepository = savedJobRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.candidateSkillRepository = candidateSkillRepository;
+        this.systemActivityLogRepository = systemActivityLogRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -55,8 +67,8 @@ public class DataInitializer implements CommandLineRunner {
         // 1. Clean up any unreal, broken, or test jobs (e.g. "Engineer 1", gibberish skills)
         cleanupUnrealJobs();
 
-        // 2. Candidate: Karishma Shaik
-        initCandidateKarishma();
+        // 2. Candidate: Alex Rivera
+        initCandidateAlex();
 
         // 3. Admin: Marcus Vance
         initAdminMarcus();
@@ -69,6 +81,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // 6. Verified Recruiter & Job: American Express (Software Engineer II - Java & Distributed Systems)
         initAmericanExpressJob();
+
+        // 7. Verify all seeded recruiters and migrate existing records
+        initVerificationStatusesAndLogs();
 
         logger.info("Database initialization complete. All jobs verified and ready for real candidate applications.");
     }
@@ -107,23 +122,26 @@ public class DataInitializer implements CommandLineRunner {
         });
     }
 
-    private void initCandidateKarishma() {
-        User candidate = userRepository.findByEmailIgnoreCase("karishma681shaik@gmail.com").orElseGet(() -> {
-            User u = new User();
-            u.setEmail("karishma681shaik@gmail.com");
-            u.setFullName("Karishma Shaik");
-            u.setPasswordHash(passwordEncoder.encode("Password123!"));
-            u.setRole(Role.CANDIDATE);
-            u.setStatus(UserStatus.ACTIVE);
-            u.setPhone("+91 98765 43210");
-            u.setTitle("Senior Java Full Stack Engineer");
-            return userRepository.save(u);
-        });
+    private void initCandidateAlex() {
+        User candidate = userRepository.findByEmailIgnoreCase("alex.rivera@example.com")
+                .or(() -> userRepository.findAll().stream().filter(u -> u.getRole() == Role.CANDIDATE).findFirst())
+                .orElseGet(() -> {
+                    User u = new User();
+                    u.setEmail("alex.rivera@example.com");
+                    u.setFullName("Alex Rivera");
+                    u.setPasswordHash(passwordEncoder.encode("Password123!"));
+                    u.setRole(Role.CANDIDATE);
+                    u.setStatus(UserStatus.ACTIVE);
+                    u.setPhone("+1 (555) 234-5678");
+                    u.setTitle("Senior Java Full Stack Engineer");
+                    return userRepository.save(u);
+                });
 
-        // Ensure password is always valid for login
+        // Ensure password is always valid for login and candidate identity is sanitized
+        candidate.setEmail("alex.rivera@example.com");
         candidate.setPasswordHash(passwordEncoder.encode("Password123!"));
         candidate.setStatus(UserStatus.ACTIVE);
-        candidate.setFullName("Karishma Shaik");
+        candidate.setFullName("Alex Rivera");
         candidate.setTitle("Senior Java Full Stack Engineer");
         userRepository.save(candidate);
 
@@ -137,8 +155,8 @@ public class DataInitializer implements CommandLineRunner {
         profile.setTitle("Senior Java Full Stack Engineer");
         profile.setBio("Full Stack Java Developer proficient in Java 21, Spring Boot, React.js, Microservices, and Cloud Native architectures.");
         profile.setLocation("Bengaluru, Karnataka, India");
-        profile.setGithubUrl("https://github.com/karishma681shaik-star");
-        profile.setLinkedinUrl("https://www.linkedin.com/in/karishmashaik681/");
+        profile.setGithubUrl("https://github.com/alexrivera-dev");
+        profile.setLinkedinUrl("https://www.linkedin.com/in/alexrivera-dev/");
         profile.setProfileCompletion(95);
         candidateProfileRepository.save(profile);
 
@@ -152,16 +170,29 @@ public class DataInitializer implements CommandLineRunner {
             for (String s : techSkills) {
                 candidateSkillRepository.save(new CandidateSkill(profile, s, SkillType.TECHNICAL));
             }
-            logger.info("Seeded core technical skills for candidate Karishma Shaik.");
+            logger.info("Seeded core technical skills for candidate Alex Rivera.");
         }
     }
 
     private void initAdminMarcus() {
-        User admin = userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").orElseGet(() -> {
+        // Enforce Single-Admin Policy: Check if any admin already exists in the system
+        long adminCount = userRepository.countByRole(Role.ADMIN);
+        if (adminCount > 0) {
+            logger.info("Single-Admin Policy: Administrator account already provisioned (count: {}). Preserving existing credentials.", adminCount);
+            return;
+        }
+
+        // Provision initial administrator once from secure configuration
+        String email = (configuredAdminEmail != null && !configuredAdminEmail.isBlank())
+                ? configuredAdminEmail.trim().toLowerCase() : "admin@ai-ats.internal";
+        String initialPassword = (configuredAdminInitialPassword != null && !configuredAdminInitialPassword.isBlank())
+                ? configuredAdminInitialPassword : "Password123!";
+
+        User admin = userRepository.findByEmailIgnoreCase(email).orElseGet(() -> {
             User u = new User();
-            u.setEmail("admin@ai-ats.internal");
+            u.setEmail(email);
             u.setFullName("Marcus Vance");
-            u.setPasswordHash(passwordEncoder.encode("Password123!"));
+            u.setPasswordHash(passwordEncoder.encode(initialPassword));
             u.setRole(Role.ADMIN);
             u.setStatus(UserStatus.ACTIVE);
             u.setAvatarUrl("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80");
@@ -169,8 +200,13 @@ public class DataInitializer implements CommandLineRunner {
             u.setPhone("+1 (555) 111-2233");
             return userRepository.save(u);
         });
-        admin.setPasswordHash(passwordEncoder.encode("Password123!"));
-        userRepository.save(admin);
+
+        if (admin.getRole() != Role.ADMIN) {
+            admin.setRole(Role.ADMIN);
+            userRepository.save(admin);
+        }
+
+        logger.info("Single-Admin Provisioning: Designated administrator account [{}] established successfully.", admin.getEmail());
     }
 
     private void initCourseraJob() {
@@ -187,6 +223,10 @@ public class DataInitializer implements CommandLineRunner {
             u.setTitle("Senior Technical Recruiter");
             return userRepository.save(u);
         });
+        recruiter.setVerificationStatus(VerificationStatus.VERIFIED);
+        recruiter.setVerifiedAt(Instant.now());
+        recruiter.setVerifiedBy("Lead System Administrator");
+        userRepository.save(recruiter);
 
         // Ensure Coursera Company is verified
         Company company = companyRepository.findByRecruiter(recruiter).orElseGet(() -> {
@@ -254,6 +294,10 @@ public class DataInitializer implements CommandLineRunner {
             u.setTitle("Head of Global Talent Acquisition");
             return userRepository.save(u);
         });
+        recruiter.setVerificationStatus(VerificationStatus.VERIFIED);
+        recruiter.setVerifiedAt(Instant.now());
+        recruiter.setVerifiedBy("Lead System Administrator");
+        userRepository.save(recruiter);
 
         Company company = companyRepository.findByRecruiter(recruiter).orElseGet(() -> {
             Company c = new Company();
@@ -298,6 +342,35 @@ public class DataInitializer implements CommandLineRunner {
 
         jobRepository.save(job);
         logger.info("Initialized verified CloudScale AI Senior Java Cloud Architect requisition.");
+
+        // Initialize pending moderation requisition
+        Optional<Job> pendingJobOpt = jobRepository.findAll().stream()
+                .filter(j -> "Staff AI Systems Engineer".equalsIgnoreCase(j.getTitle()))
+                .findFirst();
+        if (pendingJobOpt.isEmpty()) {
+            Job pendingJob = new Job();
+            pendingJob.setTitle("Staff AI Systems Engineer");
+            pendingJob.setCompany(company);
+            pendingJob.setRecruiter(recruiter);
+            pendingJob.setDepartment("Applied AI & Platform");
+            pendingJob.setLocation("San Francisco, CA (Remote Eligible)");
+            pendingJob.setEmploymentType("Full-time");
+            pendingJob.setExperienceLevel("Senior Level");
+            pendingJob.setSalaryMin(new BigDecimal("185000.00"));
+            pendingJob.setSalaryMax(new BigDecimal("225000.00"));
+            pendingJob.setSalaryCurrency("USD");
+            pendingJob.setSkills("Java, Python, PyTorch, LLMs, Spring Boot, Vector Search, Kubernetes");
+            pendingJob.setDescription("CloudScale AI is seeking a Staff AI Systems Engineer to spearhead high-throughput model inference pipelines and semantic matching infrastructure for enterprise recruitment intelligence.");
+            pendingJob.setRequirements("6+ years engineering experience with machine learning systems and distributed Java/Python services||Deep knowledge of embeddings, vector databases, and LLM orchestration||Strong software engineering fundamentals and production telemetry experience");
+            pendingJob.setResponsibilities("Design ultra-low latency semantic matching microservices||Collaborate with ML research scientists to deploy specialized fine-tuned models||Optimize multi-tenant cloud inference costs and GPU cluster utilization");
+            pendingJob.setEducationRequired("Master's or PhD in Computer Science, Data Science, or related field");
+            pendingJob.setExperienceRequiredYears(6);
+            pendingJob.setDeadline("2026-11-15");
+            pendingJob.setStatus(JobStatus.PENDING_APPROVAL);
+            pendingJob.setPostedDate(Instant.now().toString());
+            jobRepository.save(pendingJob);
+            logger.info("Initialized pending moderation requisition: Staff AI Systems Engineer.");
+        }
     }
 
     private void initAmericanExpressJob() {
@@ -313,6 +386,10 @@ public class DataInitializer implements CommandLineRunner {
             u.setTitle("Global Talent Lead");
             return userRepository.save(u);
         });
+        recruiter.setVerificationStatus(VerificationStatus.VERIFIED);
+        recruiter.setVerifiedAt(Instant.now());
+        recruiter.setVerifiedBy("Lead System Administrator");
+        userRepository.save(recruiter);
 
         Company company = companyRepository.findByRecruiter(recruiter).orElseGet(() -> {
             Company c = new Company();
@@ -358,5 +435,49 @@ public class DataInitializer implements CommandLineRunner {
 
         jobRepository.save(job);
         logger.info("Initialized verified American Express Software Engineer II requisition.");
+    }
+
+    private void initVerificationStatusesAndLogs() {
+        // Ensure admin, candidates, and recruiters have verified status
+        userRepository.findAll().forEach(u -> {
+            if (u.getRole() == Role.ADMIN || u.getRole() == Role.CANDIDATE) {
+                if (u.getVerificationStatus() == null) {
+                    u.setVerificationStatus(VerificationStatus.VERIFIED);
+                    userRepository.save(u);
+                }
+            } else if (u.getRole() == Role.RECRUITER) {
+                if (u.getVerificationStatus() == null) {
+                    Company comp = companyRepository.findByRecruiter(u)
+                            .or(() -> companyRepository.findByRecruiterId(u.getId()))
+                            .orElse(null);
+                    if (comp != null && comp.isVerified()) {
+                        u.setVerificationStatus(VerificationStatus.VERIFIED);
+                        u.setVerifiedAt(Instant.now());
+                        u.setVerifiedBy("Lead System Administrator");
+                    } else {
+                        u.setVerificationStatus(VerificationStatus.PENDING);
+                    }
+                    userRepository.save(u);
+                }
+            }
+        });
+
+        // Initialize baseline platform activity events if none exist
+        if (systemActivityLogRepository.count() == 0) {
+            SystemActivityLog log1 = new SystemActivityLog(
+                    null, "Marcus Vance", Role.ADMIN,
+                    "Platform Engine Initialized", "Enterprise Core & PostgreSQL", "127.0.0.1"
+            );
+            SystemActivityLog log2 = new SystemActivityLog(
+                    null, "Marcus Vance", Role.ADMIN,
+                    "Recruiter Verification Approved", "Coursera (Mountain View)", "127.0.0.1"
+            );
+            SystemActivityLog log3 = new SystemActivityLog(
+                    null, "Coursera Talent Acquisition", Role.RECRUITER,
+                    "Job Created", "Java Full Stack Developer", "127.0.0.1"
+            );
+            systemActivityLogRepository.saveAll(List.of(log1, log2, log3));
+            logger.info("Initialized baseline PostgreSQL platform audit events.");
+        }
     }
 }

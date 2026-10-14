@@ -8,7 +8,7 @@ import { ReportIssue } from '../components/common/ReportIssue';
 
 export const PublicLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
       <BackgroundEffects role="public" showHudLabels={false} />
 
       {/* AI Recruitment Scanner Cursor Interaction Layer */}

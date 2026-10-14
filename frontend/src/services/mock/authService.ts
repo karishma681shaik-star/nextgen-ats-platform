@@ -59,25 +59,23 @@ export const authService = {
     return user;
   },
 
+  async adminLogin(credentials: LoginCredentials): Promise<User> {
+    await delay(300);
+    const users = storage.getUsers();
+    const user = users.find((u) => u.email.toLowerCase() === credentials.email.toLowerCase());
+    if (!user || user.role !== 'admin') {
+      throw new Error('Invalid administrator credentials or unauthorized access.');
+    }
+    storage.setCurrentUserId(user.id);
+    return user;
+  },
+
   async register(data: RegisterData): Promise<User> {
     await delay(350);
     const users = storage.getUsers();
 
     if (data.role === 'admin') {
-      const code = (data.adminRegistrationCode || '').trim().toLowerCase();
-      const validCodes = [
-        'change-this-admin-code',
-        'admin2026',
-        'admin123',
-        'admin',
-        '123456',
-        'superadmin',
-        'aiats2026',
-        'edutrack'
-      ];
-      if (code && !validCodes.includes(code)) {
-        throw new Error('Invalid Administrator Registration Code. Access Denied.');
-      }
+      throw new Error('Public registration of Administrator accounts is strictly prohibited.');
     }
 
     const newUser: User = {
@@ -86,8 +84,8 @@ export const authService = {
       email: data.email,
       role: data.role,
       companyName: data.companyName,
-      title: data.role === 'admin' ? 'System Administrator' : undefined,
-      avatar: data.role === 'admin'
+      title: (data.role as string) === 'admin' ? 'System Administrator' : undefined,
+      avatar: (data.role as string) === 'admin'
         ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
         : data.role === 'recruiter'
         ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'

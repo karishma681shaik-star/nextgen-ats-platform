@@ -55,6 +55,45 @@ public class Company {
     @Column(name = "verified", nullable = false)
     private boolean verified = false;
 
+    @Column(name = "business_registration_number", length = 100)
+    private String businessRegistrationNumber;
+
+    @Column(name = "tax_id", length = 100)
+    private String taxId;
+
+    @Column(name = "official_email_domain", length = 150)
+    private String officialEmailDomain;
+
+    @Column(name = "verification_document_url", length = 500)
+    private String verificationDocumentUrl;
+
+    @Column(name = "verification_evidence_notes", columnDefinition = "TEXT")
+    private String verificationEvidenceNotes;
+
+    @Column(name = "registration_check_status", length = 50)
+    private String registrationCheckStatus = "PENDING"; // PENDING, VERIFIED, DISCREPANCY, UNABLE_TO_VERIFY
+
+    @Column(name = "website_consistency_status", length = 50)
+    private String websiteConsistencyStatus = "PENDING"; // PENDING, CONSISTENT, INCONSISTENT
+
+    @Column(name = "association_verified")
+    private Boolean associationVerified = false;
+
+    @Column(name = "association_check_status", length = 50)
+    private String associationCheckStatus = "PENDING"; // PENDING, AUTHORIZED, UNRESOLVED, REJECTED
+
+    @Column(name = "authorization_document_url", length = 500)
+    private String authorizationDocumentUrl;
+
+    @Column(name = "authorization_notes", columnDefinition = "TEXT")
+    private String authorizationNotes;
+
+    @Column(name = "independent_confirmation_notes", columnDefinition = "TEXT")
+    private String independentConfirmationNotes;
+
+    @Column(name = "reverification_required")
+    private Boolean reverificationRequired = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -192,6 +231,110 @@ public class Company {
 
     public void setVerified(boolean verified) {
         this.verified = verified;
+    }
+
+    public String getBusinessRegistrationNumber() {
+        return businessRegistrationNumber;
+    }
+
+    public void setBusinessRegistrationNumber(String businessRegistrationNumber) {
+        this.businessRegistrationNumber = businessRegistrationNumber;
+    }
+
+    public String getTaxId() {
+        return taxId;
+    }
+
+    public void setTaxId(String taxId) {
+        this.taxId = taxId;
+    }
+
+    public String getOfficialEmailDomain() {
+        return officialEmailDomain;
+    }
+
+    public void setOfficialEmailDomain(String officialEmailDomain) {
+        this.officialEmailDomain = officialEmailDomain;
+    }
+
+    public String getVerificationDocumentUrl() {
+        return verificationDocumentUrl;
+    }
+
+    public void setVerificationDocumentUrl(String verificationDocumentUrl) {
+        this.verificationDocumentUrl = verificationDocumentUrl;
+    }
+
+    public String getVerificationEvidenceNotes() {
+        return verificationEvidenceNotes;
+    }
+
+    public void setVerificationEvidenceNotes(String verificationEvidenceNotes) {
+        this.verificationEvidenceNotes = verificationEvidenceNotes;
+    }
+
+    public String getRegistrationCheckStatus() {
+        return registrationCheckStatus != null ? registrationCheckStatus : "PENDING";
+    }
+
+    public void setRegistrationCheckStatus(String registrationCheckStatus) {
+        this.registrationCheckStatus = registrationCheckStatus;
+    }
+
+    public String getWebsiteConsistencyStatus() {
+        return websiteConsistencyStatus != null ? websiteConsistencyStatus : "PENDING";
+    }
+
+    public void setWebsiteConsistencyStatus(String websiteConsistencyStatus) {
+        this.websiteConsistencyStatus = websiteConsistencyStatus;
+    }
+
+    public Boolean getAssociationVerified() {
+        return associationVerified != null ? associationVerified : false;
+    }
+
+    public void setAssociationVerified(Boolean associationVerified) {
+        this.associationVerified = associationVerified;
+    }
+
+    public String getAssociationCheckStatus() {
+        return associationCheckStatus != null ? associationCheckStatus : "PENDING";
+    }
+
+    public void setAssociationCheckStatus(String associationCheckStatus) {
+        this.associationCheckStatus = associationCheckStatus;
+    }
+
+    public String getAuthorizationDocumentUrl() {
+        return authorizationDocumentUrl;
+    }
+
+    public void setAuthorizationDocumentUrl(String authorizationDocumentUrl) {
+        this.authorizationDocumentUrl = authorizationDocumentUrl;
+    }
+
+    public String getAuthorizationNotes() {
+        return authorizationNotes;
+    }
+
+    public void setAuthorizationNotes(String authorizationNotes) {
+        this.authorizationNotes = authorizationNotes;
+    }
+
+    public String getIndependentConfirmationNotes() {
+        return independentConfirmationNotes;
+    }
+
+    public void setIndependentConfirmationNotes(String independentConfirmationNotes) {
+        this.independentConfirmationNotes = independentConfirmationNotes;
+    }
+
+    public Boolean getReverificationRequired() {
+        return reverificationRequired != null ? reverificationRequired : false;
+    }
+
+    public void setReverificationRequired(Boolean reverificationRequired) {
+        this.reverificationRequired = reverificationRequired;
     }
 
     public Instant getCreatedAt() {

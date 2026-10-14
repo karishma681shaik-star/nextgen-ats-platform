@@ -122,7 +122,7 @@ export const HeroAtsPreview: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                    Karishma_Shaik_Resume_2026.pdf
+                    Alex_Rivera_Resume_2026.pdf
                   </h3>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

@@ -67,6 +67,11 @@ public class GeminiAiService {
         }
     }
 
+    public boolean isConfigured() {
+        String cleanKey = getCleanApiKey();
+        return !cleanKey.isBlank() && !cleanKey.contains("YOUR_GEMINI_API_KEY");
+    }
+
     private String getCleanApiKey() {
         if (apiKey == null) return "";
         String trimmed = apiKey.trim();

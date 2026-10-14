@@ -1,5 +1,6 @@
 package com.aiats.controller;
 
+import com.aiats.dto.candidate.CandidateAnalyticsDTO;
 import com.aiats.dto.candidate.CandidateDashboardDTO;
 import com.aiats.dto.candidate.CandidateProfileDTO;
 import com.aiats.dto.candidate.CandidateProfileRequest;
@@ -18,9 +19,19 @@ import java.util.UUID;
 public class CandidateController {
 
     private final CandidateService candidateService;
+    private final com.aiats.service.CandidateReportService candidateReportService;
 
-    public CandidateController(CandidateService candidateService) {
+    public CandidateController(CandidateService candidateService,
+                               com.aiats.service.CandidateReportService candidateReportService) {
         this.candidateService = candidateService;
+        this.candidateReportService = candidateReportService;
+    }
+
+    @GetMapping("/analytics")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<CandidateAnalyticsDTO>> getAnalytics(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(candidateService.getAnalytics(principal.getId())));
     }
 
     @GetMapping("/dashboard")
@@ -55,5 +66,14 @@ public class CandidateController {
             @PathVariable UUID userId) {
         CandidateProfileDTO profile = candidateService.getProfile(userId);
         return ResponseEntity.ok(ApiResponse.success(profile));
+    }
+
+    @PostMapping("/reports")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<com.aiats.dto.candidate.CandidateReportDTO>> submitReport(
+            @jakarta.validation.Valid @RequestBody com.aiats.dto.candidate.CandidateReportRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        com.aiats.dto.candidate.CandidateReportDTO report = candidateReportService.submitReport(principal.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success(report, "Thank you for submitting your safety report. Our moderation team has been notified."));
     }
 }

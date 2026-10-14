@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, Mail, ArrowLeft, Send, CheckCircle2, KeyRound } from 'lucide-react';
 import { authService } from '../../services';
 import { useToast } from '../../context/ToastContext';
@@ -9,6 +9,10 @@ import { Card } from '../../components/ui/Card';
 import { BackgroundEffects } from '../../components/ui/BackgroundEffects';
 
 export const ForgotPasswordPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const portalParam = searchParams.get('portal');
+  const portal = portalParam === 'recruiter' ? 'recruiter' : portalParam === 'candidate' ? 'candidate' : null;
+
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -16,6 +20,8 @@ export const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [emailError, setEmailError] = useState('');
+
+  const backLoginPath = portal === 'recruiter' ? '/login/recruiter' : portal === 'candidate' ? '/login/candidate' : '/login';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,14 +46,14 @@ export const ForgotPasswordPage: React.FC = () => {
       showToast({
         type: 'success',
         title: 'Verification Code Dispatched',
-        message: `A 6-digit code has been sent to ${trimmedEmail}`
+        message: `A 6-digit recovery code has been sent to ${trimmedEmail}`,
       });
     } catch (err: any) {
       const errorMsg = err?.message || 'Could not send verification code';
       showToast({
         type: 'error',
         title: 'Request Failed',
-        message: errorMsg
+        message: errorMsg,
       });
       setEmailError(errorMsg);
     } finally {
@@ -56,10 +62,21 @@ export const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8">
-      <BackgroundEffects />
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-indigo-500 selection:text-white">
+      <BackgroundEffects mode="auth" />
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 space-y-6">
+        {/* Navigation link back to login */}
+        <div className="text-center">
+          <Link
+            to={backLoginPath}
+            className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-1.5 rounded-full border border-white/[0.08]"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to {portal === 'recruiter' ? 'Recruiter' : portal === 'candidate' ? 'Candidate' : 'Portal'} Sign In
+          </Link>
+        </div>
+
         <div className="text-center space-y-3">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-glow group-hover:scale-105 transition-transform">
@@ -69,39 +86,64 @@ export const ForgotPasswordPage: React.FC = () => {
               <span className="font-display font-black text-2xl tracking-tight text-white flex items-center gap-2">
                 AI ATS <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PRO</span>
               </span>
-              <p className="text-[11px] text-slate-400 font-mono">RECOVERY CONSOLE</p>
+              <p className="text-[11px] text-slate-400 font-mono tracking-wider">RECOVERY CONSOLE</p>
             </div>
           </Link>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight mt-4">
+
+          {/* Contextual Portal Badge */}
+          {portal && (
+            <div className="pt-2">
+              <span
+                className={`inline-block text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full border ${
+                  portal === 'candidate'
+                    ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                    : 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                }`}
+              >
+                {portal === 'candidate' ? 'CANDIDATE RECOVERY' : 'RECRUITER RECOVERY'}
+              </span>
+            </div>
+          )}
+
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
             Reset your password
-          </h2>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Enter your registered email to receive a secure 6-digit verification code.
+          </h1>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+            Enter your registered {portal ? `${portal} ` : ''}email to receive a secure 6-digit verification code.
           </p>
         </div>
 
-        <Card glass className="mt-6 p-6 sm:p-8 border border-white/10 shadow-2xl">
+        <Card glass className="p-6 sm:p-8 border border-white/10 shadow-2xl">
           {isSubmitted ? (
-            <div className="text-center space-y-4 py-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-glow-emerald">
-                <CheckCircle2 className="w-7 h-7" />
+            <div className="text-center space-y-5 animate-in fade-in duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-glow-emerald">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white font-display">Check your email</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                We have dispatched a 6-digit verification code to <span className="font-bold text-indigo-300">{email}</span>.
-              </p>
-              <p className="text-[11px] text-slate-400">
-                This verification code expires in <span className="text-indigo-300 font-semibold">10 minutes</span>.
-              </p>
-              <div className="pt-2">
+              <div>
+                <h3 className="text-base font-bold text-white">Verification Code Sent</h3>
+                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  We've dispatched a 6-digit one-time code to <span className="font-mono text-indigo-300">{email}</span>.
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
                 <Button
                   variant="glow"
                   size="md"
-                  className="w-full font-bold"
-                  onClick={() => navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`)}
+                  className="w-full font-bold shadow-lg"
+                  onClick={() => navigate(`/reset-password?email=${encodeURIComponent(email)}`)}
                   rightIcon={<KeyRound className="w-4 h-4" />}
                 >
-                  Enter Verification Code →
+                  Enter Verification Code
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-slate-400 hover:text-white"
+                  onClick={() => setIsSubmitted(false)}
+                >
+                  Try another email
                 </Button>
               </div>
             </div>
@@ -110,39 +152,42 @@ export const ForgotPasswordPage: React.FC = () => {
               <Input
                 label="Registered Email Address"
                 type="email"
-                placeholder="name@example.com"
+                placeholder={portal === 'recruiter' ? 'jane@company.com' : 'jane.doe@example.com'}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (emailError) setEmailError('');
                 }}
                 error={emailError}
-                leftIcon={<Mail className="w-4 h-4" />}
+                leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
+                autoComplete="email"
                 required
               />
 
-              <Button
-                type="submit"
-                variant="glow"
-                size="lg"
-                className="w-full font-bold shadow-lg mt-2"
-                isLoading={isLoading}
-                rightIcon={<Send className="w-4 h-4" />}
-              >
-                Send Verification Code
-              </Button>
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  variant="glow"
+                  size="lg"
+                  className="w-full font-bold shadow-lg"
+                  isLoading={isLoading}
+                  rightIcon={<Send className="w-4 h-4" />}
+                >
+                  Send Verification Code
+                </Button>
+              </div>
+
+              <div className="pt-4 border-t border-white/[0.08] text-center">
+                <Link
+                  to={backLoginPath}
+                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors inline-flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Return to sign in
+                </Link>
+              </div>
             </form>
           )}
-
-          <div className="mt-6 pt-4 border-t border-white/[0.08] text-center">
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors font-bold"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to sign in</span>
-            </Link>
-          </div>
         </Card>
       </div>
     </div>

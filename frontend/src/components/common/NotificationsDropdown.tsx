@@ -1,17 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCircle2, AlertCircle, Info, ExternalLink } from 'lucide-react';
+import { Bell, CheckCircle2, AlertCircle, Info, ExternalLink, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppNotification } from '../../types';
-import { storage } from '../../services/mock/storage';
+import { notificationApi } from '../../services';
+import { formatFullDate } from '../../utils/formatters';
 import { cn } from '../../utils/cn';
 
 export const NotificationsDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [list, count] = await Promise.all([
+        notificationApi.getNotifications(),
+        notificationApi.getUnreadCount(),
+      ]);
+      setNotifications(list);
+      setUnreadCount(count);
+    } catch (err: any) {
+      console.error('Failed to load notifications from server', err);
+      setError('Could not load notifications.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setNotifications(storage.getNotifications());
+    fetchNotifications();
+    const interval = setInterval(() => {
+      notificationApi.getUnreadCount()
+        .then((c) => setUnreadCount(c))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -24,87 +58,130 @@ export const NotificationsDropdown: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllAsRead = () => {
-    const updated = notifications.map((n) => ({ ...n, read: true }));
-    setNotifications(updated);
-    storage.setNotifications(updated);
+  const markAllAsRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Failed to mark all as read', err);
+    }
   };
 
-  const markOneAsRead = (id: string) => {
-    const updated = notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
-    setNotifications(updated);
-    storage.setNotifications(updated);
+  const markOneAsRead = async (id: string) => {
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification as read', err);
+    }
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
         aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-indigo-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-[10px] font-bold text-white rounded-full flex items-center justify-center ring-2 ring-slate-900 animate-pulse">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex items-center justify-between p-4 border-b border-slate-800">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/60">
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-white">Notifications</h4>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-600 text-white">
-                  {unreadCount} new
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-600 text-white">
+                  {unreadCount} unread
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer"
+                >
+                  Mark all read
+                </button>
+              )}
               <button
-                onClick={markAllAsRead}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+                onClick={fetchNotifications}
+                className="p-1 text-slate-400 hover:text-white rounded transition-colors cursor-pointer"
+                title="Refresh"
               >
-                Mark all read
+                <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
               </button>
-            )}
+            </div>
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-800/60">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-400">No notifications yet</div>
+          <div className="max-h-96 overflow-y-auto divide-y divide-slate-800/60">
+            {isLoading && notifications.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">Loading notifications...</div>
+            ) : error ? (
+              <div className="p-6 text-center text-xs text-rose-400">{error}</div>
+            ) : notifications.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <Bell className="w-8 h-8 text-slate-600 mx-auto" />
+                <p className="text-xs font-semibold text-slate-300">No notifications yet</p>
+                <p className="text-[11px] text-slate-500">Platform updates and verification notices will appear here.</p>
+              </div>
             ) : (
               notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  onClick={() => markOneAsRead(notif.id)}
+                  onClick={() => !notif.read && markOneAsRead(notif.id)}
                   className={cn(
-                    'p-3.5 flex items-start gap-3 hover:bg-slate-800/50 transition-colors cursor-pointer',
-                    !notif.read && 'bg-indigo-950/20'
+                    'p-4 flex items-start gap-3 hover:bg-slate-800/50 transition-colors cursor-pointer',
+                    !notif.read ? 'bg-purple-950/20' : 'opacity-85'
                   )}
                 >
                   <div className="mt-0.5 shrink-0">
                     {notif.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
                     {notif.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400" />}
-                    {notif.type === 'info' && <Info className="w-4 h-4 text-indigo-400" />}
+                    {notif.type === 'info' && <Info className="w-4 h-4 text-purple-400" />}
+                    {notif.type === 'warning' && <AlertCircle className="w-4 h-4 text-amber-400" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white">{notif.title}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{notif.message}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-white">{notif.title}</p>
+                      {!notif.read && (
+                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed whitespace-pre-line">
+                      {notif.message}
+                    </p>
+                    {notif.createdAt && (
+                      <p className="text-[10px] text-slate-500 mt-1.5 font-mono">
+                        {formatFullDate(notif.createdAt)}
+                      </p>
+                    )}
                     {notif.link && (
                       <Link
                         to={notif.link}
-                        onClick={() => setIsOpen(false)}
-                        className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 mt-1.5 font-medium"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!notif.read) markOneAsRead(notif.id);
+                          setIsOpen(false);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 hover:text-white border border-indigo-500/20 mt-2 font-medium transition-colors"
                       >
-                        <span>View details</span>
+                        <span>{notif.link.includes('verification') ? 'Review Feedback' : 'View Details'}</span>
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                     )}
                   </div>
-                  {!notif.read && <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />}
                 </div>
               ))
             )}

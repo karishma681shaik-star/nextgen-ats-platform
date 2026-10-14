@@ -226,8 +226,8 @@ function extractParsedDataFromFileName(fileName: string) {
     };
   }
 
-  const isKarishma = lower.includes('karishma');
-  if (isKarishma) {
+  const isCandidate = lower.includes('alex') || lower.includes('candidate');
+  if (isCandidate) {
     return {
       extractedSkills: [
         'Java', 'Spring Boot', 'Hibernate', 'React.js', 'REST APIs',
@@ -391,25 +391,25 @@ function buildResumeJsonFromParsedData(fileName: string, parsedData: any): strin
     });
   }
 
-  const isKarishma = lower.includes('karishma');
-  if (isKarishma) {
+  const isCandidate = lower.includes('alex') || lower.includes('candidate');
+  if (isCandidate) {
     return JSON.stringify({
-      name: 'KARISHMA SHAIK',
-      firstName: 'KARISHMA',
-      lastName: 'SHAIK',
+      name: 'ALEX RIVERA',
+      firstName: 'ALEX',
+      lastName: 'RIVERA',
       headline: 'Computer Science and Engineering student focused on Java Full Stack Development',
-      phone: '+919347840962',
-      email: 'karishma681shaik@gmail.com',
-      city: 'Nandyal',
-      state: '',
-      country: '',
-      location: 'Nandyal',
+      phone: '+1 (555) 234-5678',
+      email: 'alex.rivera@example.com',
+      city: 'San Francisco',
+      state: 'CA',
+      country: 'USA',
+      location: 'San Francisco, CA',
       socialLinks: [
-        { id: 'link-li', platform: 'LinkedIn', url: 'https://linkedin.com/in/karishmashaik681', customLabel: 'karishmashaik681' },
-        { id: 'link-gh', platform: 'GitHub', url: 'https://github.com/karishmashaik-star', customLabel: 'karishmashaik-star' }
+        { id: 'link-li', platform: 'LinkedIn', url: 'https://linkedin.com/in/alexrivera-dev', customLabel: 'alexrivera-dev' },
+        { id: 'link-gh', platform: 'GitHub', url: 'https://github.com/alexrivera-dev', customLabel: 'alexrivera-dev' }
       ],
-      linkedinUrl: 'https://linkedin.com/in/karishmashaik681',
-      githubUrl: 'https://github.com/karishmashaik-star',
+      linkedinUrl: 'https://linkedin.com/in/alexrivera-dev',
+      githubUrl: 'https://github.com/alexrivera-dev',
       summary:
         'Computer Science and Engineering student focused on Java Full Stack Development, with knowledge of Java, Spring Boot, Hibernate, React.js, and REST APIs. Strong foundation in Data Structures and Algorithms, OOP, DBMS, and Computer Networks, with hands-on experience building responsive and database-driven web applications. Seeking opportunities to apply Java full-stack skills in real-world software engineering environments.',
       activeSections: ['profile', 'summary', 'experience', 'education', 'projects', 'skills'],
@@ -464,7 +464,7 @@ function buildResumeJsonFromParsedData(fileName: string, parsedData: any): strin
           description:
             '• Developed a real-time web application with responsive interfaces and database-driven functionality.\n• Implemented real-time messaging and RESTful backend communication for seamless user interactions.\n• Designed user-focused interfaces with authentication and chat management features.',
           technologies: 'Java, Spring Boot, React.js',
-          link: 'https://github.com/karishmashaik-star/vibe-chat'
+          link: 'https://github.com/alexrivera-dev/vibe-chat'
         },
         {
           id: 'proj-2',
@@ -474,7 +474,7 @@ function buildResumeJsonFromParsedData(fileName: string, parsedData: any): strin
           description:
             '• Developed a full-stack complaint registration and tracking platform for streamlined complaint management.\n• Built responsive user and administrator interfaces with RESTful API integration.\n• Integrated database functionality for user, complaint, and status management.',
           technologies: 'Java, Spring Boot, React.js',
-          link: 'https://github.com/karishmashaik-star/online-complaint-system'
+          link: 'https://github.com/alexrivera-dev/online-complaint-system'
         }
       ],
       skills: {

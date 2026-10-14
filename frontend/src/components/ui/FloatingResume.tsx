@@ -32,25 +32,23 @@ export const FloatingResume: React.FC<FloatingResumeProps> = ({
 
   return (
     <div className="relative w-full max-w-lg lg:max-w-none mx-auto select-none perspective-1000">
-      {/* Background soft purple/indigo glow */}
-      <div className="absolute -inset-6 bg-gradient-to-tr from-indigo-600/20 via-purple-650/15 to-cyan-500/15 rounded-3xl blur-3xl opacity-75 pointer-events-none" />
+      {/* Subtle Dark Shadow Rim — Minimal, elegant */}
+      <div className="absolute -inset-2 bg-[#07111F]/30 rounded-3xl blur-lg pointer-events-none" />
 
       {/* 3D FLOATING BADGES */}
       {/* Badge 1: Top Right - ATS Score */}
       <motion.div
         animate={{
-          y: [0, -6, 0],
-          rotateX: [0, 5, 0],
-          rotateY: [0, -5, 0],
+          y: [0, -5, 0],
         }}
         transition={{
-          duration: 5,
+          duration: 4.5,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
-        className="absolute -top-6 -right-4 z-30 glass-card-elevated px-4 py-2.5 rounded-2xl border border-indigo-500/40 shadow-[0_10px_30px_rgba(99,102,241,0.25)] flex items-center gap-3 backdrop-blur-xl"
+        className="absolute -top-4 -right-3 z-30 bg-[#07111F] px-3.5 py-2 rounded-xl border border-[#55DDF5]/25 shadow-lg flex items-center gap-2.5 backdrop-blur-md"
       >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md">
+        <div className="w-9 h-9 rounded-lg bg-[#0B1730] border border-[#55DDF5]/30 flex items-center justify-center text-[#55DDF5] font-black text-xs">
           {activeStep >= 3 ? '94' : '64'}
         </div>
         <div>
@@ -58,7 +56,7 @@ export const FloatingResume: React.FC<FloatingResumeProps> = ({
             <span className="text-[11px] font-bold text-white">ATS Score</span>
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
           </div>
-          <span className="text-[9px] text-slate-400 font-mono">
+          <span className="text-[9px] text-[#B6C2D2] font-mono">
             {activeStep >= 3 ? '★ Top 3% Candidate' : '⚠️ Missing keywords'}
           </span>
         </div>
@@ -118,19 +116,19 @@ export const FloatingResume: React.FC<FloatingResumeProps> = ({
       {/* MAIN DOCUMENT WRAPPER */}
       <div
         data-cursor-hero-scanner="true"
-        className="relative rounded-2xl glass-card-elevated border border-indigo-500/30 shadow-[0_30px_70px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-3xl transition-all duration-500 hover:border-cyan-400/50 hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]"
+        className="relative rounded-2xl bg-[#07111F] border border-[#55DDF5]/20 shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300 hover:border-[#55DDF5]/35"
         style={{
           transformStyle: 'preserve-3d',
         }}
       >
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#070b15]/95 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#030712]/95 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
             <span className="text-[10px] font-mono text-slate-400 ml-2">
-              Karishma_Shaik_Resume.pdf
+              Alex_Rivera_Resume.pdf
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -159,15 +157,15 @@ export const FloatingResume: React.FC<FloatingResumeProps> = ({
           ))}
         </div>
 
-        {/* Document Content Canvas */}
-        <div className="relative p-5 sm:p-6 bg-[#040712]/95 text-slate-200 space-y-4 min-h-[360px] overflow-hidden">
+        {/* Document Content Canvas — Deep Navy Surface */}
+        <div className="relative p-5 sm:p-6 bg-[#07111F]/95 text-[#F8FAFC] space-y-4 min-h-[360px] overflow-hidden">
           
           {/* Live Scanner Beam */}
           {tab === 'scan' && (
             <motion.div
               animate={{ top: ['-2%', '102%', '-2%'] }}
               transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee] pointer-events-none z-10"
+              className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#55DDF5] to-transparent shadow-[0_0_8px_#55DDF5] pointer-events-none z-10"
             />
           )}
 
@@ -175,13 +173,13 @@ export const FloatingResume: React.FC<FloatingResumeProps> = ({
           <div className="border-b border-white/[0.06] pb-3 flex items-start justify-between">
             <div>
               <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
-                Karishma Shaik
+                Alex Rivera
               </h4>
               <p className="text-[11px] font-bold text-indigo-400 mt-0.5">
                 Java Full Stack Developer & Microservices Engineer
               </p>
               <p className="text-[9px] text-slate-400 mt-1 font-mono">
-                karishma681shaik@gmail.com · Bengaluru, India · Full Stack Software Engineer
+                alex.rivera@example.com · Bengaluru, India · Full Stack Software Engineer
               </p>
             </div>
             {activeStep >= 5 && (

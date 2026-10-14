@@ -2,6 +2,17 @@ export type Role = 'candidate' | 'recruiter' | 'admin';
 
 export type UserStatus = 'active' | 'suspended' | 'pending';
 
+export type VerificationStatus =
+  | 'pending'
+  | 'in_review'
+  | 'verified'
+  | 'additional_evidence_required'
+  | 'unable_to_verify'
+  | 'rejected'
+  | 'suspended'
+  | 'archived'
+  | 'resubmitted';
+
 export interface User {
   id: string;
   name: string;
@@ -13,6 +24,16 @@ export interface User {
   phone?: string;
   companyName?: string;
   title?: string;
+  verificationStatus?: VerificationStatus;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  verificationReadinessScore?: number;
+  verificationReadinessStatus?: string;
+  riskScore?: number;
+  riskLevel?: string;
 }
 
 export interface Education {
@@ -127,7 +148,7 @@ export interface ATSAnalysis {
 
 export type EmploymentType = 'Full-time' | 'Part-time' | 'Contract' | 'Remote' | 'Hybrid' | 'Internship';
 export type ExperienceLevel = 'Entry Level' | 'Mid Level' | 'Senior Level' | 'Lead' | 'Executive';
-export type JobStatus = 'active' | 'closed' | 'draft';
+export type JobStatus = 'active' | 'closed' | 'draft' | 'pending_approval' | 'rejected' | 'archived';
 
 export interface Job {
   id: string;
@@ -160,6 +181,13 @@ export interface Job {
   applied?: boolean;
   saved?: boolean;
   verifiedRecruiter?: boolean;
+  rejectionReason?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  moderatedAt?: string;
+  recruiterName?: string;
+  recruiterEmail?: string;
+  recruiterVerificationStatus?: string;
 }
 
 export type ApplicationStatus =
@@ -217,21 +245,96 @@ export interface Company {
   contactEmail: string;
   contactPhone: string;
   verified: boolean;
+  recruiterId?: string;
+  recruiterName?: string;
+  recruiterEmail?: string;
+  recruiterPhone?: string;
+  verificationStatus?: VerificationStatus;
+  createdAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
+  businessRegistrationNumber?: string;
+  taxId?: string;
+  officialEmailDomain?: string;
+  verificationDocumentUrl?: string;
+  verificationEvidenceNotes?: string;
+  registrationCheckStatus?: string;
+  websiteConsistencyStatus?: string;
+  associationVerified?: boolean;
+  associationCheckStatus?: string;
+  authorizationDocumentUrl?: string;
+  authorizationNotes?: string;
+  independentConfirmationNotes?: string;
+  reverificationRequired?: boolean;
+}
+
+export interface PublicCompany {
+  id: string;
+  name: string;
+  logo?: string;
+  tagline?: string;
+  industry?: string;
+  website?: string;
+  location?: string;
+  size?: string;
+  description?: string;
+  foundedYear?: string;
+  benefits?: string[];
+  contactEmail?: string;
+  verified?: boolean;
+  recruiterName?: string;
+  recruiterVerified?: boolean;
+  activeJobsCount?: number;
 }
 
 export interface AdminStats {
+  totalUsers: number;
   totalCandidates: number;
   totalRecruiters: number;
+  pendingVerifications: number;
+  verifiedRecruiters: number;
+  rejectedRecruiters: number;
+  suspendedRecruiters: number;
+  additionalEvidenceRequiredRecruiters?: number;
+  suspendedAccounts: number;
+  activeAdmins: number;
+  totalAdmins: number;
+  multipleAdminsFlag: boolean;
   activeUsers: number;
   totalJobs: number;
   activeJobs: number;
   closedJobs: number;
   totalApplications: number;
+  pendingApplications?: number;
   shortlistedCount: number;
   selectedCount: number;
   rejectedCount: number;
-  placementRate: number;
+  placementRate: number | null;
   systemHealth: string;
+
+  // Section 1.B Company Verification Overview
+  companiesAwaitingReview?: number;
+  companiesVerified?: number;
+  companyAssociationChecksPending?: number;
+  companyDiscrepanciesCount?: number;
+  companiesReverificationRequired?: number;
+
+  // Section 1.C Job Safety Overview
+  jobsPendingModeration?: number;
+  jobsPublished?: number;
+  jobsRejected?: number;
+  jobsFlaggedSuspicious?: number;
+  jobsCandidateReported?: number;
+  jobsUnpublishedForInvestigation?: number;
+
+  // Section 1.D Risk Review Overview
+  highPriorityRiskCases?: number;
+  duplicateRecruiterProfilesCount?: number;
+  companyInfoMismatchesCount?: number;
+  unresolvedAssociationChecksCount?: number;
+  repeatedModerationViolationsCount?: number;
+  openCandidateComplaintsCount?: number;
 }
 
 export interface RecruiterStats {
@@ -254,12 +357,402 @@ export interface AppNotification {
   link?: string;
 }
 
+export type AuditSeverity = 'INFO' | 'NOTICE' | 'WARNING' | 'HIGH';
+export type AuditResult = 'SUCCESS' | 'FAILURE' | 'BLOCKED';
+export type AuditCategory =
+  | 'ALL'
+  | 'ACCOUNT_GOVERNANCE'
+  | 'AUTHENTICATION_SECURITY'
+  | 'RECRUITER_VERIFICATION'
+  | 'JOB_MODERATION'
+  | 'CANDIDATE_APPLICATIONS'
+  | 'SYSTEM_OPERATIONS';
+
 export interface SystemActivityLog {
   id: string;
+  actorId?: string;
   actorName: string;
   actorRole: Role;
   action: string;
+  eventType?: string;
+  eventCategory?: string;
+  severity?: AuditSeverity;
+  result?: AuditResult;
   target: string;
-  timestamp: string;
+  targetType?: string;
+  targetId?: string;
+  previousState?: string;
+  newState?: string;
+  reason?: string;
   ipAddress?: string;
+  correlationId?: string;
+  timestamp: string;
 }
+
+export interface AuditSummary {
+  totalEvents: number;
+  administrativeActions: number;
+  securityEvents: number;
+  failedOperations: number;
+  accountGovernance: number;
+  lastSyncTime: string;
+  databaseConnected: boolean;
+  todayEvents?: number;
+  yesterdayEvents?: number;
+  dailyCounts?: Record<string, number>;
+  timezone?: string;
+}
+
+export interface AuditPageResult<T = SystemActivityLog> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface AuditFilters {
+  search?: string;
+  category?: string;
+  severity?: string;
+  result?: string;
+  actorRole?: string;
+  startDate?: string;
+  endDate?: string;
+  page: number;
+  size: number;
+  sortBy: string;
+  sortDir: 'asc' | 'desc';
+}
+
+export interface AuditCleanupPreviewRequest {
+  operationType: 'SPECIFIC_DATE' | 'DATE_RANGE' | 'DELETE_ALL';
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  timezone?: string;
+  preserveHighSeverity?: boolean;
+  preserveActiveToday?: boolean;
+}
+
+export interface AuditCleanupPreview {
+  operationType: string;
+  targetScopeLabel: string;
+  totalMatching: number;
+  eligibleForDeletion: number;
+  protectedRecords: number;
+  protectionReason: string;
+  earliestTimestamp?: string;
+  latestTimestamp?: string;
+  timezone: string;
+  estimatedReclaimedBytes: string;
+  storageNotice: string;
+}
+
+export interface AuditCleanupExecutionRequest {
+  operationType: 'SPECIFIC_DATE' | 'DATE_RANGE' | 'DELETE_ALL';
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  timezone?: string;
+  confirmationCode?: string;
+  preserveHighSeverity?: boolean;
+  preserveActiveToday?: boolean;
+  notes?: string;
+}
+
+export interface AuditCleanupReceipt {
+  id: string;
+  adminId: string;
+  adminEmail: string;
+  adminName: string;
+  operationType: string;
+  targetDate?: string;
+  startDate?: string;
+  endDate?: string;
+  timezone: string;
+  recordsSelected: number;
+  recordsDeleted: number;
+  recordsProtected: number;
+  status: string;
+  failureReason?: string;
+  startedAt: string;
+  completedAt: string;
+  clientIp?: string;
+  notes?: string;
+}
+
+
+export interface AiRiskFlagItem {
+  category: string;
+  reason: string;
+  evidence: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  recommendedAction: string;
+  reviewStatus: string;
+}
+
+export interface RecruiterVerificationItem {
+  recruiterId: string;
+  recruiterName: string;
+  recruiterEmail: string;
+  recruiterPhone?: string;
+  companyId?: string;
+  companyName: string;
+  companyLogo?: string;
+  companyTagline?: string;
+  industry?: string;
+  website?: string;
+  location?: string;
+  size?: string;
+  description?: string;
+  foundedYear?: string;
+  benefits?: string[];
+  verificationStatus: VerificationStatus;
+  verified: boolean;
+  createdAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
+  rejectionCategory?: string;
+  correctiveActions?: string;
+  aiSuggestions?: string;
+  resubmissionAllowed?: boolean;
+  resubmissionNotes?: string;
+  resubmittedAt?: string;
+  history?: VerificationHistoryItem[];
+
+  // Trust & Verification Fields
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  verificationReadinessScore?: number;
+  verificationReadinessStatus?: string;
+  riskScore?: number;
+  riskLevel?: string;
+
+  // Company Information & Authenticity
+  businessRegistrationNumber?: string;
+  taxId?: string;
+  officialEmailDomain?: string;
+  verificationDocumentUrl?: string;
+  verificationEvidenceNotes?: string;
+  registrationCheckStatus?: string;
+  websiteConsistencyStatus?: string;
+
+  // Company Association & Authorization
+  associationVerified?: boolean;
+  associationCheckStatus?: string;
+  authorizationDocumentUrl?: string;
+  authorizationNotes?: string;
+  independentConfirmationNotes?: string;
+  reverificationRequired?: boolean;
+
+  // Explainable AI Risk Flags
+  aiRiskFlags?: AiRiskFlagItem[];
+}
+
+export interface AiSuggestionItem {
+  id: string;
+  issue: string;
+  whyItMatters: string;
+  recommendedAction: string;
+  requiredDocumentOrInfo: string;
+  profileCorrectionInstructions: string;
+  adminReviewRequired: boolean;
+  status: string;
+}
+
+export interface VerificationHistoryItem {
+  id: string;
+  recruiterId: string;
+  previousStatus?: string;
+  newStatus?: string;
+  action?: string;
+  actorId?: string;
+  actorName?: string;
+  rejectionCategory?: string;
+  rejectionReason?: string;
+  decisionReason?: string;
+  correctiveActions?: string;
+  aiSuggestions?: any;
+  resubmissionAllowed?: boolean;
+  resubmissionNotes?: string;
+  recruiterNotes?: string;
+  createdAt: string;
+}
+
+export interface RecruiterVerificationDetail {
+  recruiterId: string;
+  recruiterName: string;
+  recruiterEmail?: string;
+  email?: string;
+  recruiterPhone?: string;
+  verificationStatus: VerificationStatus;
+  verified: boolean;
+  rejectionCategory?: string;
+  rejectionReason?: string;
+  correctiveActions?: string;
+  aiSuggestions?: any;
+  resubmissionAllowed?: boolean;
+  resubmissionNotes?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  resubmittedAt?: string;
+  updatedAt?: string;
+  company?: Company;
+  companyName?: string;
+  companyWebsite?: string;
+  companyIndustry?: string;
+  companyLocation?: string;
+  companySize?: string;
+  companyDescription?: string;
+  businessRegistrationNumber?: string;
+  taxId?: string;
+  officialEmailDomain?: string;
+  verificationDocumentUrl?: string;
+  verificationEvidenceNotes?: string;
+  authorizationDocumentUrl?: string;
+  authorizationNotes?: string;
+  history?: VerificationHistoryItem[];
+}
+
+export type CompanyProfile = Company;
+
+export interface SecurityAlert {
+  id: string;
+  riskRecord: string;
+  accountEmail: string;
+  accountRole: 'RECRUITER' | 'CANDIDATE' | 'UNKNOWN';
+  riskCategory: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  description: string;
+  reviewStatus: 'PENDING' | 'UNDER_REVIEW' | 'CONFIRMED' | 'DISMISSED';
+  adminDecision?: string;
+  reviewedByAdmin?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecruitmentAnalytics {
+  totalCandidates: number;
+  totalRecruiters: number;
+  pendingVerifications: number;
+  verifiedRecruiters: number;
+  rejectedRecruiters: number;
+  suspendedAccounts: number;
+  activeAdmins: number;
+  totalJobs: number;
+  activeJobs: number;
+  closedJobs: number;
+  draftJobs: number;
+  totalApplications: number;
+  awaitingReview: number;
+  shortlisted: number;
+  interviewsScheduled: number;
+  offersIssued: number;
+  successfulHires: number;
+  rejectedApplications: number;
+  withdrawnApplications: number;
+  pendingSecurityAlerts: number;
+  totalSecurityAlerts: number;
+  highRiskAlerts: number;
+  applicationToShortlistRate: number | null;
+  shortlistToInterviewRate: number | null;
+  interviewToOfferRate: number | null;
+  offerToHireRate: number | null;
+  overallPlacementRate: number | null;
+}
+
+export interface RecruiterPerformanceItem {
+  recruiterId: string;
+  recruiterName: string;
+  recruiterEmail: string;
+  companyName: string;
+  companyLogo?: string;
+  verificationStatus: string;
+  accountStatus: string;
+  jobsSubmitted: number;
+  jobsPending: number;
+  jobsApproved: number;
+  jobsRejected: number;
+  activeJobs: number;
+  closedJobs: number;
+  totalApplications: number;
+  shortlistedCandidates: number;
+  interviewsScheduled: number;
+  hires: number;
+  applicationToInterviewRate?: number | null;
+  interviewToHireRate?: number | null;
+  placementRate?: number | null;
+  lastActivityAt?: string;
+}
+
+export interface CandidatePerformanceItem {
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  registeredAt?: string;
+  profileCompletion: number;
+  hasResume: boolean;
+  applicationsCount: number;
+  shortlistedCount: number;
+  interviewsCount: number;
+  offersCount: number;
+  latestStatus?: string;
+  lastActivityAt?: string;
+}
+
+export interface CandidatePerformanceData {
+  totalCandidates: number;
+  activeCandidates: number;
+  totalApplications: number;
+  applicationsUnderReview: number;
+  shortlistedCount: number;
+  interviewsScheduled: number;
+  offersCount: number;
+  hiredCount: number;
+  shortlistingRate?: number | null;
+  interviewRate?: number | null;
+  placementRate?: number | null;
+  candidates: CandidatePerformanceItem[];
+}
+
+export interface CandidateReport {
+  id: string;
+  reporterId: string;
+  reporterEmail: string;
+  reporterName: string;
+  jobId: string;
+  jobTitle: string;
+  recruiterId?: string;
+  recruiterName?: string;
+  companyId?: string;
+  companyName?: string;
+  category: string;
+  description: string;
+  status: 'PENDING' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+  assignedAdmin?: string;
+  adminDecision?: string;
+  adminNotes?: string;
+  actionTaken?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CandidateReportRequest {
+  jobId: string;
+  category: string;
+  description: string;
+}
+
+export interface CandidateReportReviewRequest {
+  status: string;
+  adminDecision?: string;
+  adminNotes?: string;
+  actionTaken?: string;
+}
+
+

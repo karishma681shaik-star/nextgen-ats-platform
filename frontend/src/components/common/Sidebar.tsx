@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Zap,
   Bot,
-  Camera
+  Camera,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserAvatarModal } from './UserAvatarModal';
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const recruiterNavItems: NavItem[] = [
     { label: 'Dashboard', path: '/recruiter', icon: LayoutDashboard, exact: true, group: 'overview' },
     { label: 'Company Profile', path: '/recruiter/company', icon: Building2, group: 'company' },
+    { label: 'Verification Center', path: '/recruiter/verification', icon: ShieldCheck, highlight: true, badge: 'STATUS', group: 'company' },
     { label: 'Job Postings', path: '/recruiter/jobs', icon: Briefcase, group: 'jobs' },
     { label: 'Post New Job', path: '/recruiter/jobs/new', icon: PlusCircle, highlight: true, badge: 'NEW', group: 'jobs' },
     { label: 'Applicant Pipeline', path: '/recruiter/applicants', icon: Users, highlight: true, badge: 'PRO', group: 'pipeline' },
@@ -67,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Recruiter Verification', path: '/admin/recruiters', icon: ShieldCheck, group: 'users' },
     { label: 'Job Moderation', path: '/admin/jobs', icon: CheckCircle, group: 'content' },
     { label: 'Platform Analytics', path: '/admin/analytics', icon: BarChart3, highlight: true, badge: 'LIVE', group: 'content' },
+    { label: 'Audit & Security', path: '/admin/audit', icon: ShieldAlert, highlight: true, badge: 'SEC', group: 'security' },
   ];
 
   const currentNavItems: NavItem[] =

@@ -245,13 +245,13 @@ const CinematicFloatingResume: React.FC = () => {
           <div className="border-b border-slate-800 pb-3 flex items-start justify-between">
             <div>
               <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                Karishma Shaik
+                Alex Rivera
               </h3>
               <p className="text-xs font-semibold text-indigo-400 mt-0.5">
                 Senior Java Full Stack Engineer
               </p>
               <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                karishma681shaik@gmail.com · github.com/karishma681shaik-star
+                alex.rivera@example.com · github.com/alexrivera-dev
               </p>
             </div>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">

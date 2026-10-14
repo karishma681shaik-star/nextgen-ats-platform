@@ -39,7 +39,6 @@ import {
 import { candidateService } from '../../services';
 import { sendCopilotMessage } from '../../services/api/copilotApi';
 import { useToast } from '../../context/ToastContext';
-import { Roaming3DBackground } from '../../components/ui/Roaming3DBackground';
 import {
   CandidateProfile,
   Education,
@@ -1029,10 +1028,6 @@ export const CandidateProfilePage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen pb-20 space-y-8 select-none">
-      {/* ============================================================
-          1. 3D ROAMING CANVAS ANIMATION & SPATIAL BACKGROUND
-          ============================================================ */}
-      <Roaming3DBackground />
 
       {/* Cyber Grid Horizon Ground with interactive mouse tilt */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">

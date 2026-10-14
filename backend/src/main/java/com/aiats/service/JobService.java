@@ -24,12 +24,28 @@ public class JobService {
     private final ApplicationRepository applicationRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final CandidateSkillRepository candidateSkillRepository;
+    private final ActivityLogService activityLogService;
+    private final SecurityAlertService securityAlertService;
 
     public JobService(JobRepository jobRepository, CompanyRepository companyRepository,
                       UserRepository userRepository, SavedJobRepository savedJobRepository,
                       ApplicationRepository applicationRepository,
                       CandidateProfileRepository candidateProfileRepository,
-                      CandidateSkillRepository candidateSkillRepository) {
+                      CandidateSkillRepository candidateSkillRepository,
+                      ActivityLogService activityLogService) {
+        this(jobRepository, companyRepository, userRepository, savedJobRepository,
+             applicationRepository, candidateProfileRepository, candidateSkillRepository,
+             activityLogService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public JobService(JobRepository jobRepository, CompanyRepository companyRepository,
+                      UserRepository userRepository, SavedJobRepository savedJobRepository,
+                      ApplicationRepository applicationRepository,
+                      CandidateProfileRepository candidateProfileRepository,
+                      CandidateSkillRepository candidateSkillRepository,
+                      ActivityLogService activityLogService,
+                      SecurityAlertService securityAlertService) {
         this.jobRepository = jobRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
@@ -37,11 +53,51 @@ public class JobService {
         this.applicationRepository = applicationRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.candidateSkillRepository = candidateSkillRepository;
+        this.activityLogService = activityLogService;
+        this.securityAlertService = securityAlertService;
+    }
+
+    private void validateRecruiterVerification(User recruiter) {
+        if (recruiter.getRole() != Role.RECRUITER) {
+            throw new org.springframework.security.access.AccessDeniedException("Only recruiters can manage job requisitions.");
+        }
+        if (recruiter.getStatus() == UserStatus.SUSPENDED) {
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter account is currently suspended. You cannot publish jobs until reviewed by administration.");
+        }
+        VerificationStatus vStatus = recruiter.getVerificationStatus();
+        if (vStatus == VerificationStatus.PENDING) {
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        recruiter.getId(),
+                        recruiter.getEmail(),
+                        "RECRUITER",
+                        "UNAUTHORIZED_JOB_POSTING_ATTEMPT",
+                        "MEDIUM",
+                        "Unverified recruiter " + recruiter.getFullName() + " attempted to publish a job requisition before admin approval.",
+                        "Recruiter is restricted to PENDING status until credential review completes."
+                );
+            }
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter account is awaiting administrator verification. You cannot publish jobs until your account is approved.");
+        }
+        if (vStatus == VerificationStatus.REJECTED) {
+            String reason = (recruiter.getRejectionReason() != null && !recruiter.getRejectionReason().isBlank())
+                    ? " (" + recruiter.getRejectionReason() + ")" : "";
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter verification was rejected" + reason + ". You cannot publish jobs.");
+        }
+        if (vStatus == VerificationStatus.RESUBMITTED) {
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter verification has been resubmitted and is awaiting administrator review. You cannot publish jobs until your account is approved.");
+        }
+        if (vStatus == VerificationStatus.SUSPENDED) {
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter account has been suspended by administration. Job creation is unavailable.");
+        }
+        if (vStatus != VerificationStatus.VERIFIED) {
+            throw new org.springframework.security.access.AccessDeniedException("Your recruiter account is not verified. You cannot publish jobs until your organization is verified by the administrator.");
+        }
     }
 
     @Transactional(readOnly = true)
     public List<JobDTO> getPublicJobs(String search, String location, String type, String level, UUID viewerUserId) {
-        List<Job> jobs = jobRepository.filterJobs(JobStatus.ACTIVE, null, location, type, level, search);
+        List<Job> jobs = jobRepository.filterPublicActiveJobs(null, location, type, level, search);
         return jobs.stream().map(j -> toDTO(j, viewerUserId)).collect(Collectors.toList());
     }
 
@@ -49,12 +105,36 @@ public class JobService {
     public JobDTO getJobById(UUID jobId, UUID viewerUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+        // Candidate / public visibility check:
+        // Only active approved jobs from verified active recruiters are visible publicly
+        if (viewerUserId != null) {
+            User viewer = userRepository.findById(viewerUserId).orElse(null);
+            boolean isAdmin = viewer != null && viewer.getRole() == Role.ADMIN;
+            boolean isOwner = viewer != null && job.getRecruiter() != null && job.getRecruiter().getId().equals(viewerUserId);
+            if (!isAdmin && !isOwner) {
+                if (job.getStatus() != JobStatus.ACTIVE ||
+                    job.getRecruiter() == null ||
+                    job.getRecruiter().getVerificationStatus() != VerificationStatus.VERIFIED ||
+                    job.getRecruiter().getStatus() != UserStatus.ACTIVE) {
+                    throw new ResourceNotFoundException("Job is not available for public discovery: " + jobId);
+                }
+            }
+        } else {
+            if (job.getStatus() != JobStatus.ACTIVE ||
+                job.getRecruiter() == null ||
+                job.getRecruiter().getVerificationStatus() != VerificationStatus.VERIFIED ||
+                job.getRecruiter().getStatus() != UserStatus.ACTIVE) {
+                throw new ResourceNotFoundException("Job is not available for public discovery: " + jobId);
+            }
+        }
+
         return toDTO(job, viewerUserId);
     }
 
     @Transactional(readOnly = true)
     public List<JobDTO> getRecruiterJobs(UUID recruiterId) {
-        return jobRepository.findByRecruiterId(recruiterId).stream()
+        return jobRepository.findByRecruiterIdOrderByCreatedAtDesc(recruiterId).stream()
                 .map(j -> toDTO(j, null)).collect(Collectors.toList());
     }
 
@@ -62,6 +142,9 @@ public class JobService {
     public JobDTO createJob(UUID recruiterId, JobRequest request) {
         User recruiter = userRepository.findById(recruiterId)
                 .orElseThrow(() -> new ResourceNotFoundException("Recruiter not found"));
+
+        // ENFORCE CRITICAL BUSINESS RULE: Only verified recruiters can publish jobs
+        validateRecruiterVerification(recruiter);
 
         // Get or create company linked to this recruiter
         Company company = companyRepository.findByRecruiterId(recruiterId)
@@ -79,7 +162,21 @@ public class JobService {
         job.setPostedDate(Instant.now().toString());
         mapRequestToJob(request, job);
 
+        // Security Governance: Recruiters cannot self-approve jobs.
+        // New jobs enter PENDING_APPROVAL unless explicitly saved as DRAFT
+        if (request.getStatus() != null && request.getStatus().equalsIgnoreCase("DRAFT")) {
+            job.setStatus(JobStatus.DRAFT);
+        } else {
+            job.setStatus(JobStatus.PENDING_APPROVAL);
+        }
+
         Job saved = jobRepository.save(job);
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(recruiterId, recruiter.getFullName(), Role.RECRUITER,
+                    "Job Created", saved.getTitle() + " at " + company.getName(), null);
+        }
+
         return toDTO(saved, null);
     }
 
@@ -90,8 +187,19 @@ public class JobService {
         if (!job.getRecruiter().getId().equals(recruiterId)) {
             throw new BadRequestException("You are not authorized to edit this job");
         }
+
+        // ENFORCE CRITICAL BUSINESS RULE on updates
+        validateRecruiterVerification(job.getRecruiter());
+
         mapRequestToJob(request, job);
-        return toDTO(jobRepository.save(job), null);
+        Job saved = jobRepository.save(job);
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(recruiterId, job.getRecruiter().getFullName(), Role.RECRUITER,
+                    "Job Updated", saved.getTitle(), null);
+        }
+
+        return toDTO(saved, null);
     }
 
     @Transactional
@@ -101,7 +209,13 @@ public class JobService {
         if (!job.getRecruiter().getId().equals(recruiterId)) {
             throw new BadRequestException("Unauthorized");
         }
+        String jobTitle = job.getTitle();
         jobRepository.delete(job);
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(recruiterId, job.getRecruiter().getFullName(), Role.RECRUITER,
+                    "Job Deleted", jobTitle, null);
+        }
     }
 
     @Transactional
@@ -192,8 +306,17 @@ public class JobService {
             dto.setVerifiedRecruiter(job.getCompany().isVerified());
         }
         if (job.getRecruiter() != null) {
+            dto.setRecruiterId(job.getRecruiter().getId().toString());
             dto.setRecruiterName(job.getRecruiter().getFullName());
+            dto.setRecruiterEmail(job.getRecruiter().getEmail());
+            dto.setRecruiterVerificationStatus(job.getRecruiter().getVerificationStatus() != null ? job.getRecruiter().getVerificationStatus().name() : "PENDING");
+            dto.setVerifiedRecruiter(job.getRecruiter().getVerificationStatus() == VerificationStatus.VERIFIED);
         }
+
+        dto.setRejectionReason(job.getRejectionReason());
+        dto.setApprovedBy(job.getApprovedBy());
+        dto.setApprovedAt(job.getApprovedAt() != null ? job.getApprovedAt().toString() : null);
+        dto.setModeratedAt(job.getModeratedAt() != null ? job.getModeratedAt().toString() : null);
 
         // Viewer-specific state
         if (viewerUserId != null) {

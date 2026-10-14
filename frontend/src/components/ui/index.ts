@@ -18,4 +18,5 @@ export * from './Breadcrumbs';
 export * from './ScoreMeter';
 export * from './BackgroundEffects';
 export * from './ContainedGridBackground';
+export * from '../3d';
 

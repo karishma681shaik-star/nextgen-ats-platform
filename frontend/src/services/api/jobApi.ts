@@ -88,6 +88,15 @@ export const jobApi = {
   async toggleJobStatus(id: string, status: JobStatus): Promise<Job> {
     return this.updateJob(id, { status });
   },
+
+  async getPublicCompany(identifier: string): Promise<any> {
+    return apiClient<any>(`/public/companies/${encodeURIComponent(identifier)}`);
+  },
+
+  async getPublicCompanyJobs(identifier: string): Promise<Job[]> {
+    const rawJobs = await apiClient<any[]>(`/public/companies/${encodeURIComponent(identifier)}/jobs`);
+    return (rawJobs || []).map(mapJobDtoToJob);
+  },
 };
 
 export function mapJobDtoToJob(dto: any): Job {
@@ -122,5 +131,12 @@ export function mapJobDtoToJob(dto: any): Job {
     applied: dto.applied === true,
     saved: dto.saved === true,
     verifiedRecruiter: dto.verifiedRecruiter !== undefined ? dto.verifiedRecruiter : true,
+    rejectionReason: dto.rejectionReason,
+    approvedBy: dto.approvedBy,
+    approvedAt: dto.approvedAt,
+    moderatedAt: dto.moderatedAt,
+    recruiterName: dto.recruiterName,
+    recruiterEmail: dto.recruiterEmail,
+    recruiterVerificationStatus: dto.recruiterVerificationStatus,
   };
 }

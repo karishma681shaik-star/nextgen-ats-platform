@@ -10,7 +10,10 @@ import { ProtectedRoute } from '../layouts/ProtectedRoute';
 
 // Public & Auth Pages
 import { LandingPage } from '../pages/public/LandingPage';
+import { PublicCareerPortalPage } from '../pages/public/PublicCareerPortalPage';
+import { PortalSelectionPage } from '../pages/auth/PortalSelectionPage';
 import { LoginPage } from '../pages/auth/LoginPage';
+import { AdminLoginPage } from '../pages/auth/AdminLoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
@@ -34,6 +37,7 @@ import { CompanyProfilePage } from '../pages/recruiter/CompanyProfilePage';
 import { JobManagementPage } from '../pages/recruiter/JobManagementPage';
 import { CreateJobPage } from '../pages/recruiter/CreateJobPage';
 import { ApplicantManagementPage } from '../pages/recruiter/ApplicantManagementPage';
+import { RecruiterVerificationCenterPage } from '../pages/recruiter/RecruiterVerificationCenterPage';
 
 // Admin Pages
 import { AdminDashboard } from '../pages/admin/AdminDashboard';
@@ -41,6 +45,7 @@ import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { RecruiterVerificationPage } from '../pages/admin/RecruiterVerificationPage';
 import { JobModerationPage } from '../pages/admin/JobModerationPage';
 import { PlatformAnalyticsPage } from '../pages/admin/PlatformAnalyticsPage';
+import { AuditLogPage } from '../pages/admin/AuditLogPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -48,10 +53,18 @@ export const AppRoutes: React.FC = () => {
       {/* Public Pages */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/careers/:companyId" element={<PublicCareerPortalPage />} />
+        <Route path="/company/:companyId/careers" element={<PublicCareerPortalPage />} />
+        <Route path="/jobs" element={<JobDiscoveryPage />} />
+        <Route path="/jobs/:id" element={<JobDetailsPage />} />
       </Route>
 
-      {/* Auth Pages */}
-      <Route path="/login" element={<LoginPage />} />
+      {/* Auth & Portal Selection Pages */}
+      <Route path="/login" element={<PortalSelectionPage />} />
+      <Route path="/login/candidate" element={<LoginPage portal="candidate" />} />
+      <Route path="/login/recruiter" element={<LoginPage portal="recruiter" />} />
+      <Route path="/login/admin" element={<Navigate to="/admin/login" replace />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -79,7 +92,7 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/candidate"
         element={
-          <ProtectedRoute allowedRoles={['candidate', 'admin', 'recruiter']}>
+          <ProtectedRoute allowedRoles={['candidate', 'admin']}>
             <CandidateLayout />
           </ProtectedRoute>
         }
@@ -99,7 +112,7 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/recruiter"
         element={
-          <ProtectedRoute allowedRoles={['recruiter', 'admin', 'candidate']}>
+          <ProtectedRoute allowedRoles={['recruiter', 'admin']}>
             <RecruiterLayout />
           </ProtectedRoute>
         }
@@ -110,22 +123,26 @@ export const AppRoutes: React.FC = () => {
         <Route path="jobs/new" element={<CreateJobPage />} />
         <Route path="jobs/:id" element={<CreateJobPage />} />
         <Route path="applicants" element={<ApplicantManagementPage />} />
+        <Route path="verification" element={<RecruiterVerificationCenterPage />} />
       </Route>
 
-      {/* Admin Routes */}
+      {/* Admin Routes - Strictly Restricted to Single-Admin Role */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin', 'recruiter', 'candidate']}>
+          <ProtectedRoute allowedRoles={['admin']}>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
         <Route index element={<AdminDashboard />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="recruiters" element={<RecruiterVerificationPage />} />
         <Route path="jobs" element={<JobModerationPage />} />
         <Route path="analytics" element={<PlatformAnalyticsPage />} />
+        <Route path="audit" element={<AuditLogPage />} />
+        <Route path="audit-log" element={<AuditLogPage />} />
       </Route>
 
       {/* Catch-all */}

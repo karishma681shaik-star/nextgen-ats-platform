@@ -18,6 +18,7 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
     List<Application> findByJobRecruiterIdOrderByAppliedDateDesc(UUID recruiterId);
     Optional<Application> findByCandidateIdAndJobId(UUID candidateId, UUID jobId);
     boolean existsByCandidateIdAndJobId(UUID candidateId, UUID jobId);
+    long countByJobId(UUID jobId);
     long countByStatus(ApplicationStatus status);
     long countByJobRecruiterId(UUID recruiterId);
     long countByJobRecruiterIdAndStatus(UUID recruiterId, ApplicationStatus status);

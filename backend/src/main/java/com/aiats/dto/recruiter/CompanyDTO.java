@@ -18,6 +18,19 @@ public class CompanyDTO {
     private String contactPhone;
     private boolean verified;
     private List<String> benefits;
+    private String businessRegistrationNumber;
+    private String taxId;
+    private String officialEmailDomain;
+    private String verificationDocumentUrl;
+    private String verificationEvidenceNotes;
+    private String registrationCheckStatus;
+    private String websiteConsistencyStatus;
+    private Boolean associationVerified;
+    private String associationCheckStatus;
+    private String authorizationDocumentUrl;
+    private String authorizationNotes;
+    private String independentConfirmationNotes;
+    private Boolean reverificationRequired;
 
     public String getId() { return id; } public void setId(String id) { this.id = id; }
     public String getRecruiterId() { return recruiterId; } public void setRecruiterId(String recruiterId) { this.recruiterId = recruiterId; }
@@ -34,4 +47,18 @@ public class CompanyDTO {
     public String getContactPhone() { return contactPhone; } public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
     public boolean isVerified() { return verified; } public void setVerified(boolean verified) { this.verified = verified; }
     public List<String> getBenefits() { return benefits; } public void setBenefits(List<String> benefits) { this.benefits = benefits; }
+
+    public String getBusinessRegistrationNumber() { return businessRegistrationNumber; } public void setBusinessRegistrationNumber(String businessRegistrationNumber) { this.businessRegistrationNumber = businessRegistrationNumber; }
+    public String getTaxId() { return taxId; } public void setTaxId(String taxId) { this.taxId = taxId; }
+    public String getOfficialEmailDomain() { return officialEmailDomain; } public void setOfficialEmailDomain(String officialEmailDomain) { this.officialEmailDomain = officialEmailDomain; }
+    public String getVerificationDocumentUrl() { return verificationDocumentUrl; } public void setVerificationDocumentUrl(String verificationDocumentUrl) { this.verificationDocumentUrl = verificationDocumentUrl; }
+    public String getVerificationEvidenceNotes() { return verificationEvidenceNotes; } public void setVerificationEvidenceNotes(String verificationEvidenceNotes) { this.verificationEvidenceNotes = verificationEvidenceNotes; }
+    public String getRegistrationCheckStatus() { return registrationCheckStatus; } public void setRegistrationCheckStatus(String registrationCheckStatus) { this.registrationCheckStatus = registrationCheckStatus; }
+    public String getWebsiteConsistencyStatus() { return websiteConsistencyStatus; } public void setWebsiteConsistencyStatus(String websiteConsistencyStatus) { this.websiteConsistencyStatus = websiteConsistencyStatus; }
+    public Boolean getAssociationVerified() { return associationVerified; } public void setAssociationVerified(Boolean associationVerified) { this.associationVerified = associationVerified; }
+    public String getAssociationCheckStatus() { return associationCheckStatus; } public void setAssociationCheckStatus(String associationCheckStatus) { this.associationCheckStatus = associationCheckStatus; }
+    public String getAuthorizationDocumentUrl() { return authorizationDocumentUrl; } public void setAuthorizationDocumentUrl(String authorizationDocumentUrl) { this.authorizationDocumentUrl = authorizationDocumentUrl; }
+    public String getAuthorizationNotes() { return authorizationNotes; } public void setAuthorizationNotes(String authorizationNotes) { this.authorizationNotes = authorizationNotes; }
+    public String getIndependentConfirmationNotes() { return independentConfirmationNotes; } public void setIndependentConfirmationNotes(String independentConfirmationNotes) { this.independentConfirmationNotes = independentConfirmationNotes; }
+    public Boolean getReverificationRequired() { return reverificationRequired; } public void setReverificationRequired(Boolean reverificationRequired) { this.reverificationRequired = reverificationRequired; }
 }

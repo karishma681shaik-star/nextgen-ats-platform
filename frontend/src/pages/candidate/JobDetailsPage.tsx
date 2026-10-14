@@ -15,9 +15,12 @@ import {
   Sparkles,
   ArrowLeft,
   Users,
-  Check
+  Check,
+  ShieldCheck,
+  Flag
 } from 'lucide-react';
 import { jobService, candidateService } from '../../services';
+import { candidateApi } from '../../services/api/candidateApi';
 import { useToast } from '../../context/ToastContext';
 import { Job, CandidateProfile, Resume } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
@@ -40,6 +43,12 @@ export const JobDetailsPage: React.FC = () => {
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Report Modal
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportCategory, setReportCategory] = useState('SUSPICIOUS_PAYMENT');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -105,6 +114,43 @@ export const JobDetailsPage: React.FC = () => {
       showToast({ type: 'error', title: 'Application Error', message: err.message });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!job) return;
+    if (!reportDescription.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'Details Required',
+        message: 'Please provide specific information or evidence regarding the safety concern.'
+      });
+      return;
+    }
+
+    try {
+      setIsSubmittingReport(true);
+      await candidateApi.submitReport({
+        jobId: job.id,
+        category: reportCategory,
+        description: reportDescription.trim()
+      });
+      showToast({
+        type: 'success',
+        title: 'Safety Report Submitted 🛡️',
+        message: 'Thank you for protecting our community. Platform administrators have opened an investigation.'
+      });
+      setReportModalOpen(false);
+      setReportDescription('');
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Submission Blocked',
+        message: err?.message || 'Failed to submit report. You may have already reported this requisition.'
+      });
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -185,6 +231,14 @@ export const JobDetailsPage: React.FC = () => {
           {/* Header Action Buttons */}
           <div className="flex items-center gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
             <button
+              onClick={() => setReportModalOpen(true)}
+              className="p-2.5 rounded-xl border border-slate-700 bg-slate-850 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors"
+              title="Report Suspicious Job or Recruiter"
+            >
+              <Flag className="w-5 h-5" />
+            </button>
+
+            <button
               onClick={handleToggleSave}
               className={`p-2.5 rounded-xl border transition-colors ${
                 isSaved
@@ -210,6 +264,44 @@ export const JobDetailsPage: React.FC = () => {
                 Apply Now
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Platform Trust & Safety Badges Bar */}
+        <div className="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider">Verification Badges:</span>
+            <span
+              title="Company Verified: Corporate registration and verified business email domain"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              Company Verified
+            </span>
+            <span
+              title="Recruiter Verified: Identity confirmed and authorized to represent the organization"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+              Recruiter Verified
+            </span>
+            <span
+              title="Job Approved: Audited and approved by platform governance moderation"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30"
+            >
+              <Check className="w-3.5 h-3.5 text-indigo-400" />
+              Job Approved
+            </span>
+          </div>
+
+          <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+            <span>Notice something suspicious?</span>
+            <button
+              onClick={() => setReportModalOpen(true)}
+              className="text-rose-400 hover:text-rose-300 font-bold underline transition-colors"
+            >
+              Report this listing
+            </button>
           </div>
         </div>
       </Card>
@@ -367,6 +459,73 @@ export const JobDetailsPage: React.FC = () => {
             </Button>
             <Button type="submit" variant="glow" isLoading={isSubmitting} leftIcon={<Send className="w-4 h-4" />}>
               Submit Application
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* CANDIDATE SAFETY REPORT MODAL */}
+      <Modal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        title="Report Job Requisition or Recruiter"
+        description="Help maintain a secure and trustworthy hiring marketplace by submitting details of suspicious activity."
+      >
+        <form onSubmit={handleReportSubmit} className="space-y-4">
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Reported Position:</span>
+            <p className="font-bold text-white">{job.title}</p>
+            <p className="text-slate-400">{job.company} • Recruiter ID: <code className="text-slate-300 font-mono text-[11px]">{job.recruiterId || 'Verified Partner'}</code></p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+              Violation or Suspicion Category
+            </label>
+            <select
+              value={reportCategory}
+              onChange={(e) => setReportCategory(e.target.value)}
+              className="w-full bg-slate-900 text-slate-100 text-xs rounded-xl border border-slate-700 p-2.5 focus:outline-none focus:border-rose-500"
+              required
+            >
+              <option value="SUSPICIOUS_PAYMENT">Demanding recruitment/training fees or suspicious payments</option>
+              <option value="MISLEADING_DESCRIPTION">Misleading job description or inaccurate salary/role details</option>
+              <option value="IDENTITY_MISMATCH">Company or recruiter identity mismatch</option>
+              <option value="EXTERNAL_LINKS">Suspicious external links, malware, or phishing attempts</option>
+              <option value="FAKE_RECRUITER">Suspected impersonation or fake recruiter profile</option>
+              <option value="OTHER">Other fraudulent or policy-violating activity</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+              Evidence & Specific Statement
+            </label>
+            <textarea
+              rows={4}
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              placeholder="Describe what occurred, quotes from communications, or suspicious URLs..."
+              className="w-full bg-slate-900 text-slate-100 text-xs rounded-xl border border-slate-700 p-3 focus:outline-none focus:border-rose-500 resize-none"
+              required
+            />
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Your report is confidential and reviewed only by human trust & safety administrators. Reports are never shared with recruiters.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <Button type="button" variant="secondary" onClick={() => setReportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              isLoading={isSubmittingReport}
+              leftIcon={<Flag className="w-4 h-4" />}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-bold"
+            >
+              Submit Report to Trust & Safety
             </Button>
           </div>
         </form>

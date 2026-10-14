@@ -12,4 +12,13 @@ import java.util.UUID;
 public interface CompanyRepository extends JpaRepository<Company, UUID> {
     Optional<Company> findByRecruiter(User recruiter);
     Optional<Company> findByRecruiterId(UUID recruiterId);
+
+    long countByVerifiedTrue();
+    long countByVerifiedFalse();
+    long countByAssociationCheckStatus(String status);
+    long countByRegistrationCheckStatus(String status);
+    long countByReverificationRequiredTrue();
+    long countByNameIgnoreCaseAndIdNot(String name, UUID id);
+    long countByWebsiteIgnoreCaseAndIdNot(String website, UUID id);
+    Optional<Company> findByNameIgnoreCase(String name);
 }

@@ -1,5 +1,6 @@
 package com.aiats.config;
 
+import com.aiats.security.JwtAccessDeniedHandler;
 import com.aiats.security.JwtAuthenticationEntryPoint;
 import com.aiats.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
@@ -23,11 +24,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
+    private final JwtAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(JwtAuthenticationEntryPoint unauthorizedHandler,
+                          JwtAccessDeniedHandler accessDeniedHandler,
                           JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.unauthorizedHandler = unauthorizedHandler;
+        this.accessDeniedHandler = accessDeniedHandler;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -47,7 +51,10 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> {})
-            .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(unauthorizedHandler)
+                .accessDeniedHandler(accessDeniedHandler)
+            )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/api", "/api/health", "/error", "/favicon.ico", "/index.html").permitAll()

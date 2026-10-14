@@ -18,7 +18,7 @@ const FOOTER_COLUMNS = [
     heading: 'Company',
     links: [
       { label: 'About', to: '/' },
-      { label: 'Contact', to: 'mailto:karishma681shaik@gmail.com' },
+      { label: 'Contact', to: 'mailto:support@ai-ats.internal' },
       { label: 'Privacy Policy', to: '/' },
       { label: 'Terms of Service', to: '/' },
       { label: 'Security', to: '/' },
@@ -37,9 +37,9 @@ const FOOTER_COLUMNS = [
 ];
 
 const SOCIAL_LINKS = [
-  { icon: Github, href: 'https://github.com/karishma681shaik-star', label: 'GitHub' },
-  { icon: Linkedin, href: 'https://www.linkedin.com/in/karishmashaik681/', label: 'LinkedIn' },
-  { icon: Mail, href: 'mailto:karishma681shaik@gmail.com', label: 'Email' },
+  { icon: Github, href: 'https://github.com', label: 'GitHub' },
+  { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+  { icon: Mail, href: 'mailto:support@ai-ats.internal', label: 'Email' },
 ];
 
 export const Footer: React.FC = () => {

@@ -442,4 +442,18 @@ public class CandidateService {
 
         return dto;
     }
+
+    @Transactional(readOnly = true)
+    public CandidateAnalyticsDTO getAnalytics(UUID candidateId) {
+        CandidateAnalyticsDTO dto = new CandidateAnalyticsDTO();
+        dto.setTotalApplications(applicationRepository.countByCandidateId(candidateId));
+        dto.setUnderReview(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.UNDER_REVIEW));
+        dto.setShortlisted(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.SHORTLISTED));
+        dto.setInterviewsScheduled(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.INTERVIEW));
+        dto.setOffersReceived(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.OFFERED));
+        dto.setSelected(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.SELECTED));
+        dto.setRejected(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.REJECTED));
+        dto.setWithdrawn(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.WITHDRAWN));
+        return dto;
+    }
 }

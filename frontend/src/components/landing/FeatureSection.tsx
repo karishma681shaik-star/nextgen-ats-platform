@@ -264,10 +264,10 @@ export const FeatureSection: React.FC = () => {
               <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-xs">
-                    KS
+                    AR
                   </div>
                   <div>
-                    <span className="text-white font-semibold block text-[11px]">Karishma Shaik</span>
+                    <span className="text-white font-semibold block text-[11px]">Alex Rivera</span>
                     <span className="text-[9px] text-slate-400">Score: 98 • Java Full Stack</span>
                   </div>
                 </div>

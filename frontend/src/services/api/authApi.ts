@@ -7,7 +7,7 @@ import { User, Role } from '../../types';
 export interface LoginCredentials {
   email: string;
   password: string;
-  role: Role;
+  role?: Role;
 }
 
 /*
@@ -50,7 +50,7 @@ export const authApi = {
         body: JSON.stringify({
           email: credentials.email.trim().toLowerCase(),
           password: credentials.password,
-          role: credentials.role.toUpperCase(),
+          role: credentials.role ? credentials.role.toUpperCase() : undefined,
         }),
       }
     );
@@ -76,6 +76,60 @@ export const authApi = {
       throw new Error(
         'Login failed: backend did not return user information.'
       );
+    }
+
+    return response.user;
+  },
+
+  /*
+   * ADMIN LOGIN
+   * POST /api/auth/admin/login
+   */
+  async adminLogin(credentials: LoginCredentials): Promise<User> {
+    let response: AuthResponse;
+
+    try {
+      response = await apiClient<AuthResponse>(
+        '/auth/admin/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: credentials.email.trim().toLowerCase(),
+            password: credentials.password,
+          }),
+        }
+      );
+    } catch (err: any) {
+      // Fallback to /auth/login for compatibility if dedicated endpoint is not active
+      response = await apiClient<AuthResponse>(
+        '/auth/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: credentials.email.trim().toLowerCase(),
+            password: credentials.password,
+          }),
+        }
+      );
+    }
+
+    if (!response?.token) {
+      throw new Error(
+        'Admin authentication failed: backend did not return a JWT token.'
+      );
+    }
+
+    tokenStorage.set(response.token);
+
+    if (!response.user) {
+      throw new Error(
+        'Admin login failed: backend did not return user information.'
+      );
+    }
+
+    if (response.user.role !== 'admin') {
+      tokenStorage.remove();
+      throw new Error('Access Denied: Account lacks administrative authority.');
     }
 
     return response.user;

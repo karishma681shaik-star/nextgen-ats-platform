@@ -88,7 +88,6 @@ public class RootController {
                   <strong style="color: #cbd5e1;">Platform Active Credentials (Password: Password123!)</strong>
                   <table>
                     <tr><th>Role</th><th>Email</th><th>Password</th></tr>
-                    <tr><td>Candidate</td><td>karishma681shaik@gmail.com</td><td>Password123!</td></tr>
                     <tr><td>Candidate</td><td>alex.rivera@example.com</td><td>Password123!</td></tr>
                     <tr><td>Recruiter</td><td>sarah.jenkins@cloudscale.io</td><td>Password123!</td></tr>
                     <tr><td>Admin</td><td>admin@ai-ats.internal</td><td>Password123!</td></tr>

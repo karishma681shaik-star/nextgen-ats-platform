@@ -131,7 +131,7 @@ Frontend runs at `http://localhost:5173`.
 
 | Role | Email | Password |
 |---|---|---|
-| **Candidate** | `karishma681shaik@gmail.com` | `Password123!` |
+| **Candidate** | `alex.rivera@example.com` | `Password123!` |
 | **Recruiter** | `talent@coursera.org` | `Password123!` |
 | **Administrator** | `admin@ai-ats.internal` | `Password123!` |
 

@@ -76,16 +76,16 @@ const DEFAULT_TECH_STACK = [
 ];
 
 const DEFAULT_COMPANY: Company = {
-  id: 'comp-karishma',
-  name: 'karishma',
+  id: 'comp-nexlify',
+  name: 'Nexlify AI',
   logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&auto=format&fit=crop&q=80',
-  tagline: 'Leading innovation in software and technology',
+  tagline: 'Leading innovation in intelligent software and cloud systems',
   industry: 'Technology',
   website: 'https://example.com',
   location: 'San Francisco, CA',
   size: '100–500 employees',
   description:
-    'At karishma, we engineer high-impact technology and intelligent cloud software that solves complex global challenges. Our engineering culture values high autonomy, rapid shipping, and continuous learning.',
+    'At Nexlify AI, we engineer high-impact technology and intelligent cloud software that solves complex global challenges. Our engineering culture values high autonomy, rapid shipping, and continuous learning.',
   foundedYear: '2020',
   benefits: [
     'Comprehensive Medical, Dental & Vision (100% Covered)',
@@ -95,7 +95,7 @@ const DEFAULT_COMPANY: Company = {
     'Home Office Ergonomic Setup Stipend',
     'Unlimited Paid Time Off & Mental Health Days'
   ],
-  contactEmail: 'talent@karishma.ai',
+  contactEmail: 'talent@nexlify.ai',
   contactPhone: '+1 (415) 890-4321',
   verified: true
 };

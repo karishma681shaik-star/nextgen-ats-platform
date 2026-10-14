@@ -21,15 +21,25 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final ResumeRepository resumeRepository;
     private final CandidateProfileRepository candidateProfileRepository;
+    private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
+    private final SecurityAlertService securityAlertService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public ApplicationService(ApplicationRepository applicationRepository, JobRepository jobRepository,
                               UserRepository userRepository, ResumeRepository resumeRepository,
-                              CandidateProfileRepository candidateProfileRepository) {
+                              CandidateProfileRepository candidateProfileRepository,
+                              ActivityLogService activityLogService,
+                              NotificationService notificationService,
+                              SecurityAlertService securityAlertService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.resumeRepository = resumeRepository;
         this.candidateProfileRepository = candidateProfileRepository;
+        this.activityLogService = activityLogService;
+        this.notificationService = notificationService;
+        this.securityAlertService = securityAlertService;
     }
 
     @Transactional
@@ -39,9 +49,20 @@ public class ApplicationService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
 
-        // Check duplicate
+        // Check duplicate active application
         if (applicationRepository.existsByCandidateIdAndJobId(candidateId, jobId)) {
-            throw new BadRequestException("You have already applied for this job");
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        candidateId,
+                        candidate.getEmail(),
+                        "CANDIDATE",
+                        "DUPLICATE_APPLICATION_SUBMISSION",
+                        "LOW",
+                        "Candidate " + candidate.getFullName() + " attempted duplicate active submission for job: " + job.getTitle(),
+                        "Informational notice. Verify whether candidate encountered connectivity timeout."
+                );
+            }
+            throw new BadRequestException("You have already submitted an active application for this job.");
         }
 
         Resume resume = null;
@@ -67,7 +88,7 @@ public class ApplicationService {
 
         // Add initial timeline entry
         ApplicationTimeline event = new ApplicationTimeline(app, ApplicationStatus.APPLIED,
-                "Application submitted via AI ATS Portal");
+                "Application submitted via NextGen ATS Candidate Portal");
         app.getTimeline().add(event);
 
         Application saved = applicationRepository.save(app);
@@ -75,6 +96,36 @@ public class ApplicationService {
         // Increment job applicant count
         job.setApplicantCount(job.getApplicantCount() + 1);
         jobRepository.save(job);
+
+        String companyName = (job.getCompany() != null && job.getCompany().getName() != null)
+                ? job.getCompany().getName() : "Hiring Organization";
+
+        // Persistent in-app notification to Candidate
+        if (notificationService != null) {
+            notificationService.createNotification(
+                    candidate,
+                    "Application Submitted Successfully",
+                    "Your application for " + job.getTitle() + " at " + companyName + " has been recorded in the platform.",
+                    "success",
+                    "/candidate/applications"
+            );
+
+            // Persistent in-app notification to owning Recruiter
+            if (job.getRecruiter() != null) {
+                notificationService.createNotification(
+                        job.getRecruiter(),
+                        "New Job Application Received",
+                        candidate.getFullName() + " has applied for " + job.getTitle() + " (ATS Score: " + score + "%).",
+                        "info",
+                        "/recruiter/applicants?jobId=" + job.getId()
+                );
+            }
+        }
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(candidateId, candidate.getFullName(), Role.CANDIDATE,
+                    "Application Submitted", job.getTitle() + " (" + candidate.getFullName() + ")", null);
+        }
 
         return toDTO(saved);
     }
@@ -96,10 +147,9 @@ public class ApplicationService {
                                                          String statusStr, Integer minScore, String search) {
         ApplicationStatus status = null;
         if (statusStr != null && !statusStr.equalsIgnoreCase("all")) {
-            try { status = ApplicationStatus.valueOf(statusStr.toUpperCase()); }
-            catch (IllegalArgumentException ignored) {}
+            status = ApplicationStatus.fromString(statusStr);
         }
-        UUID jobUuid = jobId; // may be null
+        UUID jobUuid = jobId;
         return applicationRepository.filterApplicants(recruiterId, jobUuid, status, minScore, search)
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
@@ -108,23 +158,146 @@ public class ApplicationService {
     public ApplicationDTO updateStatus(UUID recruiterId, UUID applicationId,
                                        String newStatusStr, String note) {
         Application app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
         if (!app.getJob().getRecruiter().getId().equals(recruiterId)) {
-            throw new BadRequestException("Unauthorized");
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        recruiterId,
+                        null,
+                        "RECRUITER",
+                        "UNAUTHORIZED_APPLICATION_ACCESS",
+                        "HIGH",
+                        "Recruiter attempted to update application " + applicationId + " belonging to another organization.",
+                        "Enforce strict tenant data isolation. Denied access."
+                );
+            }
+            throw new org.springframework.security.access.AccessDeniedException("You are not authorized to manage this application.");
         }
-        ApplicationStatus newStatus;
-        try { newStatus = ApplicationStatus.valueOf(newStatusStr.toUpperCase()); }
-        catch (IllegalArgumentException e) { throw new BadRequestException("Invalid status: " + newStatusStr); }
+
+        ApplicationStatus newStatus = ApplicationStatus.fromString(newStatusStr);
 
         app.setStatus(newStatus);
-        ApplicationTimeline event = new ApplicationTimeline(app, newStatus,
-                note != null ? note : "Status updated to " + newStatus.name() + " by recruiter");
+        String timelineNote = (note != null && !note.isBlank())
+                ? note
+                : "Recruitment stage transitioned to " + newStatus.toFrontendStatus() + " by hiring team";
+        ApplicationTimeline event = new ApplicationTimeline(app, newStatus, timelineNote);
         app.getTimeline().add(event);
 
         if (note != null && !note.isBlank()) {
             app.getNotes().add(new ApplicationNote(app, note));
         }
-        return toDTO(applicationRepository.save(app));
+
+        Application saved = applicationRepository.save(app);
+
+        // Notify Candidate of recruitment progression
+        if (notificationService != null && app.getCandidate() != null) {
+            String notifTitle;
+            String notifMsg;
+            String notifType = "info";
+
+            String jobTitle = app.getJob().getTitle();
+            String compName = app.getJob().getCompany() != null ? app.getJob().getCompany().getName() : "the hiring team";
+
+            switch (newStatus) {
+                case SHORTLISTED -> {
+                    notifTitle = "You Have Been Shortlisted!";
+                    notifMsg = "Great news! You have been shortlisted for " + jobTitle + " at " + compName + ".";
+                    notifType = "success";
+                }
+                case INTERVIEW -> {
+                    notifTitle = "Interview Scheduled";
+                    notifMsg = "An interview stage has been scheduled for your application to " + jobTitle + " at " + compName + "." + (note != null ? " Note: " + note : "");
+                    notifType = "info";
+                }
+                case OFFERED -> {
+                    notifTitle = "Offer Extended";
+                    notifMsg = "Congratulations! An employment offer has been extended for " + jobTitle + " at " + compName + ".";
+                    notifType = "success";
+                }
+                case SELECTED -> {
+                    notifTitle = "Selection Confirmed";
+                    notifMsg = "You have been selected for the position of " + jobTitle + " at " + compName + ". Welcome aboard!";
+                    notifType = "success";
+                }
+                case REJECTED -> {
+                    notifTitle = "Application Update";
+                    notifMsg = "Thank you for interviewing for " + jobTitle + ". The team has decided to proceed with other candidates at this time.";
+                    notifType = "warning";
+                }
+                default -> {
+                    notifTitle = "Application Progress Update";
+                    notifMsg = "Your application for " + jobTitle + " is now in stage: " + newStatus.toFrontendStatus() + ".";
+                }
+            }
+
+            notificationService.createNotification(app.getCandidate(), notifTitle, notifMsg, notifType, "/candidate/applications");
+        }
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(
+                    recruiterId,
+                    app.getJob().getRecruiter().getFullName(),
+                    Role.RECRUITER,
+                    "Application Stage Updated",
+                    app.getCandidate().getFullName() + " -> " + newStatus.toFrontendStatus() + " (" + app.getJob().getTitle() + ")",
+                    null
+            );
+        }
+
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public ApplicationDTO withdrawApplication(UUID candidateId, UUID applicationId) {
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
+
+        if (!app.getCandidate().getId().equals(candidateId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only withdraw your own applications.");
+        }
+
+        if (app.getStatus() == ApplicationStatus.SELECTED || app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            throw new BadRequestException("Applications in status " + app.getStatus().toFrontendStatus() + " cannot be withdrawn.");
+        }
+
+        app.setStatus(ApplicationStatus.WITHDRAWN);
+        ApplicationTimeline event = new ApplicationTimeline(app, ApplicationStatus.WITHDRAWN, "Application voluntarily withdrawn by candidate.");
+        app.getTimeline().add(event);
+
+        Application saved = applicationRepository.save(app);
+
+        // Notify owning Recruiter
+        if (notificationService != null && app.getJob() != null && app.getJob().getRecruiter() != null) {
+            notificationService.createNotification(
+                    app.getJob().getRecruiter(),
+                    "Candidate Application Withdrawn",
+                    app.getCandidate().getFullName() + " has withdrawn their application for " + app.getJob().getTitle() + ".",
+                    "warning",
+                    "/recruiter/applicants?jobId=" + app.getJob().getId()
+            );
+
+            // Confirm to Candidate
+            notificationService.createNotification(
+                    app.getCandidate(),
+                    "Application Withdrawn",
+                    "You have successfully withdrawn your application for " + app.getJob().getTitle() + ".",
+                    "info",
+                    "/candidate/applications"
+            );
+        }
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(
+                    candidateId,
+                    app.getCandidate().getFullName(),
+                    Role.CANDIDATE,
+                    "Application Withdrawn",
+                    app.getJob().getTitle(),
+                    null
+            );
+        }
+
+        return toDTO(saved);
     }
 
     @Transactional

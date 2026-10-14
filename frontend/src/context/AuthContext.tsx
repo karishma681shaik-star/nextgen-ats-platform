@@ -20,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
 
   login: (credentials: LoginCredentials) => Promise<User>;
+  adminLogin: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
   switchRole: (role: Role) => Promise<User>;
@@ -143,6 +144,45 @@ export const AuthProvider: React.FC<{
       setUser(null);
 
       console.error('Login failed:', error);
+
+      throw error;
+
+    } finally {
+
+      setIsLoading(false);
+
+    }
+  };
+
+  /*
+   * ---------------------------------------------------------
+   * ADMIN LOGIN
+   * ---------------------------------------------------------
+   */
+  const adminLogin = async (
+    credentials: LoginCredentials
+  ): Promise<User> => {
+
+    setIsLoading(true);
+
+    try {
+      const loggedUser = await authService.adminLogin(credentials);
+
+      if (!loggedUser) {
+        throw new Error(
+          'Admin login failed: user information was not returned by the server.'
+        );
+      }
+
+      setUser(loggedUser);
+
+      return loggedUser;
+
+    } catch (error) {
+
+      setUser(null);
+
+      console.error('Admin login failed:', error);
 
       throw error;
 
@@ -318,6 +358,7 @@ export const AuthProvider: React.FC<{
         isLoading,
 
         login,
+        adminLogin,
         register,
         logout,
         switchRole,

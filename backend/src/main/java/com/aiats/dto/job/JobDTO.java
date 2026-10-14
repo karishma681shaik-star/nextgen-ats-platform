@@ -22,7 +22,7 @@ public class JobDTO {
     private List<String> responsibilities;
     private List<String> skills;
     private String educationRequired;
-    private String status;        // OPEN, CLOSED, DRAFT, PAUSED
+    private String status;        // ACTIVE, PENDING_APPROVAL, REJECTED, CLOSED, ARCHIVED, DRAFT
     private String postedAt;
     private String deadline;
     private int applicantsCount;
@@ -30,7 +30,35 @@ public class JobDTO {
     private boolean applied;
     private String matchScore;
     private String recruiterName;
+    private String recruiterId;
+    private String recruiterEmail;
+    private String recruiterVerificationStatus;
     private boolean verifiedRecruiter;
+    private String rejectionReason;
+    private String approvedBy;
+    private String approvedAt;
+    private String moderatedAt;
+
+    public String getRecruiterId() { return recruiterId; }
+    public void setRecruiterId(String recruiterId) { this.recruiterId = recruiterId; }
+
+    public String getRecruiterEmail() { return recruiterEmail; }
+    public void setRecruiterEmail(String recruiterEmail) { this.recruiterEmail = recruiterEmail; }
+
+    public String getRecruiterVerificationStatus() { return recruiterVerificationStatus; }
+    public void setRecruiterVerificationStatus(String recruiterVerificationStatus) { this.recruiterVerificationStatus = recruiterVerificationStatus; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getApprovedBy() { return approvedBy; }
+    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
+
+    public String getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(String approvedAt) { this.approvedAt = approvedAt; }
+
+    public String getModeratedAt() { return moderatedAt; }
+    public void setModeratedAt(String moderatedAt) { this.moderatedAt = moderatedAt; }
 
     public boolean isVerifiedRecruiter() { return verifiedRecruiter; }
     public void setVerifiedRecruiter(boolean verifiedRecruiter) { this.verifiedRecruiter = verifiedRecruiter; }

@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Send,
   Building,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
 import { jobService, candidateService } from '../../services';
 import { useToast } from '../../context/ToastContext';
@@ -145,9 +147,24 @@ export const JobDiscoveryPage: React.FC = () => {
           <span>AI Semantic Job Matching</span>
         </div>
         <h1 className="text-2xl font-extrabold text-white tracking-tight">Explore & Recommended Jobs</h1>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 mt-0.5">
           Discover high-fit engineering positions ranked automatically according to your verified technical skills and ATS score.
         </p>
+
+        {/* Trust & Safety Platform Notice */}
+        <div className="mt-3 p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-300">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong className="text-white">Trusted Job Discovery:</strong> Every job on AI ATS is verified through employer business registration checks, recruiter identity validation, and manual governance moderation.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Company Verified</span>
+            <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Recruiter Verified</span>
+            <span className="text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">Job Approved</span>
+          </div>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -264,20 +281,39 @@ export const JobDiscoveryPage: React.FC = () => {
                         )}
                       </div>
 
-                      <p className="text-xs text-slate-300 font-medium flex items-center gap-2 flex-wrap">
-                        <span>{job.company}</span>
-                        {job.verifiedRecruiter !== false && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Verified Recruiter
-                          </span>
-                        )}
-                        <span>•</span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-semibold text-white">{job.company}</span>
+                        <span className="text-slate-500">•</span>
                         <span className="text-slate-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-500" />
                           {job.location}
                         </span>
-                      </p>
+                      </div>
+
+                      {/* Verified Trust Badges */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span
+                          title="Company Verified: Corporate business registration and corporate domain validated"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          Company Verified
+                        </span>
+                        <span
+                          title="Recruiter Verified: Recruiter identity and authorization to represent company confirmed"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          Recruiter Verified
+                        </span>
+                        <span
+                          title="Job Approved: Manually audited and approved by platform governance moderation"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20"
+                        >
+                          <Check className="w-3 h-3" />
+                          Job Approved
+                        </span>
+                      </div>
 
                       <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
                         <span className="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-medium">
@@ -367,7 +403,7 @@ export const JobDiscoveryPage: React.FC = () => {
             <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs space-y-1.5">
               <p className="font-bold text-white">Your Candidate Profile Summary</p>
               <p className="text-slate-300">
-                Candidate: <span className="text-white font-semibold">{user?.name || 'Karishma Shaik'}</span> • Role:{' '}
+                Candidate: <span className="text-white font-semibold">{user?.name || 'Alex Rivera'}</span> • Role:{' '}
                 <span className="text-white font-semibold">Senior Java Full Stack Engineer</span>
               </p>
               <div className="flex items-center gap-2 pt-1">

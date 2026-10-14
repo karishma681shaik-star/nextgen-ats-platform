@@ -1,28 +1,18 @@
 import React from 'react';
-import { ContainedGridBackground } from './ContainedGridBackground';
 
 export interface BackgroundEffectsProps {
-  role?: 'candidate' | 'recruiter' | 'admin' | 'public';
+  role?: 'candidate' | 'recruiter' | 'admin' | 'public' | 'auth';
+  mode?: string;
   interactive?: boolean;
   showHudLabels?: boolean;
   gridSize?: number;
   className?: string;
 }
 
-export const BackgroundEffects: React.FC<BackgroundEffectsProps> = ({
-  role = 'public',
-  interactive = true,
-  showHudLabels = false,
-  gridSize = 64,
-  className = '',
-}) => {
-  return (
-    <ContainedGridBackground
-      role={role}
-      interactive={interactive}
-      showHudLabels={showHudLabels}
-      gridSize={gridSize}
-      className={className}
-    />
-  );
+/**
+ * BackgroundEffects is now managed globally by BackgroundController in App.tsx.
+ * This component acts as a lightweight no-op to prevent duplicate WebGL canvases.
+ */
+export const BackgroundEffects: React.FC<BackgroundEffectsProps> = () => {
+  return null;
 };

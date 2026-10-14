@@ -15,6 +15,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import com.aiats.security.LoginRateLimiter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +31,8 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final CompanyRepository companyRepository;
@@ -34,9 +41,10 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
-
-    @org.springframework.beans.factory.annotation.Value("${app.admin.registration-code:change-this-admin-code}")
-    private String adminRegistrationCode;
+    private final LoginRateLimiter loginRateLimiter;
+    private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
+    private final SecurityAlertService securityAlertService;
 
     public AuthService(UserRepository userRepository,
                        CandidateProfileRepository candidateProfileRepository,
@@ -46,6 +54,38 @@ public class AuthService {
                        AuthenticationManager authenticationManager,
                        JwtTokenProvider tokenProvider,
                        EmailService emailService) {
+        this(userRepository, candidateProfileRepository, companyRepository,
+             passwordResetTokenRepository, passwordEncoder, authenticationManager,
+             tokenProvider, emailService, null, null, null, null);
+    }
+
+    public AuthService(UserRepository userRepository,
+                       CandidateProfileRepository candidateProfileRepository,
+                       CompanyRepository companyRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
+                       PasswordEncoder passwordEncoder,
+                       AuthenticationManager authenticationManager,
+                       JwtTokenProvider tokenProvider,
+                       EmailService emailService,
+                       LoginRateLimiter loginRateLimiter) {
+        this(userRepository, candidateProfileRepository, companyRepository,
+             passwordResetTokenRepository, passwordEncoder, authenticationManager,
+             tokenProvider, emailService, loginRateLimiter, null, null, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthService(UserRepository userRepository,
+                       CandidateProfileRepository candidateProfileRepository,
+                       CompanyRepository companyRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
+                       PasswordEncoder passwordEncoder,
+                       AuthenticationManager authenticationManager,
+                       JwtTokenProvider tokenProvider,
+                       EmailService emailService,
+                       LoginRateLimiter loginRateLimiter,
+                       ActivityLogService activityLogService,
+                       NotificationService notificationService,
+                       SecurityAlertService securityAlertService) {
         this.userRepository = userRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.companyRepository = companyRepository;
@@ -54,41 +94,86 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.tokenProvider = tokenProvider;
         this.emailService = emailService;
+        this.loginRateLimiter = loginRateLimiter != null ? loginRateLimiter : new LoginRateLimiter();
+        this.activityLogService = activityLogService;
+        this.notificationService = notificationService;
+        this.securityAlertService = securityAlertService;
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-            throw new DuplicateResourceException("Email is already registered: " + request.getEmail());
+        if (request.getEmail() == null || request.getEmail().trim().isBlank()) {
+            throw new BadRequestException("Email address is required.");
+        }
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        Role requestedRole = Role.fromString(request.getRole());
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        null,
+                        normalizedEmail,
+                        requestedRole != null ? requestedRole.name() : "UNKNOWN",
+                        "DUPLICATE_REGISTRATION_ATTEMPT",
+                        "MEDIUM",
+                        "Repeated registration request detected for existing email address: " + normalizedEmail,
+                        "Verify whether legitimate user forgot password or unauthorized user is probing registration."
+                );
+            }
+            throw new DuplicateResourceException("An account with this email address already exists. Please sign in or use the supported account recovery process.");
         }
 
-        Role role = Role.fromString(request.getRole());
-        if (role == Role.ADMIN) {
-            String providedCode = request.getAdminRegistrationCode();
-            if (!isValidAdminCode(providedCode)) {
-                throw new BadRequestException("Invalid Administrator Registration Code. Access Denied. Authorized master keys include: ADMIN2026 or admin123.");
+        // Single-Administrator Policy: Public registration of ADMIN accounts is strictly prohibited.
+        if (requestedRole == Role.ADMIN) {
+            logger.warn("SECURITY AUDIT: Attempted public registration as ADMIN rejected for email: {}", normalizedEmail);
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        null,
+                        normalizedEmail,
+                        "ANONYMOUS",
+                        "ADMIN_IMPERSONATION_ATTEMPT",
+                        "HIGH",
+                        "Attempted public registration specifying role=ADMIN for email: " + normalizedEmail,
+                        "Enforced single administrator policy. Operation blocked."
+                );
             }
+            throw new BadRequestException("Public registration of Administrator accounts is strictly prohibited. The platform operates under a single designated administrator policy.");
         }
+
+        if (request.getName() != null && "Marcus Vance".equalsIgnoreCase(request.getName().trim())) {
+            if (securityAlertService != null) {
+                securityAlertService.createAlert(
+                        null,
+                        normalizedEmail,
+                        "ANONYMOUS",
+                        "ADMIN_NAME_RESERVATION_BREACH",
+                        "MEDIUM",
+                        "Attempted registration using reserved Lead Administrator name 'Marcus Vance'.",
+                        "Operation blocked."
+                );
+            }
+            throw new BadRequestException("The specified account name is reserved for platform governance.");
+        }
+
+        // Only CANDIDATE or RECRUITER can be created via public registration
+        Role role = (requestedRole == Role.RECRUITER) ? Role.RECRUITER : Role.CANDIDATE;
 
         User user = new User();
-        user.setEmail(request.getEmail().trim().toLowerCase());
-        user.setFullName(request.getName().trim());
+        user.setEmail(normalizedEmail);
+        user.setFullName(request.getName() != null ? request.getName().trim() : "");
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
         user.setStatus(UserStatus.ACTIVE);
 
-        if (role == Role.ADMIN) {
-            user.setAvatarUrl("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80");
-            user.setTitle("System Administrator");
-            user.setCompanyName(request.getCompanyName() != null && !request.getCompanyName().isBlank()
-                    ? request.getCompanyName().trim() : "AI ATS Global Administration");
-        } else if (role == Role.RECRUITER) {
+        if (role == Role.RECRUITER) {
             user.setAvatarUrl("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80");
+            user.setVerificationStatus(VerificationStatus.PENDING); // CRITICAL: Newly registered recruiters default to PENDING
             if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
                 user.setCompanyName(request.getCompanyName().trim());
             }
         } else {
             user.setAvatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80");
+            user.setVerificationStatus(VerificationStatus.VERIFIED);
         }
 
         User savedUser = userRepository.save(user);
@@ -100,15 +185,38 @@ public class AuthService {
             profile.setLocation("San Francisco, CA");
             profile.setProfileCompletion(40);
             candidateProfileRepository.save(profile);
+
+            if (activityLogService != null) {
+                activityLogService.logActivity(savedUser.getId(), savedUser.getFullName(), Role.CANDIDATE,
+                        "Candidate Registered", savedUser.getEmail(), null);
+            }
         } else if (role == Role.RECRUITER) {
             Company company = new Company();
             company.setRecruiter(savedUser);
             company.setName(request.getCompanyName() != null && !request.getCompanyName().isBlank()
                     ? request.getCompanyName() : savedUser.getFullName() + "'s Organization");
             company.setContactEmail(savedUser.getEmail());
-            company.setVerified(true);
+            company.setVerified(false); // CRITICAL: Must be verified by Admin before publishing jobs!
             company.setLogo("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80");
             companyRepository.save(company);
+
+            // Notify Lead Administrator of new recruiter requiring verification review
+            if (notificationService != null) {
+                userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").ifPresent(admin -> {
+                    notificationService.createNotification(
+                            admin,
+                            "New Recruiter Verification Required",
+                            "Recruiter " + savedUser.getFullName() + " (" + company.getName() + ") has registered and requires administrator verification before publishing jobs.",
+                            "info",
+                            "/admin/recruiters"
+                    );
+                });
+            }
+
+            if (activityLogService != null) {
+                activityLogService.logActivity(savedUser.getId(), savedUser.getFullName(), Role.RECRUITER,
+                        "Recruiter Registered", company.getName(), null);
+            }
         }
 
         String token = tokenProvider.generateTokenFromUser(
@@ -145,6 +253,103 @@ public class AuthService {
         String token = tokenProvider.generateToken(authentication);
 
         return new AuthResponse(token, new UserDTO(user));
+    }
+
+    /**
+     * Dedicated secure single-administrator login bridge:
+     * 1. Rate-limited to prevent brute-force attacks.
+     * 2. Authenticates credentials against Spring Security.
+     * 3. Strictly verifies that the authenticated user has the ADMIN role.
+     * 4. Logs audit information and emits generic error on unauthorized attempts.
+     */
+    public AuthResponse adminLogin(LoginRequest request, String clientIp) {
+        String rateLimitKey = (clientIp != null ? clientIp : "127.0.0.1") + ":" +
+                (request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "");
+
+        if (loginRateLimiter.isBlocked(rateLimitKey)) {
+            logger.warn("SECURITY AUDIT: Throttled admin login attempt from IP [{}] for key [{}]", clientIp, rateLimitKey);
+            if (activityLogService != null) {
+                activityLogService.logDetailedActivity(
+                        null, "Anonymous", Role.ADMIN,
+                        "Admin Login Throttled", "SECURITY_LOCKOUT_TRIGGERED", "AUTHENTICATION_SECURITY",
+                        "HIGH", "BLOCKED",
+                        request.getEmail(), "SECURITY_EVENT", null,
+                        null, "LOCKED", "Rate limit lockout triggered: 5 consecutive failures",
+                        clientIp, null
+                );
+            }
+            throw new BadRequestException("Too many failed authentication attempts. Temporary security lockout active. Please try again in 5 minutes.");
+        }
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail().trim().toLowerCase(),
+                            request.getPassword()
+                    )
+            );
+
+            User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid administrator credentials or unauthorized access."));
+
+            // Verify account status
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                loginRateLimiter.recordFailedAttempt(rateLimitKey);
+                throw new BadRequestException("Administrator account is currently " + user.getStatus().name().toLowerCase() + ". Access denied.");
+            }
+
+            // Strictly verify that account holds the authorized ADMIN role
+            if (user.getRole() != Role.ADMIN) {
+                loginRateLimiter.recordFailedAttempt(rateLimitKey);
+                logger.warn("SECURITY ALERT: Non-admin account [{}] with role [{}] attempted access via Admin Login from IP [{}]",
+                        user.getEmail(), user.getRole(), clientIp);
+                if (activityLogService != null) {
+                    activityLogService.logDetailedActivity(
+                            user.getId(), user.getFullName(), user.getRole(),
+                            "Unauthorized Admin Login Attempt", "UNAUTHORIZED_ADMIN_ACCESS", "AUTHENTICATION_SECURITY",
+                            "HIGH", "BLOCKED",
+                            user.getEmail(), "SECURITY_EVENT", user.getId().toString(),
+                            null, null, "Non-admin account attempted administrator login",
+                            clientIp, null
+                    );
+                }
+                // Return generic error without revealing that the user exists
+                throw new BadCredentialsException("Invalid administrator credentials or unauthorized access.");
+            }
+
+            loginRateLimiter.recordSuccess(rateLimitKey);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String token = tokenProvider.generateToken(authentication);
+
+            logger.info("SECURITY AUDIT: Authorized administrator [{}] logged in successfully from IP [{}]",
+                    user.getEmail(), clientIp);
+
+            if (activityLogService != null) {
+                activityLogService.logDetailedActivity(
+                        user.getId(), user.getFullName(), Role.ADMIN,
+                        "Administrator Authenticated", "ADMIN_LOGIN_SUCCESS", "AUTHENTICATION_SECURITY",
+                        "INFO", "SUCCESS",
+                        "Governance Console", "SYSTEM", user.getId().toString(),
+                        null, "AUTHENTICATED", "Single-administrator session initialized",
+                        clientIp, null
+                );
+            }
+
+            return new AuthResponse(token, new UserDTO(user));
+        } catch (AuthenticationException ex) {
+            loginRateLimiter.recordFailedAttempt(rateLimitKey);
+            if (activityLogService != null) {
+                activityLogService.logDetailedActivity(
+                        null, "Anonymous", Role.ADMIN,
+                        "Failed Administrator Login", "ADMIN_LOGIN_FAILED", "AUTHENTICATION_SECURITY",
+                        "WARNING", "FAILURE",
+                        request.getEmail(), "SECURITY_EVENT", null,
+                        null, null, "Invalid administrator credentials or unauthorized access",
+                        clientIp, null
+                );
+            }
+            throw new BadCredentialsException("Invalid administrator credentials or unauthorized access.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -263,45 +468,5 @@ public class AuthService {
         user.setAvatarUrl(avatarUrl);
         User saved = userRepository.save(user);
         return new UserDTO(saved);
-    }
-
-    private boolean isValidAdminCode(String providedCode) {
-        if (providedCode == null || providedCode.isBlank()) {
-            return false;
-        }
-        String clean = providedCode.trim();
-
-        // 1. Check against configured registration codes
-        if (adminRegistrationCode != null) {
-            String[] configuredList = adminRegistrationCode.split(",");
-            for (String allowed : configuredList) {
-                if (allowed.trim().equalsIgnoreCase(clean)) {
-                    return true;
-                }
-            }
-        }
-
-        // 2. Standard administrator passkeys
-        String[] defaultKeys = {
-            "change-this-admin-code",
-            "ADMIN2026",
-            "admin2026",
-            "ADMIN123",
-            "admin123",
-            "ADMIN",
-            "admin",
-            "admin@123",
-            "123456",
-            "superadmin",
-            "AIATS2026",
-            "AIATS_ADMIN",
-            "edutrack"
-        };
-        for (String key : defaultKeys) {
-            if (key.equalsIgnoreCase(clean)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

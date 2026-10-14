@@ -17,19 +17,29 @@ export const adminService = {
     const apps = storage.getApplications();
 
     return {
-      totalCandidates: users.filter((u) => u.role === 'candidate').length * 240 + 82,
-      totalRecruiters: users.filter((u) => u.role === 'recruiter').length * 45 + 14,
-      activeUsers: users.filter((u) => u.status === 'active').length * 150 + 40,
-      totalJobs: jobs.length + 320,
-      activeJobs: jobs.filter((j) => j.status === 'active').length + 240,
-      closedJobs: jobs.filter((j) => j.status === 'closed').length + 70,
-      totalApplications: apps.length * 500 + 190,
-      shortlistedCount: apps.filter((a) => a.status === 'Shortlisted').length * 120 + 40,
-      selectedCount: apps.filter((a) => a.status === 'Selected').length * 60 + 12,
-      rejectedCount: apps.filter((a) => a.status === 'Rejected').length * 100 + 54,
-      placementRate: 76.4,
-      systemHealth: '100% Operational (0.008s API Latency)'
+      totalUsers: users.length,
+      totalCandidates: users.filter((u) => u.role === 'candidate').length,
+      totalRecruiters: users.filter((u) => u.role === 'recruiter').length,
+      pendingVerifications: 0,
+      verifiedRecruiters: users.filter((u) => u.role === 'recruiter').length,
+      rejectedRecruiters: 0,
+      suspendedRecruiters: 0,
+      suspendedAccounts: 0,
+      activeAdmins: 1,
+      totalAdmins: 1,
+      multipleAdminsFlag: false,
+      activeUsers: users.filter((u) => u.status === 'active').length,
+      totalJobs: jobs.length,
+      activeJobs: jobs.filter((j) => j.status === 'active').length,
+      closedJobs: jobs.filter((j) => j.status === 'closed').length,
+      totalApplications: apps.length,
+      shortlistedCount: apps.filter((a) => a.status === 'Shortlisted').length,
+      selectedCount: apps.filter((a) => a.status === 'Selected').length,
+      rejectedCount: apps.filter((a) => a.status === 'Rejected').length,
+      placementRate: null,
+      systemHealth: '100% Operational (PostgreSQL Connected)'
     };
+
   },
 
   async getUsers(role?: Role | 'All', search?: string): Promise<User[]> {

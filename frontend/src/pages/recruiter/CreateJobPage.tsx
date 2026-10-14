@@ -4,12 +4,15 @@ import {
   ArrowLeft, ArrowRight, Save, Edit3, PlusCircle, Loader2,
   Briefcase, MapPin, DollarSign, FileText, Star, GraduationCap,
   Check, X, Zap, Building2, Clock, Users, ChevronDown,
-  Sparkles, Target, Award, Eye, Calendar, Tag
+  Sparkles, Target, Award, Eye, Calendar, Tag, AlertTriangle
 } from 'lucide-react';
 
+
 import { jobService, recruiterService } from '../../services';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { EmploymentType, ExperienceLevel } from '../../types';
+
 
 // ─── TYPE COLORS ────────────────────────────────────────────────────────────────
 const TYPE_COLORS: Record<string, string> = {
@@ -335,8 +338,10 @@ export const CreateJobPage: React.FC = () => {
   const isEditMode = !!id && id !== 'new';
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(1);
+
 
   // FORM STATE
   const [title, setTitle] = useState('');
@@ -430,10 +435,24 @@ export const CreateJobPage: React.FC = () => {
   // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role === 'recruiter' && user?.verificationStatus !== 'verified') {
+      showToast({
+        type: 'error',
+        title: 'Verification Required',
+        message:
+          user?.verificationStatus === 'rejected'
+            ? 'Your recruiter account verification was declined. You cannot publish jobs.'
+            : user?.verificationStatus === 'suspended'
+            ? 'Your recruiter account is suspended. Job publishing is disabled.'
+            : 'Your recruiter account is awaiting administrator verification. You cannot publish jobs until your account is approved.',
+      });
+      return;
+    }
     if (!title.trim() || !description.trim()) {
       showToast({ type: 'warning', title: 'Missing Information', message: 'Please fill in the job title and description.' });
       return;
     }
+
     const jobData = {
       title: title.trim(),
       department: department.trim(),
@@ -601,8 +620,38 @@ export const CreateJobPage: React.FC = () => {
             </div>
           </div>
 
+          {/* VERIFICATION WARNING BANNER */}
+          {user?.role === 'recruiter' && user?.verificationStatus !== 'verified' && (
+            <div style={{
+              padding: '16px 20px', borderRadius: 16, marginBottom: 24,
+              background: user?.verificationStatus === 'rejected' || user?.verificationStatus === 'suspended'
+                ? 'rgba(244,63,94,0.1)' : 'rgba(245,158,11,0.1)',
+              border: `1px solid ${user?.verificationStatus === 'rejected' || user?.verificationStatus === 'suspended' ? 'rgba(244,63,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
+              display: 'flex', alignItems: 'flex-start', gap: 14
+            }}>
+              <AlertTriangle style={{
+                width: 20, height: 20,
+                color: user?.verificationStatus === 'rejected' || user?.verificationStatus === 'suspended' ? '#f43f5e' : '#f59e0b',
+                flexShrink: 0, marginTop: 2
+              }} />
+              <div>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>
+                  {user?.verificationStatus === 'rejected' ? 'Verification Rejected' : user?.verificationStatus === 'suspended' ? 'Account Suspended' : 'Verification Pending'}
+                </h4>
+                <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
+                  {user?.verificationStatus === 'rejected'
+                    ? `Your employer verification was declined by the administrator. ${user?.rejectionReason ? `Reason: ${user.rejectionReason}` : ''} Job publishing is disabled.`
+                    : user?.verificationStatus === 'suspended'
+                    ? `Your recruiter account has been suspended by platform administration. Job publishing is disabled.`
+                    : 'Your recruiter account is awaiting administrator verification. You cannot publish jobs until your account is approved.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* MAIN LAYOUT: left = steps + form | right = preview */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
+
 
             {/* LEFT COLUMN */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -1016,26 +1065,30 @@ export const CreateJobPage: React.FC = () => {
                     <button
                       type="submit"
                       className="publish-btn"
-                      disabled={isSubmitting || !title.trim() || !description.trim()}
+                      disabled={isSubmitting || !title.trim() || !description.trim() || (user?.role === 'recruiter' && user?.verificationStatus !== 'verified')}
                       style={{
                         padding: '14px 36px', borderRadius: 14, fontSize: 15, fontWeight: 800,
-                        background: isSubmitting
+                        background: isSubmitting || (user?.role === 'recruiter' && user?.verificationStatus !== 'verified')
                           ? 'rgba(30,41,59,0.6)'
                           : 'linear-gradient(135deg, #7c3aed, #06b6d4, #6d28d9)',
-                        color: 'white', border: isSubmitting ? 'none' : '1px solid rgba(167,139,250,0.4)',
-                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                        boxShadow: isSubmitting ? 'none' : '0 0 0 1px rgba(139,92,246,0.25), 0 8px 40px rgba(139,92,246,0.5)',
+                        color: (user?.role === 'recruiter' && user?.verificationStatus !== 'verified') ? '#94a3b8' : 'white',
+                        border: isSubmitting ? 'none' : '1px solid rgba(167,139,250,0.4)',
+                        cursor: (isSubmitting || (user?.role === 'recruiter' && user?.verificationStatus !== 'verified')) ? 'not-allowed' : 'pointer',
+                        boxShadow: isSubmitting || (user?.role === 'recruiter' && user?.verificationStatus !== 'verified') ? 'none' : '0 0 0 1px rgba(139,92,246,0.25), 0 8px 40px rgba(139,92,246,0.5)',
                         display: 'flex', alignItems: 'center', gap: 10,
                         letterSpacing: '0.02em',
                       }}
                     >
                       {isSubmitting
                         ? <><Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} /> Publishing...</>
+                        : (user?.role === 'recruiter' && user?.verificationStatus !== 'verified')
+                        ? <><AlertTriangle style={{ width: 18, height: 18 }} /> Verification Required</>
                         : isEditMode
                         ? <><Save style={{ width: 18, height: 18 }} /> Save Changes</>
                         : <><Zap style={{ width: 18, height: 18 }} /> {isEditMode ? 'Save Changes' : 'Publish Job Opening'}</>
                       }
                     </button>
+
                   )}
                 </div>
               </form>

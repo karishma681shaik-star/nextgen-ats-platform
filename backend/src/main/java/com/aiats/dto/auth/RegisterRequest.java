@@ -39,7 +39,7 @@ public class RegisterRequest {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email != null ? email.trim() : null;
     }
 
     public String getPassword() {
