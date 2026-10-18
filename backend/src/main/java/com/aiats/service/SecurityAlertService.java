@@ -64,7 +64,7 @@ public class SecurityAlertService {
         logger.warn("SECURITY ALERT [{}] logged for {}: {}", riskLevel, accountEmail, description);
 
         // Notify canonical Administrator
-        userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").ifPresent(admin -> {
+        userRepository.findByRole(Role.ADMIN).stream().findFirst().ifPresent(admin -> {
             String title = "Security Alert: " + riskCategory;
             String message = "[" + riskLevel + " RISK] " + description;
             notificationService.createNotification(admin, title, message, "warning", "/admin/security-alerts");

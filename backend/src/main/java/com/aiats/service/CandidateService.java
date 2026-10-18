@@ -22,6 +22,7 @@ public class CandidateService {
     private final UserRepository userRepository;
     private final ResumeRepository resumeRepository;
     private final ResumeAnalysisRepository resumeAnalysisRepository;
+    private final ResumeService resumeService;
     private final ApplicationRepository applicationRepository;
     private final ApplicationService applicationService;
     private final JobRepository jobRepository;
@@ -37,6 +38,7 @@ public class CandidateService {
                             UserRepository userRepository,
                             ResumeRepository resumeRepository,
                             ResumeAnalysisRepository resumeAnalysisRepository,
+                            ResumeService resumeService,
                             ApplicationRepository applicationRepository,
                             ApplicationService applicationService,
                             JobRepository jobRepository,
@@ -51,6 +53,7 @@ public class CandidateService {
         this.userRepository = userRepository;
         this.resumeRepository = resumeRepository;
         this.resumeAnalysisRepository = resumeAnalysisRepository;
+        this.resumeService = resumeService;
         this.applicationRepository = applicationRepository;
         this.applicationService = applicationService;
         this.jobRepository = jobRepository;
@@ -364,36 +367,69 @@ public class CandidateService {
         dto.setChecklist(checklist);
         dto.setHasPrimaryResume(hasResume);
 
-        int calculatedScore;
-        String tier;
-        String summary;
-
-        if (hasResume) {
+        if (!hasResume) {
+            // NO_RESUME state: strictly never display a score, gauge, tier, or keyword assessment
+            dto.setAtsStatus("NO_RESUME");
+            dto.setAtsScore(null);
+            dto.setAtsTier(null);
+            dto.setAtsSummary(null);
+            dto.setLastAnalyzedDate(null);
+        } else {
             Resume primary = primaryResumeOpt.get();
             dto.setPrimaryResumeId(primary.getId().toString());
             dto.setPrimaryResumeFileName(primary.getFileName());
 
-            Optional<ResumeAnalysis> analysisOpt = resumeAnalysisRepository.findByResume(primary);
-            if (analysisOpt.isPresent() && analysisOpt.get().getOverallScore() > 0) {
-                int resumeScore = analysisOpt.get().getOverallScore();
-                // Weighted blend: 40% profile completion + 60% resume analysis quality
-                calculatedScore = Math.min(100, Math.max(10, Math.round((completion * 0.4f) + (resumeScore * 0.6f))));
-                tier = calculatedScore >= 80 ? "Excellent" : calculatedScore >= 60 ? "Good" : "Needs Optimization";
-                summary = "Exact ATS match score is " + calculatedScore + "/100, calculated directly from your " + completion + "% profile completion and primary resume analysis.";
+            String status = primary.getStatus() != null ? primary.getStatus().toLowerCase() : "ready";
+            if ("processing".equals(status) || "uploading".equals(status)) {
+                dto.setAtsStatus("PROCESSING");
+                dto.setAtsScore(null);
+                dto.setAtsTier(null);
+                dto.setAtsSummary("Analyzing your resume...");
+                dto.setLastAnalyzedDate(null);
+            } else if ("failed".equals(status) || "error".equals(status)) {
+                dto.setAtsStatus("ANALYSIS_FAILED");
+                dto.setAtsScore(null);
+                dto.setAtsTier(null);
+                dto.setAtsSummary("We couldn't analyze your resume.");
+                dto.setLastAnalyzedDate(null);
             } else {
-                calculatedScore = completion;
-                tier = completion >= 80 ? "Excellent" : completion >= 60 ? "Good" : "Needs Optimization";
-                summary = "Exact ATS match score is " + calculatedScore + "/100, defined directly by your " + completion + "% profile completion.";
+                // Resume is uploaded and ready/parsed: check for ATS analysis or evaluate readiness
+                Optional<ResumeAnalysis> analysisOpt = resumeAnalysisRepository.findByResume(primary);
+                if (analysisOpt.isPresent() && analysisOpt.get().getOverallScore() > 0) {
+                    ResumeAnalysis analysis = analysisOpt.get();
+                    int genuineScore = analysis.getOverallScore();
+                    dto.setAtsStatus("ATS_SCORE_AVAILABLE");
+                    dto.setAtsScore(genuineScore);
+                    dto.setAtsTier(genuineScore >= 80 ? "Excellent" : genuineScore >= 60 ? "Good" : genuineScore >= 40 ? "Fair" : "Needs Optimization");
+                    dto.setAtsSummary("Resume ATS score evaluated from parsed skills, experience, and structural ATS criteria.");
+                    dto.setLastAnalyzedDate(analysis.getLastAnalyzed() != null ? analysis.getLastAnalyzed().toString() : null);
+                } else {
+                    // Check readiness from actual resume content
+                    try {
+                        com.aiats.dto.resume.ResumeReadinessDTO readiness = resumeService.checkReadiness(userId, primary.getId());
+                        if (readiness != null && readiness.getReadinessScore() > 0) {
+                            dto.setAtsStatus("ATS_SCORE_AVAILABLE");
+                            dto.setAtsScore(readiness.getReadinessScore());
+                            dto.setAtsTier(readiness.getTier());
+                            dto.setAtsSummary(readiness.getMessage());
+                            dto.setLastAnalyzedDate(primary.getUpdatedAt() != null ? primary.getUpdatedAt().toString() : (primary.getCreatedAt() != null ? primary.getCreatedAt().toString() : null));
+                        } else {
+                            dto.setAtsStatus("PARSED_PENDING_ANALYSIS");
+                            dto.setAtsScore(null);
+                            dto.setAtsTier(null);
+                            dto.setAtsSummary("Resume ready — ATS analysis pending");
+                            dto.setLastAnalyzedDate(null);
+                        }
+                    } catch (Exception e) {
+                        dto.setAtsStatus("PARSED_PENDING_ANALYSIS");
+                        dto.setAtsScore(null);
+                        dto.setAtsTier(null);
+                        dto.setAtsSummary("Resume ready — ATS analysis pending");
+                        dto.setLastAnalyzedDate(null);
+                    }
+                }
             }
-        } else {
-            calculatedScore = completion;
-            tier = completion >= 80 ? "Excellent" : completion >= 60 ? "Good" : "Needs Optimization";
-            summary = "Exact ATS match baseline is " + completion + "/100 based on your profile completeness. Complete remaining sections to increase your ranking.";
         }
-
-        dto.setAtsScore(calculatedScore);
-        dto.setAtsTier(tier);
-        dto.setAtsSummary(summary);
 
         // 3. Real Application status counts
         long totalApps = applicationRepository.countByCandidateId(userId);

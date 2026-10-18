@@ -85,13 +85,11 @@ public class RootController {
                   </div>
                 </div>
                 <div class="credentials">
-                  <strong style="color: #cbd5e1;">Platform Active Credentials (Password: Password123!)</strong>
-                  <table>
-                    <tr><th>Role</th><th>Email</th><th>Password</th></tr>
-                    <tr><td>Candidate</td><td>alex.rivera@example.com</td><td>Password123!</td></tr>
-                    <tr><td>Recruiter</td><td>sarah.jenkins@cloudscale.io</td><td>Password123!</td></tr>
-                    <tr><td>Admin</td><td>admin@ai-ats.internal</td><td>Password123!</td></tr>
-                  </table>
+                  <strong style="color: #cbd5e1;">Enterprise Authentication &amp; RBAC Architecture Active</strong>
+                  <p style="margin-top: 6px; font-size: 11px; line-height: 1.5; color: #94a3b8;">
+                    Secure candidate, recruiter, and single-administrator authorization enforced via Spring Security 6 &amp; JWT.
+                    Administrator access requires authorized provisioning. Default credentials are not exposed.
+                  </p>
                 </div>
                 <div class="btn-group">
                   <a href="{{FRONTEND_URL}}" class="btn btn-primary" target="_blank">Open Frontend Application (Port 5173) &rarr;</a>

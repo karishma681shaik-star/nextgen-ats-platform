@@ -188,6 +188,8 @@ export interface Job {
   recruiterName?: string;
   recruiterEmail?: string;
   recruiterVerificationStatus?: string;
+  closedReason?: string;
+  closedAt?: string;
 }
 
 export type ApplicationStatus =
@@ -382,6 +384,7 @@ export interface PlatformHealthResponse {
 export interface RecruiterStats {
   activeJobs: number;
   totalApplicants: number;
+  needsReview?: number;
   shortlisted: number;
   interviewsScheduled: number;
   hiresThisMonth: number;

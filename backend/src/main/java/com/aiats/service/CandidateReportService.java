@@ -101,7 +101,7 @@ public class CandidateReportService {
 
         // Notify Lead Administrator
         if (notificationService != null) {
-            userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").ifPresent(admin -> {
+            userRepository.findByRole(Role.ADMIN).stream().findFirst().ifPresent(admin -> {
                 notificationService.createNotification(
                         admin,
                         "Job Safety Alert: Candidate Report Filed",

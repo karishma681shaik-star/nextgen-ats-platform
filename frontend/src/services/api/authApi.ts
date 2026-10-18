@@ -139,45 +139,22 @@ export const authApi = {
   /*
    * REGISTER
    * POST /api/auth/register
+   * Strictly supports Candidate and Recruiter registration.
    */
   async register(data: RegisterData): Promise<User> {
-    const effectiveAdminCode = data.role === 'admin'
-      ? (data.adminRegistrationCode?.trim() || 'ADMIN2026')
-      : undefined;
-
-    const buildPayload = (adminCode?: string) => ({
+    const payload: Record<string, any> = {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       password: data.password,
       role: data.role.toUpperCase(),
       ...(data.companyName ? { companyName: data.companyName.trim() } : {}),
-      ...(data.role === 'admin'
-        ? { adminRegistrationCode: (adminCode || effectiveAdminCode)?.trim() }
-        : {}),
+      ...(data.adminRegistrationCode ? { adminRegistrationCode: data.adminRegistrationCode.trim() } : {}),
+    };
+
+    const response = await apiClient<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
-
-    let response: AuthResponse;
-
-    try {
-      response = await apiClient<AuthResponse>('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(buildPayload(effectiveAdminCode)),
-      });
-    } catch (err: any) {
-      // If legacy running backend expects 'change-this-admin-code', retry transparently
-      if (
-        data.role === 'admin' &&
-        err?.message &&
-        err.message.toLowerCase().includes('administrator registration code')
-      ) {
-        response = await apiClient<AuthResponse>('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify(buildPayload('change-this-admin-code')),
-        });
-      } else {
-        throw err;
-      }
-    }
 
     if (!response?.token) {
       throw new Error(
@@ -287,14 +264,18 @@ export const authApi = {
   },
 
 
-  async updateAvatar(avatarUrl: string): Promise<User> {
+  async updateProfile(data: { name?: string; avatar?: string }): Promise<User> {
     return apiClient<User>(
-      '/auth/avatar',
+      '/auth/profile',
       {
         method: 'PUT',
-        body: JSON.stringify({ avatar: avatarUrl }),
+        body: JSON.stringify(data),
       }
     );
+  },
+
+  async updateAvatar(avatarUrl: string): Promise<User> {
+    return this.updateProfile({ avatar: avatarUrl });
   },
 
   /*

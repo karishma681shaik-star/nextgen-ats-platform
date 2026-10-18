@@ -17,6 +17,7 @@ import {
   Check
 } from 'lucide-react';
 import { jobService, candidateService } from '../../services';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
 import { Job, Resume, EmploymentType, ExperienceLevel } from '../../types';
 import { Card } from '../../components/ui/Card';
@@ -25,7 +26,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
-import { formatCurrency, formatFullDate } from '../../utils/formatters';
+import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 
 export const JobDiscoveryPage: React.FC = () => {
@@ -97,7 +98,7 @@ export const JobDiscoveryPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       const resumeIdToSend = selectedResumeId && selectedResumeId !== 'profile' ? selectedResumeId : undefined;
-      await candidateService.applyForJob(applyingJob.id, resumeIdToSend);
+      const app = await candidateService.applyForJob(applyingJob.id, resumeIdToSend);
 
       // Immediately mark this job as applied in UI state
       setJobs((prev) =>
@@ -109,12 +110,23 @@ export const JobDiscoveryPage: React.FC = () => {
         title: 'Application Submitted! 🎉',
         message: `Successfully applied to ${applyingJob.title} at ${applyingJob.company}.`
       });
+
+      actionFeedbackService.applicationSubmitted({
+        jobTitle: applyingJob.title,
+        companyName: applyingJob.company,
+        applicationId: app?.id,
+        jobId: applyingJob.id,
+      });
+
       setApplyingJob(null);
     } catch (err: any) {
+      const message = err?.message || 'Could not submit application.';
       showToast({
         type: 'error',
-        title: 'Application Status',
-        message: err.message || 'Could not submit application.'
+        title: message.toLowerCase().includes('already applied')
+          ? 'Application Already Submitted'
+          : 'Application Status',
+        message,
       });
     } finally {
       setIsSubmitting(false);
@@ -323,7 +335,7 @@ export const JobDiscoveryPage: React.FC = () => {
                           {job.experienceLevel}
                         </span>
                         <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/40 font-semibold font-mono">
-                          {formatCurrency(job.salary.min, job.salary.currency)} - {formatCurrency(job.salary.max, job.salary.currency)} / yr
+                          {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency || 'INR', job.salary?.period)}
                         </span>
                       </div>
 

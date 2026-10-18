@@ -127,15 +127,40 @@ Frontend runs at `http://localhost:5173`.
 
 ---
 
-## 🔑 Default Credentials & Quick Login
+## 🔑 Authentication & Initial Setup
 
-| Role | Email | Password |
+### Standard Users (Development Seed Data)
+| Role | Email | Description |
 |---|---|---|
-| **Candidate** | `alex.rivera@example.com` | `Password123!` |
-| **Recruiter** | `talent@coursera.org` | `Password123!` |
-| **Administrator** | `admin@ai-ats.internal` | `Password123!` |
+| **Candidate** | `alex.rivera@example.com` | Sample verified candidate profile |
+| **Recruiter** | `talent@coursera.org` | Sample verified company recruiter |
 
-*(Admin registration passkey: `ADMIN2026` or `admin123`)*
+### Platform Administrator Provisioning
+In accordance with the **Single-Administrator Policy**, the platform does not expose public administrator registration or shared default administrator passwords in source code.
+
+For new installations, provision the administrator through one of two authorized server-side methods:
+
+1. **Environment Configuration (Automatic Provisioning on Startup):**
+   Set the following variables in your server environment or `.env` file before starting the backend:
+   ```bash
+   ADMIN_EMAIL=admin@your-domain.internal
+   ADMIN_INITIAL_PASSWORD=YourSecurePasswordHere!
+   ```
+   On first startup, the server hashes the password with BCrypt and registers the sole administrator. Subsequent startups preserve the existing account without modifying passwords.
+
+2. **Secure Installation Bootstrap Endpoint:**
+   If the database does not yet contain an administrator, authorized operators can call the bootstrap API using the server-configured `ADMIN_BOOTSTRAP_TOKEN`:
+   ```bash
+   curl -X POST http://localhost:8080/api/auth/admin/bootstrap \
+     -H "Content-Type: application/json" \
+     -d '{
+       "fullName": "Lead Administrator",
+       "email": "admin@your-domain.internal",
+       "password": "YourStrongPasswordHere!",
+       "bootstrapToken": "your-server-configured-bootstrap-token"
+     }'
+   ```
+   Once provisioned, the bootstrap endpoint is **permanently disabled** (HTTP 409 Conflict). Multiple administrators are blocked at both application and PostgreSQL database levels (`admin_singleton` table & `idx_users_single_admin` partial unique index).
 
 ---
 

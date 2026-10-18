@@ -1,11 +1,81 @@
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  const curr = (currency || 'USD').toUpperCase();
+export function formatINR(amount: number | string | null | undefined): string {
+  if (amount === null || amount === undefined || amount === '') {
+    return 'Not specified';
+  }
+
+  const value = Number(amount);
+
+  if (!Number.isFinite(value)) {
+    return 'Not specified';
+  }
+
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+export function formatCurrency(amount: number | string | null | undefined, currency: string = 'INR'): string {
+  if (amount === null || amount === undefined || amount === '') {
+    return 'Not specified';
+  }
+
+  const value = Number(amount);
+
+  if (!Number.isFinite(value)) {
+    return 'Not specified';
+  }
+
+  const curr = (currency || 'INR').toUpperCase();
   const locale = curr === 'INR' ? 'en-IN' : 'en-US';
+
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: curr,
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(value);
+}
+
+export function getSalaryPeriodLabel(period?: string | null): string {
+  if (!period) return 'per year';
+  const p = period.toLowerCase().trim();
+  if (p === 'monthly' || p === 'month' || p === 'per month') return 'per month';
+  if (p === 'hourly' || p === 'hour' || p === 'per hour') return 'per hour';
+  return 'per year';
+}
+
+export function formatSalaryRange(
+  min?: number | string | null,
+  max?: number | string | null,
+  currency: string = 'INR',
+  period: string = 'yearly',
+  fallback: string = 'Not disclosed'
+): string {
+  const minNum = min !== null && min !== undefined && min !== '' ? Number(min) : NaN;
+  const maxNum = max !== null && max !== undefined && max !== '' ? Number(max) : NaN;
+
+  const hasMin = Number.isFinite(minNum) && minNum > 0;
+  const hasMax = Number.isFinite(maxNum) && maxNum > 0;
+
+  if (!hasMin && !hasMax) {
+    return fallback;
+  }
+
+  const periodSuffix = ` ${getSalaryPeriodLabel(period)}`;
+
+  if (hasMin && hasMax) {
+    if (minNum === maxNum) {
+      return `${formatCurrency(minNum, currency)}${periodSuffix}`;
+    }
+    return `${formatCurrency(minNum, currency)} – ${formatCurrency(maxNum, currency)}${periodSuffix}`;
+  }
+
+  if (hasMin) {
+    return `From ${formatCurrency(minNum, currency)}${periodSuffix}`;
+  }
+
+  return `Up to ${formatCurrency(maxNum, currency)}${periodSuffix}`;
 }
 
 export function formatDate(dateString: string): string {
@@ -98,12 +168,19 @@ export function getStatusBadgeStyle(status: string): {
     case 'Under Review':
     case 'processing':
     case 'pending':
+    case 'pending_approval':
       return {
         badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
         dotClass: 'bg-amber-400'
       };
-    case 'Rejected':
     case 'closed':
+    case 'draft':
+      return {
+        badgeClass: 'bg-slate-800/90 text-slate-300 border-slate-700',
+        dotClass: 'bg-slate-400'
+      };
+    case 'Rejected':
+    case 'rejected':
     case 'suspended':
       return {
         badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
@@ -116,3 +193,79 @@ export function getStatusBadgeStyle(status: string): {
       };
   }
 }
+
+export function formatRelativeTime(dateString?: string | null): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSec < 60) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return new Intl.DateTimeFormat('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric'
+    }).format(date);
+  } catch {
+    return dateString || '';
+  }
+}
+
+export function isDeadlinePassed(deadline?: string | null): boolean {
+  if (!deadline || !deadline.trim()) return false;
+  try {
+    const d = new Date(deadline.trim());
+    if (isNaN(d.getTime())) return false;
+    if (!deadline.includes(':')) {
+      d.setHours(23, 59, 59, 999);
+    }
+    return new Date().getTime() > d.getTime();
+  } catch {
+    return false;
+  }
+}
+
+export function isDeadlineApproaching(deadline?: string | null, daysThreshold: number = 7): boolean {
+  if (!deadline || !deadline.trim()) return false;
+  try {
+    const d = new Date(deadline.trim());
+    if (isNaN(d.getTime())) return false;
+    if (!deadline.includes(':')) {
+      d.setHours(23, 59, 59, 999);
+    }
+    const now = new Date().getTime();
+    const diffMs = d.getTime() - now;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    return diffDays >= 0 && diffDays <= daysThreshold;
+  } catch {
+    return false;
+  }
+}
+
+export function formatDeadlineLabel(deadline?: string | null): string {
+  if (!deadline || !deadline.trim()) return 'No deadline set';
+  if (isDeadlinePassed(deadline)) return 'Expired';
+  try {
+    const d = new Date(deadline.trim());
+    if (isNaN(d.getTime())) return `Closes: ${deadline}`;
+    return `Closes: ${new Intl.DateTimeFormat('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(d)}`;
+  } catch {
+    return `Closes: ${deadline}`;
+  }
+}
+

@@ -47,15 +47,15 @@ public class SingleAdminDatabaseMigration implements CommandLineRunner {
         long adminCount = userRepository.countByRole(Role.ADMIN);
         if (adminCount > 1) {
             List<User> admins = userRepository.findByRole(Role.ADMIN);
-            for (User u : admins) {
-                if (!"admin@ai-ats.internal".equalsIgnoreCase(u.getEmail())) {
-                    logger.warn("Auto-remediating duplicate administrator account [{}]: demoting to RECRUITER.", u.getEmail());
-                    u.setRole(Role.RECRUITER);
-                    u.setVerificationStatus(com.aiats.entity.VerificationStatus.PENDING);
-                    userRepository.save(u);
-                }
+            User primaryAdmin = admins.get(0);
+            for (int i = 1; i < admins.size(); i++) {
+                User u = admins.get(i);
+                logger.warn("Auto-remediating duplicate administrator account [{}]: demoting to RECRUITER.", u.getEmail());
+                u.setRole(Role.RECRUITER);
+                u.setVerificationStatus(com.aiats.entity.VerificationStatus.PENDING);
+                userRepository.save(u);
             }
-            logger.info("Single-Admin Policy: Remediation completed. Designating admin@ai-ats.internal as sole administrator.");
+            logger.info("Single-Admin Policy: Remediation completed. Designating [{}] as sole platform administrator.", primaryAdmin.getEmail());
         }
 
         // Reconcile any non-admin accounts that were inadvertently named after the Lead Administrator "Marcus Vance"

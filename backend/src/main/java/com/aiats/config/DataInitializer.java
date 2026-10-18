@@ -36,7 +36,7 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.email:admin@ai-ats.internal}")
     private String configuredAdminEmail;
 
-    @Value("${app.admin.initial-password:Password123!}")
+    @Value("${app.admin.initial-password:}")
     private String configuredAdminInitialPassword;
 
     public DataInitializer(UserRepository userRepository,
@@ -85,7 +85,29 @@ public class DataInitializer implements CommandLineRunner {
         // 7. Verify all seeded recruiters and migrate existing records
         initVerificationStatusesAndLogs();
 
+        // 8. Ensure all jobs have standard INR currency and default yearly period
+        migrateExistingJobsToINR();
+
         logger.info("Database initialization complete. All jobs verified and ready for real candidate applications.");
+    }
+
+    private void migrateExistingJobsToINR() {
+        jobRepository.findAll().forEach(job -> {
+            boolean modified = false;
+            if (job.getSalaryCurrency() == null || !"INR".equalsIgnoreCase(job.getSalaryCurrency())) {
+                job.setSalaryCurrency("INR");
+                modified = true;
+            }
+            if (job.getSalaryPeriod() == null || job.getSalaryPeriod().isBlank()) {
+                job.setSalaryPeriod("yearly");
+                modified = true;
+            }
+            if (modified) {
+                jobRepository.save(job);
+                logger.info("Migrated job '{}' to INR currency and {} period (preserved exact salary: {} - {})",
+                        job.getTitle(), job.getSalaryPeriod(), job.getSalaryMin(), job.getSalaryMax());
+            }
+        });
     }
 
     private void cleanupUnrealJobs() {
@@ -101,8 +123,7 @@ public class DataInitializer implements CommandLineRunner {
             if (skills.contains("kfngkfdnkgnnfknnd")) isUnreal = true;
             // Target old American Express job with unrealistic salary
             if (company.equalsIgnoreCase("American Express") && job.getSalaryMax() != null
-                    && job.getSalaryMax().compareTo(new BigDecimal("1000000")) > 0
-                    && "USD".equalsIgnoreCase(job.getSalaryCurrency())) {
+                    && job.getSalaryMax().compareTo(new BigDecimal("100000000")) > 0) {
                 isUnreal = true;
             }
 
@@ -182,11 +203,16 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        // Provision initial administrator once from secure configuration
+        // If an initial administrator password is explicitly configured via environment, provision it.
+        // Otherwise, leave unprovisioned for authorized administrator bootstrap.
+        if (configuredAdminInitialPassword == null || configuredAdminInitialPassword.trim().isBlank()) {
+            logger.info("Single-Admin Policy: No platform administrator provisioned yet. Awaiting authorized administrator bootstrap.");
+            return;
+        }
+
         String email = (configuredAdminEmail != null && !configuredAdminEmail.isBlank())
                 ? configuredAdminEmail.trim().toLowerCase() : "admin@ai-ats.internal";
-        String initialPassword = (configuredAdminInitialPassword != null && !configuredAdminInitialPassword.isBlank())
-                ? configuredAdminInitialPassword : "Password123!";
+        String initialPassword = configuredAdminInitialPassword.trim();
 
         User admin = userRepository.findByEmailIgnoreCase(email).orElseGet(() -> {
             User u = new User();
@@ -266,7 +292,7 @@ public class DataInitializer implements CommandLineRunner {
         job.setExperienceLevel("Mid Level");
         job.setSalaryMin(new BigDecimal("140000.00"));
         job.setSalaryMax(new BigDecimal("180000.00"));
-        job.setSalaryCurrency("USD");
+        job.setSalaryCurrency("INR");
         job.setSkills("Java, Spring Boot, React.js, REST APIs, PostgreSQL, Microservices, Docker, AWS, Git");
         job.setDescription("Coursera is seeking a talented Java Full Stack Developer to build, scale, and optimize our core learning experience platform. You will design, develop, and maintain high-throughput microservices using Java 21 & Spring Boot, while creating responsive web interfaces using React.js.");
         job.setRequirements("B.Tech/B.E. or Master's in Computer Science, or related field||3+ years hands-on experience in Java and Spring Boot||Strong proficiency in React.js, JavaScript, and modern HTML/CSS||Proven track record designing and integrating RESTful APIs||Familiarity with PostgreSQL/MySQL, Docker, and AWS cloud deployment");
@@ -329,7 +355,7 @@ public class DataInitializer implements CommandLineRunner {
         job.setExperienceLevel("Senior Level");
         job.setSalaryMin(new BigDecimal("150000.00"));
         job.setSalaryMax(new BigDecimal("190000.00"));
-        job.setSalaryCurrency("USD");
+        job.setSalaryCurrency("INR");
         job.setSkills("Java, Spring Boot, AWS, Kubernetes, Terraform, Docker, Microservices, Cloud Security");
         job.setDescription("CloudScale AI is hiring a Senior Java Cloud Architect to lead the design and implementation of distributed telemetry engines and autoscaling cloud infrastructure.");
         job.setRequirements("5+ years software engineering experience in enterprise Java systems and cloud orchestration||Expertise in Spring Boot, distributed caching, and event-driven architectures with Apache Kafka||Strong experience with container orchestration (Kubernetes, Docker) and AWS cloud infrastructure");
@@ -358,7 +384,7 @@ public class DataInitializer implements CommandLineRunner {
             pendingJob.setExperienceLevel("Senior Level");
             pendingJob.setSalaryMin(new BigDecimal("185000.00"));
             pendingJob.setSalaryMax(new BigDecimal("225000.00"));
-            pendingJob.setSalaryCurrency("USD");
+            pendingJob.setSalaryCurrency("INR");
             pendingJob.setSkills("Java, Python, PyTorch, LLMs, Spring Boot, Vector Search, Kubernetes");
             pendingJob.setDescription("CloudScale AI is seeking a Staff AI Systems Engineer to spearhead high-throughput model inference pipelines and semantic matching infrastructure for enterprise recruitment intelligence.");
             pendingJob.setRequirements("6+ years engineering experience with machine learning systems and distributed Java/Python services||Deep knowledge of embeddings, vector databases, and LLM orchestration||Strong software engineering fundamentals and production telemetry experience");

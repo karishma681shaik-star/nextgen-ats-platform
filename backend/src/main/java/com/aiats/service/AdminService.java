@@ -339,7 +339,7 @@ public class AdminService {
         // 3. Authentication & Security Filter
         long authStart = System.currentTimeMillis();
         try {
-            userRepository.existsByEmailIgnoreCase("admin@ai-ats.internal");
+            userRepository.countByRole(Role.ADMIN);
             long authElapsed = Math.max(1, System.currentTimeMillis() - authStart);
             services.add(new ServiceHealthDTO(
                 "Authentication & Security Filter",
@@ -449,15 +449,17 @@ public class AdminService {
     }
 
     public UUID getCanonicalAdminId() {
-        return userRepository.findByEmailIgnoreCase("admin@ai-ats.internal")
+        return userRepository.findByRole(Role.ADMIN).stream()
+                .findFirst()
                 .map(User::getId)
                 .orElse(null);
     }
 
     public String getCanonicalAdminName() {
-        return userRepository.findByEmailIgnoreCase("admin@ai-ats.internal")
+        return userRepository.findByRole(Role.ADMIN).stream()
+                .findFirst()
                 .map(User::getFullName)
-                .orElse("Marcus Vance");
+                .orElse("Chief Administrator");
     }
 
     @Transactional(readOnly = true)
@@ -1128,7 +1130,7 @@ public class AdminService {
         // Protection 2: Final active administrator check
         if (user.getRole() == Role.ADMIN) {
             long activeAdminCount = userRepository.countByRole(Role.ADMIN);
-            if (activeAdminCount <= 1 || "admin@ai-ats.internal".equalsIgnoreCase(user.getEmail())) {
+            if (activeAdminCount <= 1) {
                 throw new BadRequestException("The final active administrator account cannot be deleted.");
             }
         }
@@ -2457,7 +2459,8 @@ public class AdminService {
 
         if (job.getSalaryMin() != null) dto.setSalaryMin(job.getSalaryMin().toPlainString());
         if (job.getSalaryMax() != null) dto.setSalaryMax(job.getSalaryMax().toPlainString());
-        dto.setCurrency(job.getSalaryCurrency());
+        dto.setCurrency(job.getSalaryCurrency() != null ? job.getSalaryCurrency() : "INR");
+        dto.setSalaryPeriod(job.getSalaryPeriod() != null ? job.getSalaryPeriod() : "yearly");
 
         if (job.getRequirements() != null && !job.getRequirements().isBlank()) {
             dto.setRequirements(Arrays.asList(job.getRequirements().split("\\|\\|")));

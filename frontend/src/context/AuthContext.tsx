@@ -26,6 +26,7 @@ interface AuthContextType {
   switchRole: (role: Role) => Promise<User>;
   refreshUser: () => Promise<void>;
   updateAvatar: (avatarUrl: string) => Promise<void>;
+  updateProfile: (profileData: { name?: string; avatar?: string }) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -321,16 +322,27 @@ export const AuthProvider: React.FC<{
 
   /*
    * ---------------------------------------------------------
+   * UPDATE PROFILE (NAME AND/OR AVATAR)
+   * ---------------------------------------------------------
+   */
+  const updateProfile = async (profileData: { name?: string; avatar?: string }): Promise<User> => {
+    const updated = await authService.updateProfile(profileData);
+    if (updated) {
+      setUser(updated);
+      return updated;
+    }
+    throw new Error('Failed to update profile: empty response received from server.');
+  };
+
+  /*
+   * ---------------------------------------------------------
    * UPDATE AVATAR
    * ---------------------------------------------------------
    */
   const updateAvatar = async (avatarUrl: string): Promise<void> => {
     try {
-      const updated = await authService.updateAvatar(avatarUrl);
-      if (updated) {
-        setUser(updated);
-        return;
-      }
+      const updated = await updateProfile({ avatar: avatarUrl });
+      if (updated) return;
     } catch (error) {
       console.warn('Backend updateAvatar failed, updating local state:', error);
     }
@@ -364,6 +376,7 @@ export const AuthProvider: React.FC<{
         switchRole,
         refreshUser,
         updateAvatar,
+        updateProfile,
       }}
     >
       {children}

@@ -34,6 +34,7 @@ import {
   Layers
 } from 'lucide-react';
 import { adminService } from '../../services';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
 import {
   RecruiterVerificationItem,
@@ -229,6 +230,12 @@ export const RecruiterVerificationPage: React.FC = () => {
         message: `${updated.recruiterName} (${updated.companyName}) has received the structured decision and corrective instructions.`
       });
 
+      actionFeedbackService.recruiterRejected({
+        id: updated.recruiterId,
+        name: updated.recruiterName,
+        reason: detailedReason.trim(),
+      });
+
       setRejectItem(null);
       loadQueue();
     } catch (err: any) {
@@ -252,6 +259,13 @@ export const RecruiterVerificationPage: React.FC = () => {
         title: 'Recruiter Verified',
         message: `${updated.recruiterName} (${updated.companyName}) is now authorized to create and publish live job requisitions.`
       });
+
+      actionFeedbackService.recruiterVerified({
+        id: updated.recruiterId,
+        name: updated.recruiterName,
+        companyName: updated.companyName,
+      });
+
       setApproveConfirm(null);
       loadQueue();
     } catch (err: any) {

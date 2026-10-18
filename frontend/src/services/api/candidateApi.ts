@@ -9,9 +9,11 @@ export interface CandidateDashboardData {
   candidateTitle: string;
   avatar?: string;
   profileCompletion: number;
-  atsScore: number;
-  atsTier: string;
-  atsSummary: string;
+  atsScore: number | null;
+  atsStatus: 'NO_RESUME' | 'PROCESSING' | 'PARSED_PENDING_ANALYSIS' | 'ATS_SCORE_AVAILABLE' | 'ANALYSIS_FAILED';
+  atsTier?: string;
+  atsSummary?: string;
+  lastAnalyzedDate?: string;
   hasPrimaryResume: boolean;
   primaryResumeId?: string;
   primaryResumeFileName?: string;
@@ -36,9 +38,11 @@ export const candidateApi = {
       candidateTitle: raw.candidateTitle || 'Candidate',
       avatar: raw.avatar,
       profileCompletion: typeof raw.profileCompletion === 'number' ? raw.profileCompletion : 0,
-      atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : 0,
-      atsTier: raw.atsTier || 'Needs Optimization',
-      atsSummary: raw.atsSummary || '',
+      atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : null,
+      atsStatus: raw.atsStatus || (raw.hasPrimaryResume ? 'ATS_SCORE_AVAILABLE' : 'NO_RESUME'),
+      atsTier: raw.atsTier,
+      atsSummary: raw.atsSummary,
+      lastAnalyzedDate: raw.lastAnalyzedDate,
       hasPrimaryResume: !!raw.hasPrimaryResume,
       primaryResumeId: raw.primaryResumeId,
       primaryResumeFileName: raw.primaryResumeFileName,

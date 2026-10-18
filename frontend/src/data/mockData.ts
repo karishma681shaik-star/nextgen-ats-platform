@@ -688,7 +688,7 @@ export const INITIAL_JOBS: Job[] = [
     salary: {
       min: 155000,
       max: 195000,
-      currency: 'USD',
+      currency: 'INR',
       period: 'yearly'
     },
     description: 'We are seeking an experienced Senior Full Stack Engineer to lead the architectural evolution of our flagship cloud intelligence portal. You will build highly reactive frontends with TypeScript & React, orchestrate Spring Boot / Node microservices, and collaborate closely with product and AI researchers.',
@@ -729,7 +729,7 @@ export const INITIAL_JOBS: Job[] = [
     salary: {
       min: 165000,
       max: 215000,
-      currency: 'USD',
+      currency: 'INR',
       period: 'yearly'
     },
     description: 'Join the mission-critical core engineering team at Nexus Fintech. You will engineer ultra-low latency transaction clearing pipelines, distributed transaction ledgers, and event-driven settlement architectures capable of processing hundreds of thousands of transactions per second.',
@@ -768,7 +768,7 @@ export const INITIAL_JOBS: Job[] = [
     salary: {
       min: 130000,
       max: 165000,
-      currency: 'USD',
+      currency: 'INR',
       period: 'yearly'
     },
     description: 'Help scale our multi-region Kubernetes clusters across AWS and GCP. You will manage Infrastructure as Code with Terraform, configure zero-downtime deployment pipelines, and build observability solutions with Prometheus, Grafana, and OpenTelemetry.',
@@ -806,7 +806,7 @@ export const INITIAL_JOBS: Job[] = [
     salary: {
       min: 145000,
       max: 180000,
-      currency: 'USD',
+      currency: 'INR',
       period: 'yearly'
     },
     description: 'Transform complex cyber threat matrices into beautiful, intuitive visual dashboards. You will champion design tokens, accessible UI primitives, and high-performance real-time WebGL/Canvas network graph visualizers.',
@@ -843,7 +843,7 @@ export const INITIAL_JOBS: Job[] = [
     salary: {
       min: 170000,
       max: 220000,
-      currency: 'USD',
+      currency: 'INR',
       period: 'yearly'
     },
     description: 'Lead the development of custom LLM fine-tuning pipelines and semantic embedding vector databases for biomedical entity extraction and medical record synthesis.',

@@ -31,6 +31,7 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import { adminService, candidateService } from '../../services';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
 import { User, Role, UserStatus, AdminStats, SystemActivityLog, CandidateProfile } from '../../types';
 import { Card } from '../../components/ui/Card';
@@ -199,7 +200,7 @@ export const UserManagementPage: React.FC = () => {
   const handleConfirmSuspension = async () => {
     if (!suspendTarget) return;
 
-    if (suspendTarget.role === 'admin' || suspendTarget.email.toLowerCase() === 'admin@ai-ats.internal') {
+    if (suspendTarget.role === 'admin') {
       showToast({ type: 'error', title: 'Action Prohibited', message: 'The primary administrator account cannot be suspended.' });
       setSuspendTarget(null);
       return;
@@ -212,6 +213,10 @@ export const UserManagementPage: React.FC = () => {
         type: 'warning',
         title: 'Account Suspended',
         message: `${suspendTarget.name} has been suspended. Platform access revoked.`
+      });
+      actionFeedbackService.userStatusChanged({
+        name: suspendTarget.name,
+        action: 'suspended',
       });
       setSuspendTarget(null);
       setCustomSuspensionNote('');
@@ -242,6 +247,10 @@ export const UserManagementPage: React.FC = () => {
         title: 'Account Reactivated',
         message: `${reactivateTarget.name} has been reactivated successfully.`
       });
+      actionFeedbackService.userStatusChanged({
+        name: reactivateTarget.name,
+        action: 'reactivated',
+      });
       setReactivateTarget(null);
       await loadAllData(true);
       if (selectedUser?.id === reactivateTarget.id) {
@@ -262,7 +271,7 @@ export const UserManagementPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deleteTarget || deleteConfirmInput.trim() !== 'DELETE' || isDeleting) return;
 
-    if (deleteTarget.role === 'admin' || deleteTarget.email.toLowerCase() === 'admin@ai-ats.internal') {
+    if (deleteTarget.role === 'admin') {
       showToast({ type: 'error', title: 'Protected Administrator', message: 'The primary administrator account cannot be deleted.' });
       setDeleteTarget(null);
       return;
@@ -695,7 +704,7 @@ export const UserManagementPage: React.FC = () => {
                 </tr>
               ) : (
                 filteredUsers.map((u) => {
-                  const isAdmin = u.role === 'admin' || u.email.toLowerCase() === 'admin@ai-ats.internal';
+                  const isAdmin = u.role === 'admin';
                   const isSuspended = u.status === 'suspended';
                   const shortId = u.id ? `${u.id.slice(0, 8)}...` : '';
 
@@ -1191,7 +1200,7 @@ export const UserManagementPage: React.FC = () => {
                 Close Drawer
               </Button>
 
-              {selectedUser.role !== 'admin' && selectedUser.email.toLowerCase() !== 'admin@ai-ats.internal' && (
+              {selectedUser.role !== 'admin' && (
                 <div className="flex items-center gap-2">
                   {selectedUser.status === 'active' ? (
                     <Button

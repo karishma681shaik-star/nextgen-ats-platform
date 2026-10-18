@@ -55,9 +55,9 @@ export const BackgroundController: React.FC<BackgroundControllerProps> = ({
       return 'recruiter';
     }
 
-    // Admin Area
+    // Admin Area: Clean, distraction-free, professional navy (no floating particles behind text)
     if (path.startsWith('/admin')) {
-      return 'admin';
+      return 'none';
     }
 
     return 'minimal';

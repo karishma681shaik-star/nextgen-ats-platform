@@ -68,6 +68,9 @@ export const AdminLoginPage: React.FC = () => {
         message: `Authenticated as Chief Administrator (${user.name})`,
       });
 
+      // Trigger cinematic dashboard entrance animation
+      sessionStorage.setItem('ai_ats_play_intro_admin', 'true');
+
       const destination = (location.state as any)?.from?.pathname;
       if (destination && destination.startsWith('/admin')) {
         navigate(destination, { replace: true });
@@ -157,11 +160,13 @@ export const AdminLoginPage: React.FC = () => {
 
         {/* Login Form Card */}
         <Card glass className="p-6 sm:p-8 border border-white/10 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <Input
               label="Administrator Email"
+              name="admin_login_email"
+              id="admin-email"
               type="email"
-              placeholder="admin@ai-ats.internal"
+              placeholder="e.g. admin@organization.internal"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -170,19 +175,25 @@ export const AdminLoginPage: React.FC = () => {
               }}
               error={errors.email}
               leftIcon={<Mail className="w-4 h-4 text-emerald-400" />}
-              autoComplete="email"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              data-lpignore="true"
               required
             />
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                <label htmlFor="admin-password" className="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
                   Password
                 </label>
               </div>
               <Input
+                name="admin_login_password"
+                id="admin-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••••••"
+                placeholder="Enter administrator password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -201,7 +212,11 @@ export const AdminLoginPage: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="current-password"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                data-lpignore="true"
                 required
               />
             </div>
@@ -211,8 +226,9 @@ export const AdminLoginPage: React.FC = () => {
                 type="submit"
                 variant="glow-emerald"
                 size="lg"
-                className="w-full font-bold shadow-lg"
+                className="w-full font-bold shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 isLoading={isLoading}
+                disabled={isLoading}
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >
                 Sign In

@@ -4,14 +4,18 @@ import {
   ArrowLeft, ArrowRight, Save, Edit3, PlusCircle, Loader2,
   Briefcase, MapPin, DollarSign, FileText, Star, GraduationCap,
   Check, X, Zap, Building2, Clock, Users, ChevronDown,
-  Sparkles, Target, Award, Eye, Calendar, Tag, AlertTriangle
+  Sparkles, Target, Award, Eye, Calendar, Tag, AlertTriangle,
+  Coins
 } from 'lucide-react';
 
 
 import { jobService, recruiterService } from '../../services';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { EmploymentType, ExperienceLevel } from '../../types';
+import { Job, EmploymentType, ExperienceLevel } from '../../types';
+import { JobPublishSuccessModal } from '../../components/recruiter/JobPublishSuccessModal';
+import { formatSalaryRange, formatCurrency, formatINR } from '../../utils/formatters';
 
 
 // ─── TYPE COLORS ────────────────────────────────────────────────────────────────
@@ -27,7 +31,7 @@ const TYPE_COLORS: Record<string, string> = {
 // ─── STEP CONFIG ────────────────────────────────────────────────────────────────
 const STEPS = [
   { id: 1, label: 'Role Overview',   icon: Briefcase,     color: 'from-cyan-500 to-blue-600' },
-  { id: 2, label: 'Compensation',    icon: DollarSign,    color: 'from-emerald-500 to-teal-600' },
+  { id: 2, label: 'Compensation',    icon: Coins,         color: 'from-emerald-500 to-teal-600' },
   { id: 3, label: 'Job Details',     icon: FileText,      color: 'from-violet-500 to-purple-600' },
   { id: 4, label: 'Requirements',    icon: Star,          color: 'from-rose-500 to-pink-600' },
   { id: 5, label: 'Review & Publish',icon: Eye,           color: 'from-amber-500 to-orange-600' },
@@ -232,9 +236,11 @@ const StepProgress: React.FC<{ current: number; steps: typeof STEPS }> = ({ curr
 // ─── LIVE PREVIEW CARD ───────────────────────────────────────────────────────────
 const LivePreviewCard: React.FC<{
   title: string; department: string; location: string; type: string;
-  experienceLevel: string; minSalary: string; maxSalary: string; skills: string[];
+  experienceLevel: string; minSalary: string; maxSalary: string;
+  salaryPeriod?: string;
+  skills: string[];
   deadline: string;
-}> = ({ title, department, location, type, experienceLevel, minSalary, maxSalary, skills, deadline }) => {
+}> = ({ title, department, location, type, experienceLevel, minSalary, maxSalary, salaryPeriod = 'yearly', skills, deadline }) => {
   const typeColor = TYPE_COLORS[type] || 'from-cyan-500 to-blue-500';
   return (
     <div style={{
@@ -300,7 +306,7 @@ const LivePreviewCard: React.FC<{
             background: 'rgba(34,197,94,0.1)', color: '#4ade80',
             border: '1px solid rgba(34,197,94,0.2)',
           }}>
-            ₹{minSalary && parseInt(minSalary).toLocaleString()} – ₹{maxSalary && parseInt(maxSalary).toLocaleString()}/yr
+            {formatSalaryRange(minSalary, maxSalary, 'INR', salaryPeriod)}
           </span>
         )}
       </div>
@@ -351,6 +357,8 @@ export const CreateJobPage: React.FC = () => {
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('Mid Level');
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
+  const [salaryPeriod, setSalaryPeriod] = useState<'yearly' | 'monthly' | 'hourly'>('yearly');
+  const [currency, setCurrency] = useState('INR');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [responsibilities, setResponsibilities] = useState('');
@@ -360,6 +368,33 @@ export const CreateJobPage: React.FC = () => {
   const [educationRequired, setEducationRequired] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingJob, setIsLoadingJob] = useState(isEditMode);
+
+  // Success Modal State
+  const [publishedJob, setPublishedJob] = useState<Job | null>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  // Reset form for "Post Another Job"
+  const resetForm = useCallback(() => {
+    setTitle('');
+    setDepartment('');
+    setLocation('');
+    setType('Full-time');
+    setExperienceLevel('Mid Level');
+    setMinSalary('');
+    setMaxSalary('');
+    setSalaryPeriod('yearly');
+    setCurrency('INR');
+    setDeadline('');
+    setDescription('');
+    setResponsibilities('');
+    setRequirements('');
+    setSkills([]);
+    setSkillInput('');
+    setEducationRequired('');
+    setStep(1);
+    setPublishedJob(null);
+    setIsSuccessModalOpen(false);
+  }, []);
 
   // LOAD EXISTING JOB (Edit Mode)
   useEffect(() => {
@@ -378,8 +413,10 @@ export const CreateJobPage: React.FC = () => {
         setLocation(job.location || '');
         setType((job.type as EmploymentType) || 'Full-time');
         setExperienceLevel((job.experienceLevel as ExperienceLevel) || 'Mid Level');
-        setMinSalary(String(job.salary?.min || ''));
-        setMaxSalary(String(job.salary?.max || ''));
+        setMinSalary(job.salary?.min !== undefined && job.salary?.min !== null && job.salary?.min > 0 ? String(job.salary.min) : '');
+        setMaxSalary(job.salary?.max !== undefined && job.salary?.max !== null && job.salary?.max > 0 ? String(job.salary.max) : '');
+        if (job.salary?.period) setSalaryPeriod(job.salary.period as any);
+        if (job.salary?.currency) setCurrency(job.salary.currency);
         setDeadline(job.deadline || '');
         setDescription(job.description || '');
         setResponsibilities(
@@ -425,16 +462,27 @@ export const CreateJobPage: React.FC = () => {
     }
   };
 
+  // SALARY VALIDATION
+  const getSalaryValidationError = (): string | null => {
+    if (minSalary !== '' && Number(minSalary) < 0) return 'Minimum salary cannot be negative.';
+    if (maxSalary !== '' && Number(maxSalary) < 0) return 'Maximum salary cannot be negative.';
+    if (minSalary !== '' && maxSalary !== '' && Number(minSalary) > Number(maxSalary)) {
+      return 'Minimum salary cannot exceed maximum salary.';
+    }
+    return null;
+  };
+
   // STEP VALIDATION
   const canNext = (): boolean => {
     if (step === 1) return !!title.trim() && !!department.trim() && !!location.trim();
+    if (step === 2) return getSalaryValidationError() === null;
     if (step === 3) return !!description.trim();
     return true;
   };
 
   // SUBMIT
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e?.preventDefault) e.preventDefault();
     if (user?.role === 'recruiter' && user?.verificationStatus !== 'verified') {
       showToast({
         type: 'error',
@@ -453,6 +501,13 @@ export const CreateJobPage: React.FC = () => {
       return;
     }
 
+    const salaryErr = getSalaryValidationError();
+    if (salaryErr) {
+      showToast({ type: 'error', title: 'Invalid Salary', message: salaryErr });
+      setStep(2);
+      return;
+    }
+
     const jobData = {
       title: title.trim(),
       department: department.trim(),
@@ -460,10 +515,10 @@ export const CreateJobPage: React.FC = () => {
       type,
       experienceLevel,
       salary: {
-        min: parseInt(minSalary, 10) || 0,
-        max: parseInt(maxSalary, 10) || 0,
+        min: minSalary ? parseInt(minSalary, 10) : 0,
+        max: maxSalary ? parseInt(maxSalary, 10) : 0,
         currency: 'INR',
-        period: 'yearly' as const,
+        period: salaryPeriod,
       },
       description: description.trim(),
       responsibilities: responsibilities.split('\n').map(s => s.trim()).filter(Boolean),
@@ -480,14 +535,49 @@ export const CreateJobPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       if (isEditMode) {
-        await jobService.updateJob(id!, jobData);
+        const updated = await jobService.updateJob(id!, jobData);
         showToast({ type: 'success', title: 'Job Updated ✅', message: `"${title}" has been saved successfully.` });
+        setPublishedJob(updated);
+        setIsSuccessModalOpen(true);
+        actionFeedbackService.jobUpdated({ id: id!, title: updated.title });
       } else {
         const company = await recruiterService.getCompanyProfile();
-        await jobService.createJob({ ...jobData, company: company.name, companyId: company.id, companyLogo: company.logo });
-        showToast({ type: 'success', title: 'Job Published! 🎉', message: `"${title}" is now live and accepting applicants.` });
+        const createdJob = await jobService.createJob({ ...jobData, company: company.name, companyId: company.id, companyLogo: company.logo });
+        showToast({
+          type: 'success',
+          title: createdJob.status === 'pending_approval' ? 'Job Submitted for Approval' : 'Job Published! 🎉',
+          message: createdJob.status === 'pending_approval'
+            ? `"${title}" is awaiting administrator review.`
+            : `"${title}" is now live and accepting applicants.`
+        });
+        setPublishedJob(createdJob);
+        setIsSuccessModalOpen(true);
+
+        if (createdJob.status === 'active' || (createdJob.status as string) === 'published') {
+          actionFeedbackService.jobPublished({
+            id: createdJob.id,
+            title: createdJob.title,
+            companyName: createdJob.company,
+            location: createdJob.location,
+            employmentType: createdJob.type,
+            salaryMin: createdJob.salary?.min,
+            salaryMax: createdJob.salary?.max,
+            deadline: createdJob.deadline,
+            status: createdJob.status.toUpperCase(),
+            applicantCount: createdJob.applicantCount || 0,
+          });
+        } else if (createdJob.status === 'pending_approval') {
+          actionFeedbackService.jobSubmittedForApproval({
+            id: createdJob.id,
+            title: createdJob.title,
+          });
+        } else if (createdJob.status === 'draft') {
+          actionFeedbackService.jobDraftSaved({
+            id: createdJob.id,
+            title: createdJob.title,
+          });
+        }
       }
-      navigate('/recruiter/jobs');
     } catch (err: any) {
       showToast({ type: 'error', title: isEditMode ? 'Failed to Update' : 'Failed to Publish', message: err?.message || 'Something went wrong.' });
     } finally {
@@ -730,20 +820,47 @@ export const CreateJobPage: React.FC = () => {
                 {/* STEP 2: COMPENSATION */}
                 {step === 2 && (
                   <div className="step-panel premium-card neon-section" style={SECTION_STYLE}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                       <div style={{
                         width: 40, height: 40, borderRadius: 14,
                         background: 'linear-gradient(135deg, #10b981, #0d9488)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 0 20px rgba(16,185,129,0.7), 0 4px 14px rgba(16,185,129,0.5)',
                       }}>
-                        <DollarSign style={{ width: 18, height: 18, color: 'white' }} />
+                        <span style={{ fontSize: 20, fontWeight: 800, color: 'white', lineHeight: 1 }}>₹</span>
                       </div>
                       <div>
-                        <h2 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>Compensation &amp; Deadline</h2>
-                        <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Salary range and application window</p>
+                        <h2 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>Compensation &amp; Deadline (INR ₹)</h2>
+                        <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Salary range and application window in Indian Rupees</p>
                       </div>
                     </div>
+
+                    {/* Helper text banner */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '12px 16px', borderRadius: 14, marginBottom: 18,
+                      background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+                      color: '#a7f3d0', fontSize: 12, fontWeight: 500, lineHeight: 1.5
+                    }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: '#34d399', flexShrink: 0 }}>₹</span>
+                      <div>
+                        <strong style={{ color: '#ecfdf5' }}>Indian Rupee (INR) Standard: </strong>
+                        <span>Enter salary in Indian Rupees (INR). Displays use Indian number grouping (e.g. ₹3,00,000 – ₹5,00,000 per year).</span>
+                      </div>
+                    </div>
+
+                    {/* Validation Error banner if invalid */}
+                    {getSalaryValidationError() && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '12px 16px', borderRadius: 14, marginBottom: 18,
+                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#fca5a5', fontSize: 12, fontWeight: 600,
+                      }}>
+                        <AlertTriangle style={{ width: 16, height: 16, color: '#f87171', flexShrink: 0 }} />
+                        <span>{getSalaryValidationError()}</span>
+                      </div>
+                    )}
 
                     {/* Salary visual */}
                     <div style={{
@@ -753,40 +870,61 @@ export const CreateJobPage: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                         <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Salary Range Preview</span>
                         <span style={{ fontSize: 16, fontWeight: 800, color: '#4ade80' }}>
-                          {minSalary && maxSalary
-                            ? `₹${parseInt(minSalary).toLocaleString()} – ₹${parseInt(maxSalary).toLocaleString()}/yr`
-                            : 'Not set yet'}
+                          {formatSalaryRange(minSalary, maxSalary, 'INR', salaryPeriod, 'Not set yet')}
                         </span>
                       </div>
                       <div style={{
                         height: 6, background: 'rgba(30,41,59,0.8)', borderRadius: 3, overflow: 'hidden',
                       }}>
                         <div style={{
-                          height: '100%', width: minSalary && maxSalary
-                            ? `${Math.min((parseInt(maxSalary) / 3000000) * 100, 100)}%` : '0%',
+                          height: '100%', width: minSalary || maxSalary
+                            ? `${Math.min((Math.max(Number(minSalary) || 0, Number(maxSalary) || 0) / (salaryPeriod === 'monthly' ? 250000 : salaryPeriod === 'hourly' ? 5000 : 3000000)) * 100, 100)}%` : '0%',
                           background: 'linear-gradient(90deg, #10b981, #06b6d4)',
                           borderRadius: 3, transition: 'width 0.5s ease',
                         }} />
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                         <span style={{ fontSize: 10, color: '#475569' }}>₹0</span>
-                        <span style={{ fontSize: 10, color: '#475569' }}>₹30L+</span>
+                        <span style={{ fontSize: 10, color: '#475569' }}>
+                          {salaryPeriod === 'monthly' ? '₹2.5L+/mo' : salaryPeriod === 'hourly' ? '₹5,000+/hr' : '₹30L+/yr'}
+                        </span>
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                       <PremiumInput
-                        label="Min Salary (₹/yr)" placeholder="e.g. 600000" type="number"
-                        value={minSalary} onChange={setMinSalary}
-                        icon={<DollarSign style={{ width: 16, height: 16 }} />}
+                        label="Minimum Salary"
+                        placeholder="e.g. 300000"
+                        type="number"
+                        value={minSalary}
+                        onChange={setMinSalary}
+                        icon={<span style={{ fontWeight: 800, fontSize: 15, color: '#10b981' }}>₹</span>}
+                        hint="Leave blank if not disclosed"
                       />
                       <PremiumInput
-                        label="Max Salary (₹/yr)" placeholder="e.g. 1200000" type="number"
-                        value={maxSalary} onChange={setMaxSalary}
-                        icon={<DollarSign style={{ width: 16, height: 16 }} />}
+                        label="Maximum Salary"
+                        placeholder="e.g. 500000"
+                        type="number"
+                        value={maxSalary}
+                        onChange={setMaxSalary}
+                        icon={<span style={{ fontWeight: 800, fontSize: 15, color: '#10b981' }}>₹</span>}
+                        hint="Must be ≥ Minimum Salary"
+                      />
+                      <PremiumSelect
+                        label="Salary Period"
+                        value={salaryPeriod}
+                        onChange={v => setSalaryPeriod(v as any)}
+                        options={[
+                          { value: 'yearly', label: 'Annual (per year)' },
+                          { value: 'monthly', label: 'Monthly (per month)' },
+                          { value: 'hourly', label: 'Hourly (per hour)' },
+                        ]}
+                        icon={<Clock style={{ width: 16, height: 16 }} />}
                       />
                       <PremiumInput
-                        label="Application Deadline" type="date" value={deadline}
+                        label="Application Deadline"
+                        type="date"
+                        value={deadline}
                         onChange={setDeadline}
                         icon={<Calendar style={{ width: 16, height: 16 }} />}
                         hint="Recommended: 2–4 weeks from today"
@@ -922,7 +1060,7 @@ export const CreateJobPage: React.FC = () => {
                         { label: 'Location', value: location, icon: <MapPin style={{ width: 14, height: 14 }} /> },
                         { label: 'Type', value: type, icon: <Clock style={{ width: 14, height: 14 }} /> },
                         { label: 'Seniority', value: experienceLevel, icon: <Award style={{ width: 14, height: 14 }} /> },
-                        { label: 'Salary', value: minSalary && maxSalary ? `₹${parseInt(minSalary).toLocaleString()} – ₹${parseInt(maxSalary).toLocaleString()}/yr` : 'Not specified', icon: <DollarSign style={{ width: 14, height: 14 }} /> },
+                        { label: 'Salary', value: formatSalaryRange(minSalary, maxSalary, 'INR', salaryPeriod, 'Not specified'), icon: <span style={{ fontWeight: 800, fontSize: 13, color: '#10b981' }}>₹</span> },
                         { label: 'Deadline', value: deadline ? new Date(deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Open', icon: <Calendar style={{ width: 14, height: 14 }} /> },
                         { label: 'Education', value: educationRequired || 'Not specified', icon: <GraduationCap style={{ width: 14, height: 14 }} /> },
                       ].map(item => (
@@ -1063,7 +1201,8 @@ export const CreateJobPage: React.FC = () => {
                     </button>
                   ) : (
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleSubmit}
                       className="publish-btn"
                       disabled={isSubmitting || !title.trim() || !description.trim() || (user?.role === 'recruiter' && user?.verificationStatus !== 'verified')}
                       style={{
@@ -1100,6 +1239,7 @@ export const CreateJobPage: React.FC = () => {
                 title={title} department={department} location={location}
                 type={type} experienceLevel={experienceLevel}
                 minSalary={minSalary} maxSalary={maxSalary}
+                salaryPeriod={salaryPeriod}
                 skills={skills} deadline={deadline}
               />
 
@@ -1157,6 +1297,17 @@ export const CreateJobPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Cinematic Job Publish Success Modal */}
+      <JobPublishSuccessModal
+        isOpen={isSuccessModalOpen}
+        job={publishedJob}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          navigate('/recruiter/jobs');
+        }}
+        onPostAnotherJob={resetForm}
+      />
     </>
   );
 };

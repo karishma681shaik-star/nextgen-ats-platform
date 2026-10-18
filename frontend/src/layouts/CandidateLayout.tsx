@@ -6,11 +6,20 @@ import { FloatingActionHub } from '../components/common/FloatingActionHub';
 import { BackgroundEffects } from '../components/ui/BackgroundEffects';
 import { AICursor } from '../components/ui/AICursor';
 
+import {
+  CinematicDashboardIntro,
+  useCinematicIntro,
+} from '../components/common/CinematicDashboardIntro';
+
 export const CandidateLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { shouldPlay, onComplete } = useCinematicIntro('candidate');
 
   return (
     <div className="min-h-screen bg-transparent text-slate-100 flex relative overflow-x-hidden">
+      {shouldPlay && (
+        <CinematicDashboardIntro role="candidate" onComplete={onComplete} />
+      )}
       <AICursor />
       <BackgroundEffects role="candidate" />
 

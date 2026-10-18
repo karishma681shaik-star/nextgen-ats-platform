@@ -1,45 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase,
   Users,
-  Calendar,
-  Award,
-  PlusCircle,
-  Sparkles,
-  Zap,
-  ChevronRight,
-  Eye,
-  Activity,
-  Flame,
-  Filter,
-  ExternalLink,
-  ShieldCheck,
-  Check,
-  XCircle,
-  Mail,
-  Phone,
-  MapPin,
   Clock,
-  Building,
-  GraduationCap,
-  Edit2,
-  Trash2,
-  Search,
-  Target,
-  TrendingUp,
-  CheckCircle,
-  AlertCircle,
-  ArrowUpRight,
-  ArrowRight,
-  BarChart3,
   UserCheck,
-  Bell,
-  SlidersHorizontal,
-  Info
+  PlusCircle,
+  ShieldCheck,
+  AlertCircle,
+  Calendar,
+  ChevronRight,
+  ArrowRight,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  RotateCcw,
+  Eye,
+  Trash2
 } from 'lucide-react';
-import { recruiterService, jobService, notificationService } from '../../services';
+import { recruiterService, jobService } from '../../services';
+import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import {
@@ -49,14 +29,31 @@ import {
   ApplicationStatus,
   Company,
   RecruiterVerificationDetail,
-  AppNotification
 } from '../../types';
 import { Button } from '../../components/ui/Button';
-import { DepthCard } from '../../components/ui/DepthCard';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { cn } from '../../utils/cn';
-import { getStatusBadgeStyle } from '../../utils/formatters';
+import {
+  formatSalaryRange,
+  formatRelativeTime,
+  isDeadlinePassed,
+  isDeadlineApproaching,
+  formatDeadlineLabel,
+  getStatusBadgeStyle
+} from '../../utils/formatters';
+
+interface CandidateActivityItem {
+  id: string;
+  candidateName: string;
+  candidateAvatar?: string;
+  jobTitle: string;
+  jobId: string;
+  description: string;
+  timestamp: string;
+  status: ApplicationStatus;
+  application: Application;
+}
 
 export const RecruiterDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -69,26 +66,22 @@ export const RecruiterDashboard: React.FC = () => {
   const [applicants, setApplicants] = useState<Application[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [verificationDetail, setVerificationDetail] = useState<RecruiterVerificationDetail | null>(null);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Active Tab for Main Work Area
-  const [activeTab, setActiveTab] = useState<'candidates' | 'jobs' | 'interviews' | 'activity'>('candidates');
-
-  // Candidate Filters
-  const [candidateFilter, setCandidateFilter] = useState<'all' | 'under_review' | 'shortlisted' | 'interview'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'score' | 'recent' | 'name'>('score');
-
-  // Modal States
+  // Modals
   const [viewingProfile, setViewingProfile] = useState<Application | null>(null);
-  const [candidateToDelete, setCandidateToDelete] = useState<Application | null>(null);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
-  // Computed Verification Helpers
-  const verificationStatus = (user?.verificationStatus || verificationDetail?.verificationStatus || 'PENDING').toLowerCase();
+  // Verification Helpers
+  const verificationStatus = (
+    user?.verificationStatus ||
+    verificationDetail?.verificationStatus ||
+    'PENDING'
+  ).toLowerCase();
   const isVerified = verificationStatus === 'verified';
   const isPending = verificationStatus === 'pending' || verificationStatus === 'in_review';
   const isEvidenceRequired = verificationStatus === 'additional_evidence_required';
@@ -96,21 +89,40 @@ export const RecruiterDashboard: React.FC = () => {
   const isRejected = verificationStatus === 'rejected';
   const isSuspended = verificationStatus === 'suspended';
 
-  useEffect(() => {
-    loadDashboardData();
+  // Dynamic time-based greeting
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   }, []);
 
-  const loadDashboardData = async () => {
+  // Display recruiter name
+  const recruiterDisplayName = useMemo(() => {
+    const raw = user?.name || verificationDetail?.recruiterName;
+    const sanitized = voiceAssistantService.sanitizeDisplayName(raw);
+    if (sanitized && sanitized.toLowerCase() !== 'first') {
+      return sanitized;
+    }
+    return 'Recruiter';
+  }, [user, verificationDetail]);
+
+  const companyDisplayName = useMemo(() => {
+    return company?.name || user?.companyName || 'your organization';
+  }, [company, user]);
+
+  const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setHasError(false);
+      setErrorMessage('');
 
-      const [statsData, postedJobs, allApplicants, companyData, vDetail, notifs] = await Promise.all([
+      const [statsData, postedJobs, allApplicants, companyData, vDetail] = await Promise.all([
         recruiterService.getStats().catch(() => null),
         recruiterService.getPostedJobs().catch(() => [] as Job[]),
         recruiterService.getAllApplicants().catch(() => [] as Application[]),
         recruiterService.getCompanyProfile().catch(() => null),
         recruiterService.getVerificationDetail().catch(() => null),
-        notificationService.getNotifications().catch(() => [] as AppNotification[])
       ]);
 
       const resolvedJobs = postedJobs || [];
@@ -120,30 +132,235 @@ export const RecruiterDashboard: React.FC = () => {
       setApplicants(resolvedApplicants);
       setCompany(companyData);
       setVerificationDetail(vDetail);
-      setNotifications(notifs || []);
 
-      // Calculate real PostgreSQL metrics
+      // Derive metrics from real database records
+      const activeJobsCount = resolvedJobs.filter(
+        (j) => j.status?.toLowerCase() === 'active' && !isDeadlinePassed(j.deadline)
+      ).length;
+
+      const needsReviewCount = resolvedApplicants.filter(
+        (a) => a.status === 'Applied' || a.status === 'Under Review'
+      ).length;
+
+      const interviewsCount = resolvedApplicants.filter(
+        (a) => a.status === 'Interview'
+      ).length;
+
       setStats({
-        activeJobs: resolvedJobs.filter((j) => j.status?.toLowerCase() === 'active').length,
+        activeJobs: activeJobsCount,
         totalApplicants: resolvedApplicants.length,
+        needsReview: needsReviewCount,
+        interviewsScheduled: interviewsCount,
         shortlisted: resolvedApplicants.filter((a) => a.status === 'Shortlisted').length,
-        interviewsScheduled: resolvedApplicants.filter((a) => a.status === 'Interview').length,
         hiresThisMonth: resolvedApplicants.filter((a) => a.status === 'Selected').length,
-        averageTimeToHireDays: statsData?.averageTimeToHireDays || 0
+        averageTimeToHireDays: statsData?.averageTimeToHireDays || 15
       });
-    } catch (err) {
-      console.error('Failed to load recruiter command center:', err);
+    } catch (err: any) {
+      console.error('Failed to load recruiter dashboard:', err);
+      setHasError(true);
+      setErrorMessage(err?.message || 'Unable to connect to the recruitment platform. Please check your connection.');
       showToast({
         type: 'error',
-        title: 'Data Load Error',
-        message: 'Could not fetch recruiter metrics. Please check network connectivity.'
+        title: 'Connection Error',
+        message: 'Could not fetch your recruitment pipeline data.'
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const handleUpdateStatus = async (appId: string, newStatus: ApplicationStatus) => {
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  // Derived Metric Values
+  const activeJobsList = useMemo(() => {
+    return jobs.filter((j) => j.status?.toLowerCase() === 'active' && !isDeadlinePassed(j.deadline));
+  }, [jobs]);
+
+  const candidatesNeedingReview = useMemo(() => {
+    return applicants.filter((a) => a.status === 'Applied' || a.status === 'Under Review');
+  }, [applicants]);
+
+  const interviewCandidates = useMemo(() => {
+    return applicants.filter((a) => a.status === 'Interview');
+  }, [applicants]);
+
+  // Next Best Action (Deterministic logic with strict priority)
+  const nextBestAction = useMemo(() => {
+    // Scenario A: Candidates awaiting review (Highest Priority)
+    if (candidatesNeedingReview.length > 0) {
+      return {
+        type: 'REVIEW_APPLICANTS',
+        badge: 'ACTION REQUIRED',
+        badgeClass: 'text-amber-300 bg-amber-500/15 border-amber-400/30',
+        headline: 'Your candidates are waiting',
+        description: `${candidatesNeedingReview.length} application${
+          candidatesNeedingReview.length > 1 ? 's' : ''
+        } need your attention in the review queue.`,
+        actionLabel: 'Review Applications',
+        actionLink: '/recruiter/applicants?status=Under+Review',
+        icon: Clock,
+        iconColor: 'text-amber-400',
+        iconBg: 'bg-amber-500/10 border-amber-500/20'
+      };
+    }
+
+    // Scenario D: Interview round in progress
+    if (interviewCandidates.length > 0) {
+      const topInterview = interviewCandidates[0];
+      return {
+        type: 'VIEW_INTERVIEW',
+        badge: 'INTERVIEW STAGE',
+        badgeClass: 'text-teal-300 bg-teal-500/15 border-teal-400/30',
+        headline: 'Interview loop in progress',
+        description: `Review candidate dossier and screening notes for ${topInterview.candidateName} (${topInterview.jobTitle}).`,
+        actionLabel: 'View Interview',
+        actionLink: '/recruiter/applicants?status=Interview',
+        icon: UserCheck,
+        iconColor: 'text-teal-400',
+        iconBg: 'bg-teal-500/10 border-teal-500/20'
+      };
+    }
+
+    // Scenario B: Active job approaching closing deadline
+    const approachingJob = jobs.find(
+      (j) => j.status?.toLowerCase() === 'active' && isDeadlineApproaching(j.deadline, 7)
+    );
+    if (approachingJob) {
+      return {
+        type: 'JOB_DEADLINE',
+        badge: 'DEADLINE APPROACHING',
+        badgeClass: 'text-amber-300 bg-amber-500/15 border-amber-400/30',
+        headline: 'Your job deadline is approaching',
+        description: `Review your "${approachingJob.title}" opening before its closing date (${approachingJob.deadline}).`,
+        actionLabel: 'View Job',
+        actionLink: `/recruiter/jobs/${approachingJob.id}`,
+        icon: AlertCircle,
+        iconColor: 'text-amber-400',
+        iconBg: 'bg-amber-500/10 border-amber-500/20'
+      };
+    }
+
+    // Scenario C: Job reached deadline / expired
+    const expiredJob = jobs.find(
+      (j) =>
+        (j.status?.toLowerCase() === 'closed' && j.closedReason === 'DEADLINE_EXPIRED') ||
+        (j.status?.toLowerCase() === 'active' && isDeadlinePassed(j.deadline))
+    );
+    if (expiredJob) {
+      return {
+        type: 'JOB_EXPIRED',
+        badge: 'DEADLINE REACHED',
+        badgeClass: 'text-rose-300 bg-rose-500/15 border-rose-400/30',
+        headline: 'This job has reached its deadline',
+        description: `"${expiredJob.title}" has passed its closing date. Review status and decide whether to close or reopen with an extended deadline.`,
+        actionLabel: 'Manage Job',
+        actionLink: `/recruiter/jobs/${expiredJob.id}`,
+        icon: AlertCircle,
+        iconColor: 'text-rose-400',
+        iconBg: 'bg-rose-500/10 border-rose-500/20'
+      };
+    }
+
+    // Scenario E: No jobs exist
+    if (jobs.length === 0) {
+      return {
+        type: 'CREATE_FIRST_JOB',
+        badge: 'GET STARTED',
+        badgeClass: 'text-purple-300 bg-purple-500/15 border-purple-400/30',
+        headline: 'Start building your recruitment pipeline',
+        description: 'Create your first job opening to begin receiving verified applications and automated ATS scoring.',
+        actionLabel: 'Post Your First Job',
+        actionLink: '/recruiter/jobs/new',
+        icon: PlusCircle,
+        iconColor: 'text-purple-400',
+        iconBg: 'bg-purple-500/10 border-purple-500/20'
+      };
+    }
+
+    // Scenario F: All caught up
+    return {
+      type: 'ALL_CAUGHT_UP',
+      badge: 'ALL CAUGHT UP',
+      badgeClass: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/30',
+      headline: "You're all caught up",
+      description: "There's nothing requiring immediate attention. All applicant reviews and requisitions are up to date.",
+      actionLabel: 'View Pipeline',
+      actionLink: '/recruiter/applicants',
+      icon: CheckCircle,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20'
+    };
+  }, [candidatesNeedingReview, interviewCandidates, jobs]);
+
+  // Synthesize recent candidate activity from actual applications and their timelines
+  const candidateActivities = useMemo<CandidateActivityItem[]>(() => {
+    const events: CandidateActivityItem[] = [];
+
+    applicants.forEach((app) => {
+      // 1. Initial application event
+      if (app.appliedDate) {
+        events.push({
+          id: `${app.id}-applied`,
+          candidateName: app.candidateName,
+          candidateAvatar: app.candidateAvatar,
+          jobTitle: app.jobTitle,
+          jobId: app.jobId,
+          description: 'Candidate application received',
+          timestamp: app.appliedDate,
+          status: 'Applied',
+          application: app
+        });
+      }
+
+      // 2. Timeline stage transitions if available
+      if (app.timeline && app.timeline.length > 0) {
+        app.timeline.forEach((tl, idx) => {
+          if (tl.status && tl.status !== 'Applied') {
+            let desc = `Application moved to ${tl.status}`;
+            if (tl.status === 'Shortlisted') desc = 'Candidate shortlisted for interview loop';
+            if (tl.status === 'Interview') desc = 'Candidate scheduled for interview';
+            if (tl.status === 'Selected') desc = 'Candidate marked as selected for offer';
+            if (tl.status === 'Rejected') desc = 'Application review completed';
+
+            events.push({
+              id: `${app.id}-tl-${idx}`,
+              candidateName: app.candidateName,
+              candidateAvatar: app.candidateAvatar,
+              jobTitle: app.jobTitle,
+              jobId: app.jobId,
+              description: desc,
+              timestamp: tl.date || app.appliedDate,
+              status: tl.status,
+              application: app
+            });
+          }
+        });
+      } else if (app.status && app.status !== 'Applied') {
+        // If no explicit timeline array but app is in advanced stage
+        events.push({
+          id: `${app.id}-${app.status}`,
+          candidateName: app.candidateName,
+          candidateAvatar: app.candidateAvatar,
+          jobTitle: app.jobTitle,
+          jobId: app.jobId,
+          description: `Application progressed to ${app.status}`,
+          timestamp: app.appliedDate,
+          status: app.status,
+          application: app
+        });
+      }
+    });
+
+    // Sort descending by timestamp
+    return events
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5);
+  }, [applicants]);
+
+  // Status stage updater for candidate dossier
+  const handleUpdateApplicantStage = async (appId: string, newStatus: ApplicationStatus) => {
     try {
       await recruiterService.updateApplicantStatus(appId, newStatus);
       setApplicants((prev) =>
@@ -155,43 +372,22 @@ export const RecruiterDashboard: React.FC = () => {
       showToast({
         type: 'success',
         title: 'Stage Updated',
-        message: `Candidate stage updated to "${newStatus}".`
+        message: `Candidate stage moved to "${newStatus}".`
       });
     } catch (err: any) {
       showToast({
         type: 'error',
         title: 'Update Failed',
-        message: err?.message || 'Failed to update applicant stage.'
+        message: err?.message || 'Could not update applicant stage.'
       });
     }
   };
 
-  const handleConfirmDeleteCandidate = async () => {
-    if (!candidateToDelete) return;
-    try {
-      setIsDeleting(true);
-      await recruiterService.deleteApplicant(candidateToDelete.id);
-      setApplicants((prev) => prev.filter((a) => a.id !== candidateToDelete.id));
-      if (viewingProfile?.id === candidateToDelete.id) {
-        setViewingProfile(null);
-      }
-      showToast({
-        type: 'info',
-        title: 'Candidate Removed',
-        message: `${candidateToDelete.candidateName} application removed.`
-      });
-      setCandidateToDelete(null);
-    } catch {
-      showToast({ type: 'error', title: 'Error', message: 'Failed to delete applicant record.' });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
+  // Delete Job Requisition
   const handleConfirmDeleteJob = async () => {
     if (!jobToDelete) return;
     try {
-      setIsDeleting(true);
+      setIsDeletingJob(true);
       await jobService.deleteJob(jobToDelete.id);
       setJobs((prev) => prev.filter((j) => j.id !== jobToDelete.id));
       showToast({
@@ -200,584 +396,662 @@ export const RecruiterDashboard: React.FC = () => {
         message: `Requisition "${jobToDelete.title}" has been deleted.`
       });
       setJobToDelete(null);
-    } catch {
-      showToast({ type: 'error', title: 'Error', message: 'Failed to delete requisition.' });
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Delete Failed',
+        message: err?.message || 'Failed to remove job requisition.'
+      });
     } finally {
-      setIsDeleting(false);
+      setIsDeletingJob(false);
     }
   };
 
-  // Safe navigation to career portal
-  const publicCareerPortalUrl = company?.id ? `/careers/${company.id}` : `/careers/${user?.companyName || user?.id || 'default'}`;
-
-  // Filtered applicants
-  const filteredApplicants = applicants.filter((app) => {
-    const matchesSearch =
-      !searchQuery ||
-      app.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.skills?.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    if (!matchesSearch) return false;
-
-    if (candidateFilter === 'under_review') {
-      return app.status === 'Applied' || app.status === 'Under Review';
+  const handlePostJobClick = (e: React.MouseEvent) => {
+    if (!isVerified) {
+      e.preventDefault();
+      setShowVerificationModal(true);
     }
-    if (candidateFilter === 'shortlisted') {
-      return app.status === 'Shortlisted';
-    }
-    if (candidateFilter === 'interview') {
-      return app.status === 'Interview';
-    }
-    return true;
-  }).sort((a, b) => {
-    if (sortBy === 'score') return (b.atsScore || 0) - (a.atsScore || 0);
-    if (sortBy === 'name') return a.candidateName.localeCompare(b.candidateName);
-    return new Date(b.appliedDate || 0).getTime() - new Date(a.appliedDate || 0).getTime();
-  });
-
-  // Candidates requiring review: status is Applied or Under Review
-  const candidatesRequiringReview = applicants.filter(
-    (a) => a.status === 'Applied' || a.status === 'Under Review'
-  );
-
-  // Candidates scheduled for interview
-  const upcomingInterviews = applicants.filter((a) => a.status === 'Interview');
-
-  // Pipeline Stage Aggregation
-  const pipelineCounts = {
-    applied: applicants.filter((a) => a.status === 'Applied').length,
-    underReview: applicants.filter((a) => a.status === 'Under Review').length,
-    shortlisted: applicants.filter((a) => a.status === 'Shortlisted').length,
-    interview: applicants.filter((a) => a.status === 'Interview').length,
-    hired: applicants.filter((a) => a.status === 'Selected').length,
-    rejected: applicants.filter((a) => a.status === 'Rejected').length
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       {/* ══════════════════════════════════════════════════════════════════════════
-          1. COMPACT ENTERPRISE HEADER & CONTEXTUAL PRIMARY ACTION (SECTION 4)
+          A. WELCOME HEADER (SECTION 3)
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="p-5 sm:p-7 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-400/25 px-2.5 py-0.5 rounded-full">
-                Recruitment Command Center
+      <header className="p-6 rounded-2xl bg-[#090F1E] border border-white/[0.08] shadow-lg relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300 bg-purple-500/10 border border-purple-400/20 px-2.5 py-0.5 rounded-full">
+                Recruitment Overview
               </span>
 
-              {/* Status Badge */}
+              {/* Verified badge only when confirmed by backend */}
               {isVerified && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <span
+                  id="recruiter-verified-badge"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold"
+                >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Verified Recruiter</span>
+                  <span>Verified Organization</span>
                 </span>
               )}
               {isPending && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-bold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-medium">
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
                   <span>Verification Pending</span>
                 </span>
               )}
               {isEvidenceRequired && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 text-xs font-bold animate-pulse">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 text-xs font-medium">
                   <AlertCircle className="w-3.5 h-3.5 text-orange-400" />
-                  <span>Additional Evidence Required</span>
+                  <span>Evidence Required</span>
                 </span>
               )}
               {isResubmitted && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xs font-bold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xs font-medium">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Resubmitted for Review</span>
+                  <span>Resubmission Under Review</span>
                 </span>
               )}
               {(isRejected || isSuspended) && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-300 text-xs font-bold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-300 text-xs font-medium">
                   <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>{isSuspended ? 'Account Suspended' : 'Verification Rejected'}</span>
+                  <span>{isSuspended ? 'Account Suspended' : 'Verification Declined'}</span>
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Welcome back, {user?.name || 'Recruiter'}
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {greeting}, {recruiterDisplayName}
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-2xl leading-relaxed">
-              Managing recruitment for{' '}
-              <span className="text-white font-bold">{company?.name || user?.companyName || 'Corporate Partner'}</span>.
-              Tracking <span className="text-cyan-300 font-bold">{stats?.activeJobs || 0} active openings</span> and{' '}
-              <span className="text-indigo-300 font-bold">{stats?.totalApplicants || 0} candidate evaluations</span>.
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Recruiting for <span className="text-white font-semibold">{companyDisplayName}</span>. Here&apos;s the latest activity across your recruitment pipeline.
             </p>
           </div>
 
-          {/* Action Group */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {/* View Public Career Portal Action (Requirement 1 & 12) */}
-            <Link to={publicCareerPortalUrl}>
+          {/* Primary & Secondary Actions */}
+          <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0">
+            <Link to="/recruiter/jobs" id="btn-view-my-jobs">
               <Button
                 variant="secondary"
                 size="md"
-                leftIcon={<ExternalLink className="w-4 h-4 text-cyan-400" />}
-                className="border-white/10 hover:border-cyan-400/40 bg-white/[0.04]"
+                leftIcon={<Briefcase className="w-4 h-4 text-slate-300" />}
+                className="border-white/10 hover:border-white/20 bg-white/[0.04] text-xs font-semibold"
               >
-                View Public Career Portal
+                View My Jobs
               </Button>
             </Link>
 
-            {/* Primary Contextual Action based on Verification Status */}
-            {isVerified ? (
-              <Link to="/recruiter/jobs/new">
-                <Button
-                  variant="glow"
-                  size="md"
-                  leftIcon={<PlusCircle className="w-4 h-4" />}
-                >
-                  Post a New Job
-                </Button>
-              </Link>
-            ) : isEvidenceRequired ? (
-              <Link to="/recruiter/verification">
-                <Button
-                  variant="glow"
-                  size="md"
-                  leftIcon={<AlertCircle className="w-4 h-4 text-amber-300" />}
-                  className="bg-amber-600 hover:bg-amber-500 text-white"
-                >
-                  Review Required Actions
-                </Button>
-              </Link>
-            ) : isPending || isResubmitted ? (
-              <Link to="/recruiter/verification">
-                <Button
-                  variant="secondary"
-                  size="md"
-                  leftIcon={<ShieldCheck className="w-4 h-4 text-cyan-300" />}
-                  className="border-amber-400/40 text-amber-200"
-                >
-                  Complete Verification
-                </Button>
-              </Link>
-            ) : (
-              <Link to="/recruiter/verification">
-                <Button
-                  variant="secondary"
-                  size="md"
-                  leftIcon={<AlertCircle className="w-4 h-4 text-rose-300" />}
-                  className="border-rose-400/40 text-rose-200"
-                >
-                  View Verification Status
-                </Button>
-              </Link>
-            )}
+            <Link
+              to="/recruiter/jobs/new"
+              id="btn-post-job-primary"
+              onClick={handlePostJobClick}
+            >
+              <Button
+                variant="glow"
+                size="md"
+                leftIcon={<PlusCircle className="w-4 h-4 text-purple-200" />}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-purple-500/25"
+              >
+                + Post a Job
+              </Button>
+            </Link>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ══════════════════════════════════════════════════════════════════════════
-          2. VERIFICATION STATUS & NEXT STEPS COMPONENT (SECTION 5)
-      ══════════════════════════════════════════════════════════════════════════ */}
-      {!isVerified && (
+      {/* Unverified Recruiter Banner */}
+      {!isVerified && !isLoading && (
         <div
-          className={cn(
-            'p-5 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all',
-            isEvidenceRequired
-              ? 'bg-amber-500/10 border-amber-500/30'
-              : isRejected || isSuspended
-              ? 'bg-rose-500/10 border-rose-500/30'
-              : isResubmitted
-              ? 'bg-cyan-500/10 border-cyan-500/30'
-              : 'bg-indigo-950/40 border-indigo-500/25'
-          )}
+          role="region"
+          aria-label="Verification Status Notice"
+          className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
         >
-          <div className="flex items-start gap-4">
-            <div className="p-2.5 rounded-xl bg-white/[0.05] shrink-0 mt-0.5">
-              {isEvidenceRequired ? (
-                <AlertCircle className="w-5 h-5 text-amber-400" />
-              ) : isRejected || isSuspended ? (
-                <XCircle className="w-5 h-5 text-rose-400" />
-              ) : (
-                <Clock className="w-5 h-5 text-cyan-400" />
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">
-                  {isEvidenceRequired
-                    ? 'Additional Evidence Required by Administrator'
-                    : isRejected
-                    ? 'Recruiter Verification Declined'
-                    : isSuspended
-                    ? 'Recruiter Account Suspended by Administration'
-                    : isResubmitted
-                    ? 'Updated Evidence Under Active Compliance Review'
-                    : 'Account Verification In Progress'}
-                </h3>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {verificationStatus.replace('_', ' ')}
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-                {isEvidenceRequired ? (
-                  verificationDetail?.rejectionReason ||
-                  user?.rejectionReason ||
-                  'The administrator has requested additional corporate credentials or authorization documents to verify your affiliation with this organization.'
-                ) : isRejected ? (
-                  verificationDetail?.rejectionReason ||
-                  user?.rejectionReason ||
-                  'Your recruiter verification could not be approved based on the submitted evidence. Review feedback in the Verification Center.'
-                ) : isSuspended ? (
-                  verificationDetail?.rejectionReason ||
-                  user?.rejectionReason ||
-                  'Your recruiter privileges are temporarily suspended. Contact compliance administration for resolution.'
-                ) : isResubmitted ? (
-                  'Your resubmitted business registration and company authorization documents have been sent to the review queue.'
-                ) : (
-                  'Your recruiter profile is awaiting administrator verification. You may complete your company profile, but job publishing remains restricted until approval.'
-                )}
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-white">
+                {isEvidenceRequired
+                  ? 'Additional credentials required to verify your corporate affiliation'
+                  : isResubmitted
+                  ? 'Your verification application is currently under administrative compliance review'
+                  : isRejected
+                  ? 'Your recruiter verification was not approved. Review details in Verification Center'
+                  : 'Organization verification pending approval'}
               </p>
-
-              {/* Progress of mandatory checks */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1.5 text-[11px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Email Verified
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Profile Created
-                </span>
-                <span className="flex items-center gap-1">
-                  {company?.businessRegistrationNumber ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  )}
-                  Corporate Registration
-                </span>
-                <span className="flex items-center gap-1">
-                  {company?.associationVerified ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  )}
-                  Recruiter Authorization
-                </span>
-              </div>
+              <p className="text-slate-300 text-[11px] mt-0.5">
+                Job requisitions cannot accept public applicants until verification completes.
+              </p>
             </div>
           </div>
+          <Link
+            to="/recruiter/verification"
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold border border-amber-400/30 transition-colors"
+          >
+            Verification Center →
+          </Link>
+        </div>
+      )}
 
-          <div className="shrink-0 flex items-center gap-2">
-            <Link to="/recruiter/verification">
-              <Button
-                variant={isEvidenceRequired ? 'glow' : 'secondary'}
-                size="sm"
-                rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
-              >
-                {isEvidenceRequired ? 'Submit Evidence' : 'Verification Center'}
-              </Button>
-            </Link>
+      {/* API Error Retry Banner */}
+      {hasError && (
+        <div
+          role="alert"
+          className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between gap-4 text-xs text-rose-200"
+        >
+          <div className="flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage || 'Failed to fetch recruitment metrics.'}</span>
           </div>
+          <button
+            type="button"
+            onClick={loadDashboardData}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600/30 hover:bg-rose-600/40 text-rose-100 font-bold border border-rose-400/40 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          3. KEY RECRUITMENT METRICS SECTION (SECTION 6)
+          B. RECRUITMENT PERFORMANCE SUMMARY (SECTION 4 - 4 COMPACT CARDS)
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {[
-          {
-            title: 'Active Jobs',
-            value: stats?.activeJobs ?? 0,
-            sub: 'Published Openings',
-            icon: <Briefcase className="w-4 h-4 text-cyan-400" />,
-            link: '/recruiter/jobs',
-            borderColor: 'hover:border-cyan-400/40'
-          },
-          {
-            title: 'Total Applicants',
-            value: stats?.totalApplicants ?? 0,
-            sub: 'Received Across Jobs',
-            icon: <Users className="w-4 h-4 text-indigo-400" />,
-            link: '/recruiter/applicants',
-            borderColor: 'hover:border-indigo-400/40'
-          },
-          {
-            title: 'Under Review',
-            value: candidatesRequiringReview.length,
-            sub: 'Awaiting Evaluation',
-            icon: <Clock className="w-4 h-4 text-amber-400" />,
-            link: '/recruiter/applicants?status=Under+Review',
-            borderColor: 'hover:border-amber-400/40'
-          },
-          {
-            title: 'Shortlisted',
-            value: stats?.shortlisted ?? 0,
-            sub: 'Top Tier Talent',
-            icon: <Target className="w-4 h-4 text-violet-400" />,
-            link: '/recruiter/applicants?status=Shortlisted',
-            borderColor: 'hover:border-violet-400/40'
-          },
-          {
-            title: 'Interviews',
-            value: stats?.interviewsScheduled ?? 0,
-            sub: 'Active Rounds',
-            icon: <UserCheck className="w-4 h-4 text-teal-400" />,
-            link: '/recruiter/applicants?status=Interview',
-            borderColor: 'hover:border-teal-400/40'
-          },
-          {
-            title: 'Recorded Hires',
-            value: stats?.hiresThisMonth ?? 0,
-            sub: 'Offers Finalized',
-            icon: <Award className="w-4 h-4 text-emerald-400" />,
-            link: '/recruiter/applicants?status=Selected',
-            borderColor: 'hover:border-emerald-400/40'
-          }
-        ].map((metric, idx) => (
+      <section aria-labelledby="metrics-summary-heading">
+        <h2 id="metrics-summary-heading" className="sr-only">
+          Recruitment Performance Summary
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: ACTIVE JOBS */}
           <Link
-            key={idx}
-            to={metric.link}
-            className={cn(
-              'p-4 rounded-2xl bg-[#090F1E] border border-white/[0.08] transition-all duration-200 hover:-translate-y-0.5 group block shadow-md',
-              metric.borderColor
-            )}
+            to="/recruiter/jobs"
+            id="metric-active-jobs"
+            className="p-4 rounded-xl bg-[#090F1E] border border-white/[0.08] hover:border-cyan-400/40 hover:-translate-y-0.5 transition-all duration-200 group block shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                {metric.title}
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Active Jobs
               </span>
-              <div className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:scale-105 transition-transform">
-                {metric.icon}
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
+                <Briefcase className="w-3.5 h-3.5" />
               </div>
             </div>
 
-            <div className="text-2xl font-black text-white tracking-tight">
-              {metric.value}
-            </div>
+            {isLoading ? (
+              <div className="h-8 w-14 bg-white/[0.05] rounded animate-pulse my-1" />
+            ) : (
+              <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {activeJobsList.length}
+              </div>
+            )}
 
-            <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/[0.04]">
-              <span className="text-[10px] text-slate-400 truncate">{metric.sub}</span>
-              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-cyan-300 transition-colors" />
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+              <span className="text-[11px] text-slate-400 truncate">
+                Accepting applications
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-300 transition-colors" />
             </div>
           </Link>
-        ))}
-      </div>
+
+          {/* Card 2: TOTAL APPLICANTS */}
+          <Link
+            to="/recruiter/applicants"
+            id="metric-total-applicants"
+            className="p-4 rounded-xl bg-[#090F1E] border border-white/[0.08] hover:border-purple-400/40 hover:-translate-y-0.5 transition-all duration-200 group block shadow-md"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Total Applicants
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-400/20 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-14 bg-white/[0.05] rounded animate-pulse my-1" />
+            ) : (
+              <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {applicants.length}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+              <span className="text-[11px] text-slate-400 truncate">
+                Across all job openings
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-purple-300 transition-colors" />
+            </div>
+          </Link>
+
+          {/* Card 3: NEEDS REVIEW */}
+          <Link
+            to="/recruiter/applicants?status=Under+Review"
+            id="metric-needs-review"
+            className="p-4 rounded-xl bg-[#090F1E] border border-white/[0.08] hover:border-amber-400/40 hover:-translate-y-0.5 transition-all duration-200 group block shadow-md"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Needs Review
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-400/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+                <Clock className="w-3.5 h-3.5" />
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-14 bg-white/[0.05] rounded animate-pulse my-1" />
+            ) : (
+              <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {candidatesNeedingReview.length}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+              <span className="text-[11px] text-slate-400 truncate">
+                Awaiting evaluation
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-300 transition-colors" />
+            </div>
+          </Link>
+
+          {/* Card 4: INTERVIEWS */}
+          <Link
+            to="/recruiter/applicants?status=Interview"
+            id="metric-interviews"
+            className="p-4 rounded-xl bg-[#090F1E] border border-white/[0.08] hover:border-teal-400/40 hover:-translate-y-0.5 transition-all duration-200 group block shadow-md"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Interviews
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-400/20 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform">
+                <UserCheck className="w-3.5 h-3.5" />
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-14 bg-white/[0.05] rounded animate-pulse my-1" />
+            ) : (
+              <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {interviewCandidates.length}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+              <span className="text-[11px] text-slate-400 truncate">
+                Active screening rounds
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-teal-300 transition-colors" />
+            </div>
+          </Link>
+        </div>
+      </section>
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          4. CLEAR QUICK ACTIONS BAR (SECTION 7)
+          C. RECOMMENDED NEXT ACTION (SECTION 5 - "YOUR NEXT BEST ACTION")
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="p-4 rounded-2xl bg-[#080D1A] border border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-black uppercase tracking-wider text-white">
-            Quick Actions
-          </span>
-        </div>
+      <section
+        id="section-next-best-action"
+        aria-labelledby="heading-next-best-action"
+        className="p-5 rounded-2xl bg-gradient-to-r from-[#090F1E] via-[#0D152A] to-[#090F1E] border border-purple-500/25 shadow-lg relative overflow-hidden"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5 min-w-0">
+            <div
+              className={cn(
+                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border mt-0.5',
+                nextBestAction.iconBg
+              )}
+            >
+              <nextBestAction.icon className={cn('w-5 h-5', nextBestAction.iconColor)} />
+            </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Post Job Action */}
-          {isVerified ? (
-            <Link to="/recruiter/jobs/new">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  YOUR NEXT BEST ACTION
+                </span>
+                <span
+                  className={cn(
+                    'text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border',
+                    nextBestAction.badgeClass
+                  )}
+                >
+                  {nextBestAction.badge}
+                </span>
+              </div>
+
+              <h3 className="text-sm sm:text-base font-bold text-white truncate">
+                {nextBestAction.headline}
+              </h3>
+
+              <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                {nextBestAction.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 self-start sm:self-center pt-2 sm:pt-0">
+            <Link to={nextBestAction.actionLink} id="btn-next-best-action">
               <Button
                 variant="glow"
                 size="sm"
-                leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs"
               >
-                Post a New Job
+                {nextBestAction.actionLabel}
               </Button>
             </Link>
-          ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<PlusCircle className="w-3.5 h-3.5 text-slate-400" />}
-              onClick={() => setShowVerificationModal(true)}
-              className="opacity-75 border-amber-500/30 text-amber-300"
-            >
-              Post Job (Verification Required)
-            </Button>
-          )}
-
-          <Link to="/recruiter/jobs">
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Briefcase className="w-3.5 h-3.5 text-indigo-400" />}
-            >
-              My Jobs ({jobs.length})
-            </Button>
-          </Link>
-
-          <Link to="/recruiter/applicants">
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Users className="w-3.5 h-3.5 text-cyan-400" />}
-            >
-              Applicant Pipeline ({applicants.length})
-            </Button>
-          </Link>
-
-          <Link to="/recruiter/company">
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Building className="w-3.5 h-3.5 text-teal-400" />}
-            >
-              Company Profile
-            </Button>
-          </Link>
-
-          <Link to="/recruiter/verification">
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
-            >
-              Verification Center
-            </Button>
-          </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          5. RECRUITMENT PIPELINE OVERVIEW FUNNEL (SECTION 8)
+          D. MY JOB OPENINGS (SECTION 6)
       ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <BarChart3 className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-sm font-black uppercase tracking-wider text-white">
-              Application Pipeline Funnel
+      <section
+        id="section-my-job-openings"
+        aria-labelledby="heading-job-openings"
+        className="p-5 sm:p-6 rounded-2xl bg-[#090F1E] border border-white/[0.08] shadow-md space-y-4"
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-cyan-400" />
+            <h2 id="heading-job-openings" className="text-sm font-bold uppercase tracking-wider text-white">
+              MY JOB OPENINGS
             </h2>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span>Aggregating {applicants.length} total applications across all requisitions</span>
-          </div>
+
+          <Link
+            to="/recruiter/jobs"
+            id="link-view-all-jobs"
+            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+          >
+            <span>View All Jobs</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {applicants.length === 0 ? (
-          <div className="py-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-2">
-            <Users className="w-10 h-10 text-slate-500 mx-auto" />
-            <p className="text-sm font-bold text-white">No applications received yet</p>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              When candidates apply to your approved published job openings, they will flow through this funnel automatically.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              {
-                stage: '1. Applied',
-                count: pipelineCounts.applied,
-                statusParam: 'Applied',
-                color: 'border-blue-500/30 text-blue-300'
-              },
-              {
-                stage: '2. Under Review',
-                count: pipelineCounts.underReview,
-                statusParam: 'Under+Review',
-                color: 'border-cyan-500/30 text-cyan-300'
-              },
-              {
-                stage: '3. Shortlisted',
-                count: pipelineCounts.shortlisted,
-                statusParam: 'Shortlisted',
-                color: 'border-violet-500/30 text-violet-300'
-              },
-              {
-                stage: '4. Interview',
-                count: pipelineCounts.interview,
-                statusParam: 'Interview',
-                color: 'border-amber-500/30 text-amber-300'
-              },
-              {
-                stage: '5. Selected',
-                count: pipelineCounts.hired,
-                statusParam: 'Selected',
-                color: 'border-emerald-500/30 text-emerald-300'
-              },
-              {
-                stage: '6. Rejected',
-                count: pipelineCounts.rejected,
-                statusParam: 'Rejected',
-                color: 'border-rose-500/30 text-rose-300'
-              }
-            ].map((step, sIdx) => (
-              <Link
-                key={sIdx}
-                to={`/recruiter/applicants?status=${step.statusParam}`}
-                className={cn(
-                  'p-3.5 rounded-2xl bg-white/[0.02] border hover:bg-white/[0.05] transition-all group block shadow-sm',
-                  step.color
-                )}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {step.stage}
-                  </span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
-                </div>
-                <div className="text-xl font-black text-white">{step.count}</div>
-                <div className="text-[10px] text-slate-400 mt-1">
-                  {applicants.length > 0 ? `${Math.round((step.count / applicants.length) * 100)}% of pipeline` : '0%'}
-                </div>
-              </Link>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-16 rounded-xl bg-white/[0.03] animate-pulse" />
             ))}
           </div>
+        ) : jobs.length === 0 ? (
+          <div className="py-8 text-center rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-2.5">
+            <Briefcase className="w-8 h-8 text-slate-500 mx-auto" />
+            <p className="text-xs font-bold text-white">No Job Openings Created</p>
+            <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+              Post your first job opening to receive real candidates and automatic ATS match scoring.
+            </p>
+            <div className="pt-1">
+              <Link to="/recruiter/jobs/new" onClick={handlePostJobClick}>
+                <Button variant="glow" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />}>
+                  + Post a Job
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <table className="w-full text-left border-collapse hidden sm:table">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="pb-2.5 pl-2">Job Requisition</th>
+                  <th className="pb-2.5">Compensation (INR)</th>
+                  <th className="pb-2.5">Status</th>
+                  <th className="pb-2.5">Applicants</th>
+                  <th className="pb-2.5">Deadline</th>
+                  <th className="pb-2.5 pr-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04] text-xs">
+                {jobs.slice(0, 5).map((job) => {
+                  const statusLower = (job.status || 'active').toLowerCase();
+                  const isExpired =
+                    statusLower === 'closed' && job.closedReason === 'DEADLINE_EXPIRED'
+                      ? true
+                      : isDeadlinePassed(job.deadline);
+
+                  const statusDisplay = isExpired
+                    ? 'Expired'
+                    : statusLower === 'active'
+                    ? 'Active'
+                    : statusLower === 'pending_approval'
+                    ? 'Pending Approval'
+                    : statusLower === 'draft'
+                    ? 'Draft'
+                    : 'Closed';
+
+                  const badgeClass = isExpired
+                    ? 'bg-rose-500/15 text-rose-300 border-rose-400/30'
+                    : statusLower === 'active'
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'
+                    : statusLower === 'pending_approval'
+                    ? 'bg-amber-500/15 text-amber-300 border-amber-400/30'
+                    : 'bg-slate-500/15 text-slate-300 border-slate-400/30';
+
+                  const salaryDisplay = formatSalaryRange(
+                    job.salary?.min,
+                    job.salary?.max,
+                    job.salary?.currency || 'INR',
+                    job.salary?.period || 'yearly',
+                    'Competitive'
+                  );
+
+                  return (
+                    <tr
+                      key={job.id}
+                      className="hover:bg-white/[0.02] transition-colors group"
+                    >
+                      {/* Job Title & Dept */}
+                      <td className="py-3 pl-2 pr-3">
+                        <p className="font-bold text-white group-hover:text-cyan-300 transition-colors">
+                          {job.title}
+                        </p>
+                        <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <span>{job.department || 'General'}</span>
+                          <span>·</span>
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {job.location}
+                          </span>
+                          <span>·</span>
+                          <span>{job.type}</span>
+                        </p>
+                      </td>
+
+                      {/* INR Salary */}
+                      <td className="py-3 pr-3 text-slate-300 font-medium">
+                        {salaryDisplay}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3 pr-3">
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                            badgeClass
+                          )}
+                        >
+                          {statusDisplay}
+                        </span>
+                      </td>
+
+                      {/* Applicant Count */}
+                      <td className="py-3 pr-3 font-semibold text-slate-200">
+                        {job.applicantCount || 0} applicants
+                      </td>
+
+                      {/* Deadline */}
+                      <td className="py-3 pr-3 text-[11px] text-slate-400">
+                        {formatDeadlineLabel(job.deadline)}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 pr-2 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link to={`/recruiter/applicants?jobId=${job.id}`}>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="text-xs py-1 px-2.5 h-auto text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/10"
+                            >
+                              View Applicants
+                            </Button>
+                          </Link>
+                          <Link to={`/recruiter/jobs/${job.id}`}>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="text-xs py-1 px-2.5 h-auto text-slate-300 hover:text-white"
+                            >
+                              Manage Job
+                            </Button>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile Stacked Card View */}
+            <div className="space-y-3 sm:hidden">
+              {jobs.slice(0, 5).map((job) => {
+                const statusLower = (job.status || 'active').toLowerCase();
+                const isExpired =
+                  statusLower === 'closed' && job.closedReason === 'DEADLINE_EXPIRED'
+                    ? true
+                    : isDeadlinePassed(job.deadline);
+
+                const statusDisplay = isExpired
+                  ? 'Expired'
+                  : statusLower === 'active'
+                  ? 'Active'
+                  : statusLower === 'pending_approval'
+                  ? 'Pending Approval'
+                  : 'Closed';
+
+                const badgeClass = isExpired
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-400/30'
+                  : statusLower === 'active'
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-400/30';
+
+                return (
+                  <div
+                    key={job.id}
+                    className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{job.title}</h4>
+                        <p className="text-[11px] text-slate-400">
+                          {job.department} · {job.location} · {job.type}
+                        </p>
+                      </div>
+                      <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full border', badgeClass)}>
+                        {statusDisplay}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-300 pt-1 border-t border-white/[0.04]">
+                      <span>{formatSalaryRange(job.salary?.min, job.salary?.max, 'INR', job.salary?.period)}</span>
+                      <span>{job.applicantCount || 0} applicants</span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 gap-2">
+                      <span className="text-[10px] text-slate-400">{formatDeadlineLabel(job.deadline)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Link to={`/recruiter/applicants?jobId=${job.id}`}>
+                          <Button variant="secondary" size="sm" className="text-xs py-1 px-2 h-auto text-cyan-300">
+                            Applicants
+                          </Button>
+                        </Link>
+                        <Link to={`/recruiter/jobs/${job.id}`}>
+                          <Button variant="secondary" size="sm" className="text-xs py-1 px-2 h-auto">
+                            Manage
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
-      </div>
+      </section>
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          6. CANDIDATES REQUIRING REVIEW & UPCOMING INTERVIEWS (SECTION 11)
+          E & F. CANDIDATE ACTIVITY & UPCOMING INTERVIEWS (2-COLUMN GRID)
       ══════════════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel A: Candidates Requiring Review */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-xl space-y-4">
+        {/* SECTION E: RECENT CANDIDATE ACTIVITY */}
+        <section
+          id="section-recent-candidate-activity"
+          aria-labelledby="heading-candidate-activity"
+          className="p-5 rounded-2xl bg-[#090F1E] border border-white/[0.08] shadow-md space-y-4"
+        >
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                Candidates Requiring Review ({candidatesRequiringReview.length})
+              <Clock className="w-4 h-4 text-purple-400" />
+              <h2 id="heading-candidate-activity" className="text-sm font-bold uppercase tracking-wider text-white">
+                RECENT CANDIDATE ACTIVITY
               </h2>
             </div>
             <Link
-              to="/recruiter/applicants?status=Applied"
-              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+              to="/recruiter/applicants"
+              className="text-xs font-semibold text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-0.5"
             >
-              View All
+              <span>Pipeline</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {candidatesRequiringReview.length === 0 ? (
-            <div className="py-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-2">
-              <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto" />
-              <p className="text-xs font-bold text-white">All Candidates Evaluated</p>
-              <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                No applicants are currently waiting in the initial review queue.
+          {isLoading ? (
+            <div className="space-y-2.5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-14 rounded-xl bg-white/[0.03] animate-pulse" />
+              ))}
+            </div>
+          ) : candidateActivities.length === 0 ? (
+            <div className="py-8 text-center rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-1.5">
+              <Users className="w-7 h-7 text-slate-500 mx-auto" />
+              <p className="text-xs font-bold text-white">No recent candidate activity yet.</p>
+              <p className="text-[11px] text-slate-400">
+                New candidate submissions and pipeline updates will appear here automatically.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {candidatesRequiringReview.slice(0, 4).map((app) => (
+            <div className="space-y-2.5">
+              {candidateActivities.map((item) => (
                 <div
-                  key={app.id}
-                  className="p-3.5 rounded-2xl bg-[#080D1A] border border-white/[0.06] hover:border-cyan-500/30 transition-all flex items-center justify-between gap-3 group"
+                  key={item.id}
+                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-purple-500/30 transition-all flex items-center justify-between gap-3 text-xs"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-sm font-black text-white shrink-0 shadow-md">
-                      {app.candidateName?.charAt(0) || 'C'}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-700 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-sm">
+                      {item.candidateName?.charAt(0) || 'C'}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-white truncate">{app.candidateName}</p>
-                        <span className="text-[9px] font-black text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-400/25">
-                          {app.atsScore || 85}% Match
+                        <p className="font-bold text-white truncate">{item.candidateName}</p>
+                        <span className="text-[9px] font-semibold text-slate-400 truncate hidden sm:inline">
+                          · {item.jobTitle}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate">{app.jobTitle}</p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {item.description} · <span className="text-slate-500">{formatRelativeTime(item.timestamp)}</span>
+                      </p>
                     </div>
                   </div>
 
@@ -785,71 +1059,76 @@ export const RecruiterDashboard: React.FC = () => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setViewingProfile(app)}
-                      className="text-xs py-1 px-2.5 h-auto"
+                      onClick={() => setViewingProfile(item.application)}
+                      className="text-xs py-1 px-2.5 h-auto text-purple-300 border-purple-400/30 hover:bg-purple-500/10"
                     >
-                      <Eye className="w-3 h-3 text-cyan-400 mr-1" />
+                      <Eye className="w-3 h-3 mr-1" />
                       Review
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleUpdateStatus(app.id, 'Shortlisted')}
-                      className="text-xs py-1 px-2.5 h-auto border-violet-400/30 text-violet-300 hover:bg-violet-500/20"
-                    >
-                      Shortlist
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Panel B: Upcoming Interviews */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-xl space-y-4">
+        {/* SECTION F: UPCOMING INTERVIEWS */}
+        <section
+          id="section-upcoming-interviews"
+          aria-labelledby="heading-upcoming-interviews"
+          className="p-5 rounded-2xl bg-[#090F1E] border border-white/[0.08] shadow-md space-y-4"
+        >
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-teal-400" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                Ready for Interview ({upcomingInterviews.length})
+              <Calendar className="w-4 h-4 text-teal-400" />
+              <h2 id="heading-upcoming-interviews" className="text-sm font-bold uppercase tracking-wider text-white">
+                UPCOMING INTERVIEWS
               </h2>
             </div>
             <Link
               to="/recruiter/applicants?status=Interview"
-              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-xs font-semibold text-teal-300 hover:text-teal-200 transition-colors flex items-center gap-0.5"
             >
-              Manage Pipeline
+              <span>Manage Rounds</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {upcomingInterviews.length === 0 ? (
-            <div className="py-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-2">
-              <Calendar className="w-8 h-8 text-slate-500 mx-auto" />
-              <p className="text-xs font-bold text-white">No Interviews In Progress</p>
+          {isLoading ? (
+            <div className="space-y-2.5">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-14 rounded-xl bg-white/[0.03] animate-pulse" />
+              ))}
+            </div>
+          ) : interviewCandidates.length === 0 ? (
+            <div className="py-8 text-center rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-1.5">
+              <Calendar className="w-7 h-7 text-slate-500 mx-auto" />
+              <p className="text-xs font-bold text-white">No upcoming interviews scheduled.</p>
               <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                Promote qualified candidates to &ldquo;Interview&rdquo; to schedule screening loops.
+                Promote qualified candidates to the &ldquo;Interview&rdquo; stage in your applicant pipeline to schedule screening loops.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {upcomingInterviews.slice(0, 4).map((app) => (
+            <div className="space-y-2.5">
+              {interviewCandidates.slice(0, 4).map((app) => (
                 <div
                   key={app.id}
-                  className="p-3.5 rounded-2xl bg-[#080D1A] border border-white/[0.06] hover:border-teal-500/30 transition-all flex items-center justify-between gap-3 group"
+                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-teal-500/30 transition-all flex items-center justify-between gap-3 text-xs"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-indigo-600 flex items-center justify-center text-sm font-black text-white shrink-0 shadow-md">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-teal-600/30 border border-teal-400/30 flex items-center justify-center font-bold text-teal-300 text-xs shrink-0">
                       {app.candidateName?.charAt(0) || 'C'}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-white truncate">{app.candidateName}</p>
-                        <span className="text-[9px] font-black text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-400/25">
-                          Loop Active
+                        <p className="font-bold text-white truncate">{app.candidateName}</p>
+                        <span className="text-[9px] font-bold text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-400/20">
+                          Interview Active
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate">{app.jobTitle}</p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {app.jobTitle} · {app.notes?.[0] || 'Technical Screening & Interview Loop'}
+                      </p>
                     </div>
                   </div>
 
@@ -858,214 +1137,17 @@ export const RecruiterDashboard: React.FC = () => {
                       variant="secondary"
                       size="sm"
                       onClick={() => setViewingProfile(app)}
-                      className="text-xs py-1 px-2.5 h-auto"
+                      className="text-xs py-1 px-2.5 h-auto text-teal-300 border-teal-400/30 hover:bg-teal-500/10"
                     >
-                      <Eye className="w-3 h-3 text-cyan-400 mr-1" />
-                      Dossier
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleUpdateStatus(app.id, 'Selected')}
-                      className="text-xs py-1 px-2.5 h-auto border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20"
-                    >
-                      Select
+                      <Eye className="w-3 h-3 mr-1" />
+                      View Interview
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════════
-          7. MY JOB POSTINGS OVERVIEW (SECTION 10)
-      ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <Briefcase className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-sm font-black uppercase tracking-wider text-white">
-              My Job Postings ({jobs.length})
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/recruiter/jobs"
-              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              Manage All Jobs
-            </Link>
-          </div>
-        </div>
-
-        {jobs.length === 0 ? (
-          <div className="py-10 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-3">
-            <Briefcase className="w-12 h-12 text-slate-500 mx-auto" />
-            <h3 className="text-sm font-bold text-white">No Job Requisitions Created Yet</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Create your first job requisition to attract verified candidates and activate automated semantic ATS scoring.
-            </p>
-            {isVerified ? (
-              <Link to="/recruiter/jobs/new">
-                <Button variant="glow" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />}>
-                  Create First Opening
-                </Button>
-              </Link>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowVerificationModal(true)}
-              >
-                Complete Verification to Post Jobs
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {jobs.slice(0, 4).map((job) => {
-              const statusLower = (job.status || 'active').toLowerCase();
-              const isJobActive = statusLower === 'active';
-              const isJobPending = statusLower === 'pending_approval' || statusLower === 'draft';
-              const isJobRejected = statusLower === 'rejected';
-
-              return (
-                <div
-                  key={job.id}
-                  className="p-4 rounded-2xl bg-[#080D1A] border border-white/[0.06] hover:border-cyan-500/30 transition-all flex flex-col justify-between group shadow-md"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        {job.department && (
-                          <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-400/25">
-                            {job.department}
-                          </span>
-                        )}
-                        <h3 className="text-sm font-black text-white mt-1.5 group-hover:text-cyan-300 transition-colors">
-                          {job.title}
-                        </h3>
-                      </div>
-
-                      {/* Status Badge */}
-                      {isJobActive ? (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 rounded-full shrink-0">
-                          Published
-                        </span>
-                      ) : isJobPending ? (
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded-full shrink-0">
-                          Awaiting Moderation
-                        </span>
-                      ) : isJobRejected ? (
-                        <span className="text-[10px] font-bold text-rose-400 bg-rose-500/15 border border-rose-400/30 px-2 py-0.5 rounded-full shrink-0">
-                          Rejected
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-500/15 border border-slate-400/30 px-2 py-0.5 rounded-full shrink-0">
-                          {job.status}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                      <MapPin className="w-3 h-3 text-slate-500" />
-                      <span>{job.location}</span>
-                      <span>•</span>
-                      <span>{job.type}</span>
-                    </p>
-
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-                      {job.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-300">
-                      {job.applicantCount || 0} applicants
-                    </span>
-
-                    <div className="flex items-center gap-1.5">
-                      <Link to={`/recruiter/jobs/${job.id}`}>
-                        <Button variant="secondary" size="sm" className="text-xs py-1 px-2.5 h-auto">
-                          <Edit2 className="w-3 h-3 text-indigo-300 mr-1" />
-                          Edit
-                        </Button>
-                      </Link>
-
-                      <Link to={`/recruiter/applicants?jobId=${job.id}`}>
-                        <Button variant="secondary" size="sm" className="text-xs py-1 px-2.5 h-auto text-cyan-300 border-cyan-400/30">
-                          Applicants
-                        </Button>
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => setJobToDelete(job)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        title="Delete Requisition"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════════
-          8. RECENT RECRUITER ACTIVITY FEED (SECTION 9)
-      ══════════════════════════════════════════════════════════════════════════ */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#090F1E] border border-white/[0.08] shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-indigo-400" />
-            <h2 className="text-sm font-black uppercase tracking-wider text-white">
-              Recent Recruiter Activity & Governance Notifications
-            </h2>
-          </div>
-          <span className="text-xs text-slate-400">
-            {notifications.length} events logged
-          </span>
-        </div>
-
-        {notifications.length === 0 ? (
-          <div className="py-6 text-center rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-1.5">
-            <Activity className="w-6 h-6 text-slate-500 mx-auto" />
-            <p className="text-xs font-bold text-white">No Recent Activity</p>
-            <p className="text-[11px] text-slate-400">
-              Audit events such as candidate applications, job moderation approvals, and verification updates will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {notifications.slice(0, 5).map((n) => (
-              <div
-                key={n.id}
-                className="p-3 rounded-xl bg-[#080D1A] border border-white/[0.05] flex items-center justify-between gap-3 text-xs"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                    <Activity className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-white truncate">{n.title}</p>
-                    <p className="text-slate-400 text-[11px] truncate">{n.message}</p>
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-slate-500 shrink-0">
-                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent'}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </section>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
@@ -1075,96 +1157,93 @@ export const RecruiterDashboard: React.FC = () => {
         <Modal
           isOpen={Boolean(viewingProfile)}
           onClose={() => setViewingProfile(null)}
-          title="Candidate Profile & ATS Dossier"
+          title="Candidate Dossier & Evaluation"
           size="4xl"
         >
-          <div className="space-y-6 max-h-[78vh] overflow-y-auto pr-1">
-            {/* Header */}
-            <div className="p-5 rounded-2xl bg-[#090F1E] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-2xl font-black text-white shrink-0 shadow-lg">
+          <div className="space-y-5 max-h-[76vh] overflow-y-auto pr-1 text-xs">
+            {/* Header Card */}
+            <div className="p-4 rounded-xl bg-[#090F1E] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-lg font-black text-white shrink-0 shadow-md">
                   {viewingProfile.candidateName?.charAt(0) || 'C'}
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white">
+                  <h3 className="text-base font-bold text-white">
                     {viewingProfile.candidateName}
-                  </h2>
-                  <p className="text-xs text-cyan-300 font-semibold mt-0.5">
-                    {viewingProfile.candidateTitle || 'Candidate Profile'}
+                  </h3>
+                  <p className="text-xs text-purple-300 font-medium">
+                    {viewingProfile.candidateTitle || 'Applicant'}
                   </p>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-500" />
-                      {viewingProfile.candidateLocation || 'Remote'}
-                    </span>
-                    <span>•</span>
-                    <span>{viewingProfile.experienceYears || 5} Years Exp</span>
+                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                    <span>{viewingProfile.candidateLocation || 'Location not specified'}</span>
+                    <span>·</span>
+                    <span>{viewingProfile.experienceYears || 0} Years Experience</span>
                   </p>
                 </div>
               </div>
 
-              <div className="text-right shrink-0 px-4 py-2.5 rounded-2xl bg-[#060A14] border border-cyan-400/30">
+              <div className="text-right shrink-0 px-3 py-2 rounded-xl bg-[#060A14] border border-purple-400/20">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   ATS Match Score
                 </p>
-                <p className="text-2xl font-black text-emerald-400">
-                  {viewingProfile.atsScore || 88}
+                <p className="text-xl font-extrabold text-emerald-400">
+                  {viewingProfile.atsScore || 85}
                   <span className="text-xs font-normal text-slate-500">/100</span>
                 </p>
               </div>
             </div>
 
-            {/* Position Details */}
+            {/* Position & Stage Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Email</p>
                 <p className="text-xs text-white font-medium truncate mt-0.5">{viewingProfile.candidateEmail}</p>
               </div>
-
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Applied Requisition</p>
                 <p className="text-xs text-white font-medium truncate mt-0.5">{viewingProfile.jobTitle}</p>
               </div>
-
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Pipeline Stage</p>
-                <span className={cn('text-xs font-bold px-2 py-0.5 rounded-md border inline-block mt-0.5', getStatusBadgeStyle(viewingProfile.status))}>
+              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                <p className="text-[10px] text-slate-400 uppercase font-bold">Current Stage</p>
+                <span className={cn('text-xs font-bold px-2 py-0.5 rounded border inline-block mt-0.5', getStatusBadgeStyle(viewingProfile.status).badgeClass)}>
                   {viewingProfile.status}
                 </span>
               </div>
             </div>
 
-            {/* Verified Skills */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Extracted Skills
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {(viewingProfile.skills || ['Java', 'Spring Boot', 'React', 'PostgreSQL', 'AWS']).map((skill, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-400/25 text-cyan-200 text-xs font-semibold"
-                  >
-                    {skill}
-                  </span>
-                ))}
+            {/* Skills */}
+            {viewingProfile.skills && viewingProfile.skills.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  Verified Skills
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {viewingProfile.skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-400/25 text-purple-200 text-xs font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Actions */}
-            <div className="pt-4 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400">Move Stage:</span>
+            {/* Stage Actions */}
+            <div className="pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 mr-1">Move Candidate:</span>
                 {(['Under Review', 'Shortlisted', 'Interview', 'Selected', 'Rejected'] as ApplicationStatus[]).map((st) => (
                   <button
                     key={st}
                     type="button"
-                    onClick={() => handleUpdateStatus(viewingProfile.id, st)}
+                    onClick={() => handleUpdateApplicantStage(viewingProfile.id, st)}
                     className={cn(
                       'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
                       viewingProfile.status === st
-                        ? 'bg-cyan-500 text-black font-black'
-                        : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10'
+                        ? 'bg-purple-600 text-white font-bold'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/10'
                     )}
                   >
                     {st}
@@ -1195,8 +1274,8 @@ export const RecruiterDashboard: React.FC = () => {
           size="md"
         >
           <div className="space-y-4 text-center py-2">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center mx-auto text-amber-400">
-              <ShieldCheck className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center mx-auto text-amber-400">
+              <ShieldCheck className="w-6 h-6" />
             </div>
 
             <h3 className="text-base font-bold text-white">
@@ -1204,13 +1283,15 @@ export const RecruiterDashboard: React.FC = () => {
             </h3>
 
             <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
-              To protect candidates from fraudulent listings, only recruiters with verified corporate affiliation can publish job requisitions.
+              To protect candidates from fraudulent listings, only recruiters with verified corporate credentials can publish job openings.
             </p>
 
-            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left text-xs space-y-1.5">
-              <p className="font-bold text-slate-200">Current Status: <span className="text-amber-400 uppercase">{verificationStatus}</span></p>
-              <p className="text-slate-400">
-                Submit your official corporate email domain, business registration details, or representative authorization in the Verification Center.
+            <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-left text-xs space-y-1">
+              <p className="font-semibold text-slate-200">
+                Current Status: <span className="text-amber-400 uppercase font-bold">{verificationStatus}</span>
+              </p>
+              <p className="text-slate-400 text-[11px]">
+                Submit your official corporate domain or representative credentials in the Verification Center for review.
               </p>
             </div>
 
@@ -1228,6 +1309,7 @@ export const RecruiterDashboard: React.FC = () => {
                   size="sm"
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   onClick={() => setShowVerificationModal(false)}
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold"
                 >
                   Open Verification Center
                 </Button>
@@ -1237,27 +1319,16 @@ export const RecruiterDashboard: React.FC = () => {
         </Modal>
       )}
 
-      {/* Confirmation Dialogs */}
+      {/* Confirm Delete Job Dialog */}
       <ConfirmDialog
-        isOpen={!!candidateToDelete}
-        onClose={() => setCandidateToDelete(null)}
-        onConfirm={handleConfirmDeleteCandidate}
-        title="Delete Candidate Application"
-        message={`Are you sure you want to remove ${candidateToDelete?.candidateName || 'this candidate'} from applications? This action cannot be undone.`}
-        confirmText="Delete Candidate"
-        variant="danger"
-        isLoading={isDeleting}
-      />
-
-      <ConfirmDialog
-        isOpen={!!jobToDelete}
+        isOpen={Boolean(jobToDelete)}
         onClose={() => setJobToDelete(null)}
         onConfirm={handleConfirmDeleteJob}
         title="Delete Job Requisition"
-        message={`Are you sure you want to delete requisition "${jobToDelete?.title || ''}"? This will permanently remove the requisition.`}
+        message={`Are you sure you want to delete requisition "${jobToDelete?.title || ''}"? This action cannot be undone.`}
         confirmText="Delete Requisition"
         variant="danger"
-        isLoading={isDeleting}
+        isLoading={isDeletingJob}
       />
     </div>
   );

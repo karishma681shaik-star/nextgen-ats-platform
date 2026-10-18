@@ -14,9 +14,11 @@ public class CandidateDashboardDTO {
 
     // Truthful, calculated Profile & ATS Score
     private int profileCompletion;
-    private int atsScore;
+    private Integer atsScore; // null if no resume or pending analysis
+    private String atsStatus; // NO_RESUME, PROCESSING, PARSED_PENDING_ANALYSIS, ATS_SCORE_AVAILABLE, ANALYSIS_FAILED
     private String atsTier;
     private String atsSummary;
+    private String lastAnalyzedDate;
 
     // Primary resume info
     private boolean hasPrimaryResume;
@@ -56,14 +58,20 @@ public class CandidateDashboardDTO {
     public int getProfileCompletion() { return profileCompletion; }
     public void setProfileCompletion(int profileCompletion) { this.profileCompletion = profileCompletion; }
 
-    public int getAtsScore() { return atsScore; }
-    public void setAtsScore(int atsScore) { this.atsScore = atsScore; }
+    public Integer getAtsScore() { return atsScore; }
+    public void setAtsScore(Integer atsScore) { this.atsScore = atsScore; }
+
+    public String getAtsStatus() { return atsStatus; }
+    public void setAtsStatus(String atsStatus) { this.atsStatus = atsStatus; }
 
     public String getAtsTier() { return atsTier; }
     public void setAtsTier(String atsTier) { this.atsTier = atsTier; }
 
     public String getAtsSummary() { return atsSummary; }
     public void setAtsSummary(String atsSummary) { this.atsSummary = atsSummary; }
+
+    public String getLastAnalyzedDate() { return lastAnalyzedDate; }
+    public void setLastAnalyzedDate(String lastAnalyzedDate) { this.lastAnalyzedDate = lastAnalyzedDate; }
 
     public boolean isHasPrimaryResume() { return hasPrimaryResume; }
     public void setHasPrimaryResume(boolean hasPrimaryResume) { this.hasPrimaryResume = hasPrimaryResume; }

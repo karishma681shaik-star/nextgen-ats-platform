@@ -47,7 +47,7 @@ public class Job {
     private BigDecimal salaryMax;
 
     @Column(name = "salary_currency", length = 10)
-    private String salaryCurrency = "USD";
+    private String salaryCurrency = "INR";
 
     @Column(name = "salary_period", length = 20)
     private String salaryPeriod = "yearly";
@@ -94,6 +94,12 @@ public class Job {
 
     @Column(name = "moderated_at")
     private Instant moderatedAt;
+
+    @Column(name = "closed_reason", length = 255)
+    private String closedReason;
+
+    @Column(name = "closed_at")
+    private Instant closedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -336,5 +342,21 @@ public class Job {
 
     public void setModeratedAt(Instant moderatedAt) {
         this.moderatedAt = moderatedAt;
+    }
+
+    public String getClosedReason() {
+        return closedReason;
+    }
+
+    public void setClosedReason(String closedReason) {
+        this.closedReason = closedReason;
+    }
+
+    public Instant getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(Instant closedAt) {
+        this.closedAt = closedAt;
     }
 }

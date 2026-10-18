@@ -221,7 +221,7 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <Input
               label="Full Name"
               type="text"
@@ -233,7 +233,9 @@ export const RegisterPage: React.FC = () => {
               }}
               error={errors.name}
               leftIcon={<User className="w-4 h-4 text-slate-400" />}
-              autoComplete="name"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
 
@@ -248,7 +250,10 @@ export const RegisterPage: React.FC = () => {
               }}
               error={errors.email}
               leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
-              autoComplete="email"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               required
             />
 
@@ -266,7 +271,9 @@ export const RegisterPage: React.FC = () => {
                   }}
                   error={errors.companyName}
                   leftIcon={<Building className="w-4 h-4 text-slate-400" />}
-                  autoComplete="organization"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
               </div>
@@ -294,7 +301,10 @@ export const RegisterPage: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="new-password"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
 
@@ -319,7 +329,10 @@ export const RegisterPage: React.FC = () => {
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="new-password"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
             </div>
@@ -345,8 +358,9 @@ export const RegisterPage: React.FC = () => {
               type="submit"
               variant={role === 'recruiter' ? 'glow-purple' : 'glow'}
               size="lg"
-              className="w-full font-bold shadow-lg mt-2"
+              className="w-full font-bold shadow-lg mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
               isLoading={isLoading}
+              disabled={isLoading}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
               {isCandidate ? 'Register as Candidate' : 'Register as Recruiter'}

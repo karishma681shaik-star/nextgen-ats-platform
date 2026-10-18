@@ -322,7 +322,7 @@ public class AdminController {
             HttpServletRequest httpRequest) {
 
         UUID adminId = adminPrincipal != null ? adminPrincipal.getId() : null;
-        String adminEmail = adminPrincipal != null ? adminPrincipal.getUsername() : "admin@ai-ats.internal";
+        String adminEmail = adminPrincipal != null ? adminPrincipal.getUsername() : "admin@platform.local";
         String adminName = adminPrincipal != null ? adminPrincipal.getFullName() : "Administrator";
         String ipAddress = httpRequest != null ? httpRequest.getRemoteAddr() : "127.0.0.1";
 

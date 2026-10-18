@@ -26,6 +26,7 @@ public class JobService {
     private final CandidateSkillRepository candidateSkillRepository;
     private final ActivityLogService activityLogService;
     private final SecurityAlertService securityAlertService;
+    private final JobDeadlineService jobDeadlineService;
 
     public JobService(JobRepository jobRepository, CompanyRepository companyRepository,
                       UserRepository userRepository, SavedJobRepository savedJobRepository,
@@ -35,7 +36,7 @@ public class JobService {
                       ActivityLogService activityLogService) {
         this(jobRepository, companyRepository, userRepository, savedJobRepository,
              applicationRepository, candidateProfileRepository, candidateSkillRepository,
-             activityLogService, null);
+             activityLogService, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -45,7 +46,8 @@ public class JobService {
                       CandidateProfileRepository candidateProfileRepository,
                       CandidateSkillRepository candidateSkillRepository,
                       ActivityLogService activityLogService,
-                      SecurityAlertService securityAlertService) {
+                      SecurityAlertService securityAlertService,
+                      JobDeadlineService jobDeadlineService) {
         this.jobRepository = jobRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
@@ -55,6 +57,7 @@ public class JobService {
         this.candidateSkillRepository = candidateSkillRepository;
         this.activityLogService = activityLogService;
         this.securityAlertService = securityAlertService;
+        this.jobDeadlineService = jobDeadlineService;
     }
 
     private void validateRecruiterVerification(User recruiter) {
@@ -132,10 +135,25 @@ public class JobService {
         return toDTO(job, viewerUserId);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<JobDTO> getRecruiterJobs(UUID recruiterId) {
-        return jobRepository.findByRecruiterIdOrderByCreatedAtDesc(recruiterId).stream()
-                .map(j -> toDTO(j, null)).collect(Collectors.toList());
+        List<Job> jobs = jobRepository.findByRecruiterIdOrderByCreatedAtDesc(recruiterId);
+        if (jobDeadlineService != null) {
+            boolean changed = false;
+            Instant now = Instant.now();
+            for (Job j : jobs) {
+                if (j.getStatus() == JobStatus.ACTIVE && jobDeadlineService.isDeadlinePassed(j.getDeadline())) {
+                    j.setStatus(JobStatus.CLOSED);
+                    j.setClosedReason("DEADLINE_EXPIRED");
+                    j.setClosedAt(now);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                jobRepository.saveAll(jobs);
+            }
+        }
+        return jobs.stream().map(j -> toDTO(j, null)).collect(Collectors.toList());
     }
 
     @Transactional
@@ -145,6 +163,7 @@ public class JobService {
 
         // ENFORCE CRITICAL BUSINESS RULE: Only verified recruiters can publish jobs
         validateRecruiterVerification(recruiter);
+        validateSalary(request);
 
         // Get or create company linked to this recruiter
         Company company = companyRepository.findByRecruiterId(recruiterId)
@@ -190,8 +209,17 @@ public class JobService {
 
         // ENFORCE CRITICAL BUSINESS RULE on updates
         validateRecruiterVerification(job.getRecruiter());
+        validateSalary(request);
 
         mapRequestToJob(request, job);
+
+        // If the job was CLOSED due to DEADLINE_EXPIRED and new deadline is in the future
+        if (job.getStatus() == JobStatus.CLOSED && "DEADLINE_EXPIRED".equals(job.getClosedReason())) {
+            if (jobDeadlineService != null && !jobDeadlineService.isDeadlinePassed(job.getDeadline())) {
+                job.setClosedReason("READY_TO_REOPEN");
+            }
+        }
+
         Job saved = jobRepository.save(job);
 
         if (activityLogService != null) {
@@ -199,6 +227,111 @@ public class JobService {
                     "Job Updated", saved.getTitle(), null);
         }
 
+        return toDTO(saved, null);
+    }
+
+    @Transactional
+    public JobDTO updateJobStatus(UUID recruiterId, UUID jobId, String newStatusStr, String reason) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+        if (!job.getRecruiter().getId().equals(recruiterId)) {
+            throw new BadRequestException("You do not have permission to manage this job");
+        }
+
+        validateRecruiterVerification(job.getRecruiter());
+
+        if (newStatusStr == null || newStatusStr.trim().isEmpty()) {
+            throw new BadRequestException("Status is required");
+        }
+
+        JobStatus targetStatus = JobStatus.fromString(newStatusStr);
+        if (targetStatus != JobStatus.ACTIVE && targetStatus != JobStatus.CLOSED) {
+            throw new BadRequestException("Only ACTIVE or CLOSED status transitions are permitted via manual toggle.");
+        }
+
+        JobStatus previousStatus = job.getStatus();
+
+        if (targetStatus == JobStatus.CLOSED) {
+            if (previousStatus == JobStatus.CLOSED) {
+                return toDTO(job, null);
+            }
+            if (previousStatus == JobStatus.REJECTED) {
+                throw new BadRequestException("This job was rejected during moderation and cannot be modified.");
+            }
+            job.setStatus(JobStatus.CLOSED);
+            job.setClosedReason(reason != null && !reason.isBlank() ? reason.trim() : "MANUALLY_CLOSED");
+            job.setClosedAt(Instant.now());
+
+            if (activityLogService != null) {
+                activityLogService.logDetailedActivity(
+                        recruiterId,
+                        job.getRecruiter().getFullName(),
+                        Role.RECRUITER,
+                        "JOB_STATUS_CHANGED",
+                        "JOB_LIFECYCLE",
+                        "RECRUITMENT",
+                        "INFO",
+                        "SUCCESS",
+                        job.getTitle(),
+                        "JOB",
+                        job.getId().toString(),
+                        previousStatus.name(),
+                        "CLOSED",
+                        "Job closed manually by recruiter",
+                        "127.0.0.1",
+                        null
+                );
+            }
+        } else if (targetStatus == JobStatus.ACTIVE) {
+            if (previousStatus == JobStatus.ACTIVE) {
+                return toDTO(job, null);
+            }
+            if (previousStatus == JobStatus.PENDING_APPROVAL) {
+                throw new BadRequestException("This job is awaiting administrator approval and cannot be activated manually.");
+            }
+            if (previousStatus == JobStatus.REJECTED) {
+                throw new BadRequestException("This job has been rejected during moderation and cannot be activated.");
+            }
+            if (previousStatus == JobStatus.ARCHIVED) {
+                throw new BadRequestException("Archived jobs cannot be reopened.");
+            }
+            if (previousStatus == JobStatus.DRAFT) {
+                throw new BadRequestException("Draft jobs must be published through the job creation wizard.");
+            }
+            if (previousStatus == JobStatus.CLOSED) {
+                // Check if deadline has passed
+                if (jobDeadlineService != null && jobDeadlineService.isDeadlinePassed(job.getDeadline())) {
+                    throw new BadRequestException("The application deadline has passed. Update the deadline before reopening this job.");
+                }
+                job.setStatus(JobStatus.ACTIVE);
+                job.setClosedReason(null);
+                job.setClosedAt(null);
+
+                if (activityLogService != null) {
+                    activityLogService.logDetailedActivity(
+                            recruiterId,
+                            job.getRecruiter().getFullName(),
+                            Role.RECRUITER,
+                            "JOB_STATUS_CHANGED",
+                            "JOB_LIFECYCLE",
+                            "RECRUITMENT",
+                            "INFO",
+                            "SUCCESS",
+                            job.getTitle(),
+                            "JOB",
+                            job.getId().toString(),
+                            "CLOSED",
+                            "ACTIVE",
+                            "Job reopened by recruiter",
+                            "127.0.0.1",
+                            null
+                    );
+                }
+            }
+        }
+
+        Job saved = jobRepository.save(job);
         return toDTO(saved, null);
     }
 
@@ -242,6 +375,34 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
+    private void validateSalary(JobRequest req) {
+        BigDecimal min = null;
+        BigDecimal max = null;
+        if (req.getSalaryMin() != null && !req.getSalaryMin().trim().isEmpty()) {
+            try {
+                min = new BigDecimal(req.getSalaryMin().trim());
+                if (min.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BadRequestException("Minimum salary cannot be negative.");
+                }
+            } catch (NumberFormatException e) {
+                throw new BadRequestException("Invalid minimum salary format.");
+            }
+        }
+        if (req.getSalaryMax() != null && !req.getSalaryMax().trim().isEmpty()) {
+            try {
+                max = new BigDecimal(req.getSalaryMax().trim());
+                if (max.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BadRequestException("Maximum salary cannot be negative.");
+                }
+            } catch (NumberFormatException e) {
+                throw new BadRequestException("Invalid maximum salary format.");
+            }
+        }
+        if (min != null && max != null && min.compareTo(max) > 0) {
+            throw new BadRequestException("Minimum salary cannot exceed maximum salary.");
+        }
+    }
+
     private void mapRequestToJob(JobRequest req, Job job) {
         if (req.getTitle() != null) job.setTitle(req.getTitle());
         if (req.getDepartment() != null) job.setDepartment(req.getDepartment());
@@ -251,13 +412,26 @@ public class JobService {
         if (req.getDescription() != null) job.setDescription(req.getDescription());
         if (req.getEducationRequired() != null) job.setEducationRequired(req.getEducationRequired());
         if (req.getDeadline() != null) job.setDeadline(req.getDeadline());
-        if (req.getSalaryMin() != null) {
-            try { job.setSalaryMin(new BigDecimal(req.getSalaryMin())); } catch (Exception ignored) {}
+        if (req.getSalaryMin() != null && !req.getSalaryMin().trim().isEmpty()) {
+            try { job.setSalaryMin(new BigDecimal(req.getSalaryMin().trim())); } catch (Exception ignored) {}
+        } else if (req.getSalaryMin() != null && req.getSalaryMin().trim().isEmpty()) {
+            job.setSalaryMin(null);
         }
-        if (req.getSalaryMax() != null) {
-            try { job.setSalaryMax(new BigDecimal(req.getSalaryMax())); } catch (Exception ignored) {}
+        if (req.getSalaryMax() != null && !req.getSalaryMax().trim().isEmpty()) {
+            try { job.setSalaryMax(new BigDecimal(req.getSalaryMax().trim())); } catch (Exception ignored) {}
+        } else if (req.getSalaryMax() != null && req.getSalaryMax().trim().isEmpty()) {
+            job.setSalaryMax(null);
         }
-        if (req.getCurrency() != null) job.setSalaryCurrency(req.getCurrency());
+        if (req.getCurrency() != null && !req.getCurrency().trim().isEmpty()) {
+            job.setSalaryCurrency(req.getCurrency().trim().toUpperCase());
+        } else if (job.getSalaryCurrency() == null) {
+            job.setSalaryCurrency("INR");
+        }
+        if (req.getSalaryPeriod() != null && !req.getSalaryPeriod().trim().isEmpty()) {
+            job.setSalaryPeriod(req.getSalaryPeriod().trim().toLowerCase());
+        } else if (job.getSalaryPeriod() == null) {
+            job.setSalaryPeriod("yearly");
+        }
         if (req.getRequirements() != null)
             job.setRequirements(String.join("||", req.getRequirements()));
         if (req.getResponsibilities() != null)
@@ -287,7 +461,8 @@ public class JobService {
 
         if (job.getSalaryMin() != null) dto.setSalaryMin(job.getSalaryMin().toPlainString());
         if (job.getSalaryMax() != null) dto.setSalaryMax(job.getSalaryMax().toPlainString());
-        dto.setCurrency(job.getSalaryCurrency());
+        dto.setCurrency(job.getSalaryCurrency() != null ? job.getSalaryCurrency() : "INR");
+        dto.setSalaryPeriod(job.getSalaryPeriod() != null ? job.getSalaryPeriod() : "yearly");
 
         if (job.getRequirements() != null && !job.getRequirements().isBlank()) {
             dto.setRequirements(parseDelimitedList(job.getRequirements(), "\\|\\|"));
@@ -317,6 +492,8 @@ public class JobService {
         dto.setApprovedBy(job.getApprovedBy());
         dto.setApprovedAt(job.getApprovedAt() != null ? job.getApprovedAt().toString() : null);
         dto.setModeratedAt(job.getModeratedAt() != null ? job.getModeratedAt().toString() : null);
+        dto.setClosedReason(job.getClosedReason());
+        dto.setClosedAt(job.getClosedAt() != null ? job.getClosedAt().toString() : null);
 
         // Viewer-specific state
         if (viewerUserId != null) {

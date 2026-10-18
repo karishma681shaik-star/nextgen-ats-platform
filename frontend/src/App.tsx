@@ -5,6 +5,8 @@ import { ToastProvider } from './context/ToastContext';
 import { AppRoutes } from './routes/AppRoutes';
 import { BackgroundController } from './components/3d/BackgroundController';
 
+import { ActionSuccessOverlay } from './components/feedback/ActionSuccessOverlay';
+
 export function App() {
   return (
     <BrowserRouter>
@@ -12,6 +14,7 @@ export function App() {
       <BackgroundController />
       <AuthProvider>
         <ToastProvider>
+          <ActionSuccessOverlay />
           <AppRoutes />
         </ToastProvider>
       </AuthProvider>

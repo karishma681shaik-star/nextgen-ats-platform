@@ -174,6 +174,17 @@ function mapCompany(raw: any): Company {
   };
 }
 
+function normalizeApplicationStatus(rawStatus: any): ApplicationStatus {
+  if (!rawStatus) return 'Applied';
+  const str = String(rawStatus).trim().toUpperCase().replace(/\s+/g, '_');
+  if (str === 'UNDER_REVIEW' || str === 'REVIEW') return 'Under Review';
+  if (str === 'SHORTLISTED') return 'Shortlisted';
+  if (str === 'INTERVIEW') return 'Interview';
+  if (str === 'SELECTED' || str === 'HIRED' || str === 'OFFERED') return 'Selected';
+  if (str === 'REJECTED') return 'Rejected';
+  return 'Applied';
+}
+
 function mapApplication(raw: any): Application {
   return {
     id: raw.id,
@@ -189,16 +200,16 @@ function mapApplication(raw: any): Application {
     candidateLocation: raw.candidateLocation || 'Remote',
     resumeId: raw.resumeId || 'res-1',
     resumeFileName: raw.resumeFileName || 'Resume.pdf',
-    appliedDate: raw.appliedDate ? raw.appliedDate.split('T')[0] : '2026-08-01',
-    status: (raw.status?.charAt(0).toUpperCase() + raw.status?.slice(1).toLowerCase()) as ApplicationStatus,
+    appliedDate: raw.appliedDate ? (raw.appliedDate.includes('T') ? raw.appliedDate.split('T')[0] : raw.appliedDate) : '',
+    status: normalizeApplicationStatus(raw.status),
     atsScore: raw.atsScore || 85,
     matchPercentage: raw.matchPercentage || 85,
-    skills: raw.skills || ['React', 'TypeScript', 'Java', 'Spring Boot'],
-    experienceYears: raw.experienceYears || 4,
+    skills: raw.skills || [],
+    experienceYears: raw.experienceYears || 0,
     notes: raw.notes || [],
     timeline: (raw.timeline || []).map((t: any) => ({
-      status: t.status,
-      date: t.date ? t.date.split('T')[0] : '2026-08-01',
+      status: normalizeApplicationStatus(t.status),
+      date: t.date ? (t.date.includes('T') ? t.date.split('T')[0] : t.date) : '',
       note: t.note,
     })),
   };

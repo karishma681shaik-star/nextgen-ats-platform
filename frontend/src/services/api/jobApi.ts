@@ -47,9 +47,10 @@ export const jobApi = {
       location: data.location,
       type: data.type,
       experienceLevel: data.experienceLevel,
-      salaryMin: String(data.salary?.min || 0),
-      salaryMax: String(data.salary?.max || 0),
-      currency: data.salary?.currency || 'USD',
+      salaryMin: data.salary?.min !== undefined ? String(data.salary.min) : '0',
+      salaryMax: data.salary?.max !== undefined ? String(data.salary.max) : '0',
+      currency: data.salary?.currency || 'INR',
+      salaryPeriod: data.salary?.period || 'yearly',
       description: data.description,
       requirements: data.requirements,
       responsibilities: data.responsibilities,
@@ -70,7 +71,8 @@ export const jobApi = {
     if (updates.salary) {
       payload.salaryMin = String(updates.salary.min);
       payload.salaryMax = String(updates.salary.max);
-      payload.currency = updates.salary.currency;
+      payload.currency = updates.salary.currency || 'INR';
+      payload.salaryPeriod = updates.salary.period || 'yearly';
     }
     const res = await apiClient<any>(`/jobs/${id}`, {
       method: 'PUT',
@@ -85,8 +87,15 @@ export const jobApi = {
     });
   },
 
-  async toggleJobStatus(id: string, status: JobStatus): Promise<Job> {
-    return this.updateJob(id, { status });
+  async toggleJobStatus(id: string, status: JobStatus, reason?: string): Promise<Job> {
+    const res = await apiClient<any>(`/jobs/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status: status.toUpperCase(),
+        reason: reason || undefined,
+      }),
+    });
+    return mapJobDtoToJob(res);
   },
 
   async getPublicCompany(identifier: string): Promise<any> {
@@ -111,10 +120,10 @@ export function mapJobDtoToJob(dto: any): Job {
     experienceLevel: (dto.experienceLevel as ExperienceLevel) || 'Mid Level',
     department: dto.department || 'Engineering',
     salary: {
-      min: Number(dto.salaryMin) || 120000,
-      max: Number(dto.salaryMax) || 160000,
-      currency: dto.currency || 'USD',
-      period: 'yearly',
+      min: dto.salaryMin !== null && dto.salaryMin !== undefined && !isNaN(Number(dto.salaryMin)) ? Number(dto.salaryMin) : 0,
+      max: dto.salaryMax !== null && dto.salaryMax !== undefined && !isNaN(Number(dto.salaryMax)) ? Number(dto.salaryMax) : 0,
+      currency: dto.currency || 'INR',
+      period: (dto.salaryPeriod || 'yearly') as 'yearly' | 'monthly' | 'hourly',
     },
     description: dto.description || '',
     responsibilities: dto.responsibilities || [],
@@ -123,8 +132,8 @@ export function mapJobDtoToJob(dto: any): Job {
     educationRequired: dto.educationRequired || "Bachelor's Degree in CS or related field",
     experienceRequiredYears: dto.experienceRequiredYears || 3,
     status: (dto.status?.toLowerCase() as JobStatus) || 'active',
-    postedDate: dto.postedAt ? dto.postedAt.split('T')[0] : '2026-08-01',
-    deadline: dto.deadline || '2026-12-31',
+    postedDate: dto.postedAt ? (dto.postedAt.includes('T') ? dto.postedAt.split('T')[0] : dto.postedAt) : '',
+    deadline: dto.deadline || '',
     applicantCount: dto.applicantsCount || 0,
     recruiterId: dto.recruiterId || 'rec-1',
     matchScore: dto.matchScore && !isNaN(Number(dto.matchScore)) ? Number(dto.matchScore) : undefined,
@@ -138,5 +147,7 @@ export function mapJobDtoToJob(dto: any): Job {
     recruiterName: dto.recruiterName,
     recruiterEmail: dto.recruiterEmail,
     recruiterVerificationStatus: dto.recruiterVerificationStatus,
+    closedReason: dto.closedReason,
+    closedAt: dto.closedAt,
   };
 }

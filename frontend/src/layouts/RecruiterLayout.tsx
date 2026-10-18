@@ -5,12 +5,20 @@ import { Sidebar } from '../components/common/Sidebar';
 import { FloatingActionHub } from '../components/common/FloatingActionHub';
 import { BackgroundEffects } from '../components/ui/BackgroundEffects';
 import { AICursor } from '../components/ui/AICursor';
+import {
+  CinematicDashboardIntro,
+  useCinematicIntro,
+} from '../components/common/CinematicDashboardIntro';
 
 export const RecruiterLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { shouldPlay, onComplete } = useCinematicIntro('recruiter');
 
   return (
     <div className="min-h-screen bg-transparent text-slate-100 flex relative overflow-x-hidden">
+      {shouldPlay && (
+        <CinematicDashboardIntro role="recruiter" onComplete={onComplete} />
+      )}
       <AICursor />
       <BackgroundEffects role="recruiter" />
 

@@ -148,7 +148,7 @@ export const ForgotPasswordPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <Input
                 label="Registered Email Address"
                 type="email"
@@ -160,7 +160,10 @@ export const ForgotPasswordPage: React.FC = () => {
                 }}
                 error={emailError}
                 leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
-                autoComplete="email"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
 
@@ -169,8 +172,9 @@ export const ForgotPasswordPage: React.FC = () => {
                   type="submit"
                   variant="glow"
                   size="lg"
-                  className="w-full font-bold shadow-lg"
+                  className="w-full font-bold shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   isLoading={isLoading}
+                  disabled={isLoading}
                   rightIcon={<Send className="w-4 h-4" />}
                 >
                   Send Verification Code

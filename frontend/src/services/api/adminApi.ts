@@ -390,6 +390,11 @@ export const adminApi = {
       target: l.target,
       timestamp: l.timestamp,
       ipAddress: l.ipAddress,
+      result: l.result || 'SUCCESS',
+      reason: l.reason,
+      severity: l.severity,
+      eventType: l.eventType,
+      eventCategory: l.eventCategory,
     }));
   },
 

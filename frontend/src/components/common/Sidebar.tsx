@@ -56,10 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const recruiterNavItems: NavItem[] = [
     { label: 'Dashboard', path: '/recruiter', icon: LayoutDashboard, exact: true, group: 'overview' },
     { label: 'Company Profile', path: '/recruiter/company', icon: Building2, group: 'company' },
-    { label: 'Verification Center', path: '/recruiter/verification', icon: ShieldCheck, highlight: true, badge: 'STATUS', group: 'company' },
+    { label: 'Verification Center', path: '/recruiter/verification', icon: ShieldCheck, group: 'company' },
     { label: 'Job Postings', path: '/recruiter/jobs', icon: Briefcase, group: 'jobs' },
-    { label: 'Post New Job', path: '/recruiter/jobs/new', icon: PlusCircle, highlight: true, badge: 'NEW', group: 'jobs' },
-    { label: 'Applicant Pipeline', path: '/recruiter/applicants', icon: Users, highlight: true, badge: 'PRO', group: 'pipeline' },
+    { label: 'Applicant Pipeline', path: '/recruiter/applicants', icon: Users, group: 'pipeline' },
   ];
 
   const adminNavItems: NavItem[] = [
@@ -147,8 +146,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
+        {/* Prominent Action Button for Recruiter */}
+        {role === 'recruiter' && (
+          <div className="px-3 pt-4 pb-1">
+            <NavLink
+              to="/recruiter/jobs/new"
+              onClick={onClose}
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md hover:shadow-purple-500/20 active:scale-[0.98] border border-purple-400/30"
+            >
+              <PlusCircle className="w-4 h-4 text-purple-200" />
+              <span>+ Post a Job</span>
+            </NavLink>
+          </div>
+        )}
+
         {/* Navigation Links */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
           <div className="px-3 pb-2 text-[9px] uppercase font-mono font-bold tracking-widest text-slate-500">
             WORKSPACE NAVIGATION
           </div>
@@ -228,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div
             onClick={() => setIsAvatarModalOpen(true)}
             className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-purple-500/30 transition-all cursor-pointer group"
-            title="Click to edit profile photo"
+            title="Click to edit profile & photo"
           >
             {user?.avatar ? (
               <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-white/10">

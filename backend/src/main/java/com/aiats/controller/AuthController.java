@@ -46,6 +46,20 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Admin authenticated successfully", response));
     }
 
+    @PostMapping("/admin/bootstrap")
+    public ResponseEntity<ApiResponse<AuthResponse>> bootstrapAdmin(
+            @Valid @RequestBody AdminBootstrapRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = httpRequest.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest.getRemoteAddr();
+        } else {
+            clientIp = clientIp.split(",")[0].trim();
+        }
+        AuthResponse response = authService.bootstrapAdmin(request, clientIp);
+        return new ResponseEntity<>(ApiResponse.ok("Admin bootstrapped successfully", response), HttpStatus.CREATED);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         if (userPrincipal == null) {
@@ -83,5 +97,25 @@ public class AuthController {
         String avatarUrl = request.get("avatar");
         UserDTO updated = authService.updateAvatar(userPrincipal.getId(), avatarUrl);
         return ResponseEntity.ok(ApiResponse.ok("Avatar updated successfully", updated));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserDTO>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody java.util.Map<String, String> request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        if (userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthenticated"));
+        }
+        String name = request.get("name");
+        String avatar = request.get("avatar");
+        String clientIp = httpRequest != null ? httpRequest.getHeader("X-Forwarded-For") : null;
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest != null ? httpRequest.getRemoteAddr() : "127.0.0.1";
+        } else {
+            clientIp = clientIp.split(",")[0].trim();
+        }
+        UserDTO updated = authService.updateProfile(userPrincipal.getId(), name, avatar, clientIp);
+        return ResponseEntity.ok(ApiResponse.ok("Profile updated successfully", updated));
     }
 }

@@ -27,6 +27,7 @@ import { Button } from '../../components/ui/Button';
 import { DepthCard } from '../../components/ui/DepthCard';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { formatSalaryRange } from '../../utils/formatters';
 
 interface PublicCompanyData {
   id: string;
@@ -507,15 +508,9 @@ export const PublicCareerPortalPage: React.FC = () => {
 
                 <div className="mt-5 pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
                   <div className="text-xs">
-                    {job.salary?.min ? (
-                      <span className="font-extrabold text-white">
-                        {job.salary.currency === 'USD' ? '$' : ''}
-                        {(job.salary.min / 1000).toFixed(0)}k - {(job.salary.max / 1000).toFixed(0)}k
-                        <span className="text-slate-400 font-normal"> / yr</span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">Competitive Package</span>
-                    )}
+                    <span className="font-extrabold text-white">
+                      {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency || 'INR', job.salary?.period, 'Competitive Package')}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">

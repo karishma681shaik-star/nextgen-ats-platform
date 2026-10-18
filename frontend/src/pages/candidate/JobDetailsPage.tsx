@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { jobService, candidateService } from '../../services';
 import { candidateApi } from '../../services/api/candidateApi';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
 import { Job, CandidateProfile, Resume } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
@@ -28,7 +29,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
-import { formatCurrency, formatFullDate } from '../../utils/formatters';
+import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
 
 export const JobDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -102,7 +103,7 @@ export const JobDetailsPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      await candidateService.applyForJob(job.id, selectedResumeId);
+      const app = await candidateService.applyForJob(job.id, selectedResumeId);
       setIsApplied(true);
       setApplyModalOpen(false);
       showToast({
@@ -110,8 +111,21 @@ export const JobDetailsPage: React.FC = () => {
         title: 'Application Submitted! 🎉',
         message: `Your resume was dispatched to ${job.company}.`
       });
+      actionFeedbackService.applicationSubmitted({
+        jobTitle: job.title,
+        companyName: job.company,
+        applicationId: app?.id,
+        jobId: job.id,
+      });
     } catch (err: any) {
-      showToast({ type: 'error', title: 'Application Error', message: err.message });
+      const message = err?.message || 'Failed to submit application.';
+      showToast({
+        type: 'error',
+        title: message.toLowerCase().includes('already applied')
+          ? 'Application Already Submitted'
+          : 'Application Error',
+        message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +236,7 @@ export const JobDetailsPage: React.FC = () => {
                 </span>
                 <span>•</span>
                 <span className="font-semibold text-emerald-400">
-                  {formatCurrency(job.salary.min)} - {formatCurrency(job.salary.max)} / year
+                  {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency || 'INR', job.salary?.period)}
                 </span>
               </div>
             </div>

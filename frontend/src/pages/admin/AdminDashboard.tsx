@@ -1,51 +1,47 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ShieldCheck,
   Users,
-  Building2,
+  ShieldCheck,
   Briefcase,
-  Layers,
-  Activity,
-  ArrowRight,
-  Sparkles,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
-  BarChart3,
-  Clock,
-  UserX,
-  UserCheck,
-  ShieldAlert,
-  RefreshCw,
-  Eye,
   FileText,
-  ChevronRight,
+  RefreshCw,
+  AlertTriangle,
+  ArrowRight,
+  Activity,
   Check,
-  X,
-  Ban,
-  ArrowUpRight,
-  Filter,
-  TrendingUp,
-  Search,
-  ExternalLink,
-  Info
+  ShieldAlert,
 } from 'lucide-react';
 import { adminService } from '../../services';
+import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import {
   AdminStats,
   SystemActivityLog,
   SecurityAlert,
-  RecruitmentAnalytics
+  RecruitmentAnalytics,
+  PlatformHealthResponse,
 } from '../../types';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Modal } from '../../components/ui/Modal';
-import { formatFullDate } from '../../utils/formatters';
+
+function formatTimestamp(ts?: string): string {
+  if (!ts) return '—';
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return ts;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return ts;
+  }
+}
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -56,20 +52,15 @@ export const AdminDashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<RecruitmentAnalytics | null>(null);
   const [logs, setLogs] = useState<SystemActivityLog[]>([]);
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
+  const [health, setHealth] = useState<PlatformHealthResponse | null>(null);
+
+  // Loading & Error States
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
 
-  // Activity Stream Filter
-  const [activityFilter, setActivityFilter] = useState<'all' | 'accounts' | 'verification' | 'security'>('all');
-
-  // Recruiter Trust & Risk Management View Tab
-  const [trustTab, setTrustTab] = useState<'recruiter' | 'company' | 'jobSafety' | 'riskReview'>('recruiter');
-
-  // Modals
-  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
-  const [auditSearchTerm, setAuditSearchTerm] = useState('');
+  // Security Alert Review Modal
   const [reviewingAlert, setReviewingAlert] = useState<SecurityAlert | null>(null);
   const [alertReviewDecision, setAlertReviewDecision] = useState<'CONFIRMED' | 'DISMISSED' | 'FALSE_POSITIVE'>('DISMISSED');
   const [alertReviewAction, setAlertReviewAction] = useState<'RESOLVED' | 'SUSPEND_ACCOUNT' | 'DISMISSED'>('RESOLVED');
@@ -86,41 +77,51 @@ export const AdminDashboard: React.FC = () => {
     setError(null);
 
     try {
-      const [statsData, analyticsData, logsData, alertsData] = await Promise.all([
+      const [statsData, analyticsData, logsData, alertsData, healthData] = await Promise.all([
         adminService.getStats(),
         adminService.getRecruitmentAnalytics().catch(() => null),
         adminService.getActivityLogs().catch(() => []),
-        adminService.getSecurityAlerts().catch(() => [])
+        adminService.getSecurityAlerts().catch(() => []),
+        adminService.getPlatformHealth().catch(() => null),
       ]);
 
       setStats(statsData);
       setAnalytics(analyticsData);
       setLogs(logsData || []);
       setAlerts(alertsData || []);
+      setHealth(healthData);
       setLastRefreshedAt(new Date());
     } catch (err: any) {
-      console.error('Failed to load admin command center data:', err);
-      setError(err?.message || 'Failed to connect to PostgreSQL backend service.');
+      console.error('Failed to load admin overview data:', err);
+      setError(err?.message || 'Unable to load dashboard data. Please try again.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
-  // Filtered activity stream
-  const filteredLogs = useMemo(() => {
-    if (activityFilter === 'all') return logs;
-    const filterTerm = activityFilter.toLowerCase();
-    return logs.filter((log) => {
-      const action = (log.action || '').toLowerCase();
-      if (filterTerm === 'accounts') return action.includes('user') || action.includes('account') || action.includes('deletion');
-      if (filterTerm === 'verification') return action.includes('recruiter') || action.includes('verif');
-      if (filterTerm === 'security') return action.includes('suspicious') || action.includes('security') || action.includes('status') || action.includes('suspended');
-      return true;
-    });
-  }, [logs, activityFilter]);
+  // Determine actual database connection status from backend health or stats response
+  const dbStatus = useMemo<'Connected' | 'Degraded' | 'Unavailable' | 'Unknown'>(() => {
+    if (!stats) return 'Unknown';
+    if (health?.services) {
+      const dbService = health.services.find(
+        (s) => s.category?.toLowerCase() === 'database' || s.serviceName?.toLowerCase().includes('database') || s.serviceName?.toLowerCase().includes('postgresql')
+      );
+      if (dbService) {
+        if (dbService.status === 'OPERATIONAL') return 'Connected';
+        if (dbService.status === 'DEGRADED') return 'Degraded';
+        return 'Unavailable';
+      }
+    }
+    // If stats loaded successfully from PostgreSQL, database is confirmed connected
+    return 'Connected';
+  }, [stats, health]);
 
-  // Handle Security Alert Review
+  const pendingAlertsCount = useMemo(() => {
+    return alerts.filter((a) => a.reviewStatus === 'PENDING').length;
+  }, [alerts]);
+
+  // Handle Security Alert Review submission
   const handleConfirmAlertReview = async () => {
     if (!reviewingAlert) return;
 
@@ -129,13 +130,13 @@ export const AdminDashboard: React.FC = () => {
       await adminService.reviewSecurityAlert(reviewingAlert.id, {
         decision: alertReviewDecision,
         action: alertReviewAction,
-        note: alertReviewNote || undefined
+        note: alertReviewNote || undefined,
       });
 
       showToast({
         type: 'success',
         title: 'Review Recorded',
-        message: `Security alert marked as ${alertReviewDecision}.`
+        message: `Security alert marked as ${alertReviewDecision}.`,
       });
 
       setReviewingAlert(null);
@@ -145,974 +146,423 @@ export const AdminDashboard: React.FC = () => {
       showToast({
         type: 'error',
         title: 'Review Failed',
-        message: err?.message || 'Failed to submit security alert decision.'
+        message: err?.message || 'Failed to submit security alert decision.',
       });
     } finally {
       setIsSubmittingReview(false);
     }
   };
 
-  // Filtered audit modal logs
-  const filteredAuditLogs = useMemo(() => {
-    if (!auditSearchTerm.trim()) return logs;
-    const q = auditSearchTerm.toLowerCase().trim();
-    return logs.filter(
-      (l) =>
-        (l.action || '').toLowerCase().includes(q) ||
-        (l.target || '').toLowerCase().includes(q) ||
-        (l.actorName || '').toLowerCase().includes(q) ||
-        (l.ipAddress || '').toLowerCase().includes(q)
-    );
-  }, [logs, auditSearchTerm]);
+  // Items requiring attention — only included when real pending records exist
+  const attentionItems = useMemo(() => {
+    if (!stats) return [];
+    const items: Array<{
+      id: string;
+      title: string;
+      count: number;
+      description: string;
+      actionLabel: string;
+      actionUrl?: string;
+      onAction?: () => void;
+    }> = [];
 
+    // 1. Recruiter Verification
+    if (stats.pendingVerifications > 0) {
+      items.push({
+        id: 'recruiter-verification',
+        title: 'Recruiter Verification',
+        count: stats.pendingVerifications,
+        description: `${stats.pendingVerifications} ${
+          stats.pendingVerifications === 1 ? 'application is' : 'applications are'
+        } waiting for review.`,
+        actionLabel: 'Review Applications',
+        actionUrl: '/admin/recruiters',
+      });
+    }
+
+    // 2. Job Moderation
+    if ((stats.jobsPendingModeration ?? 0) > 0) {
+      const count = stats.jobsPendingModeration!;
+      items.push({
+        id: 'job-moderation',
+        title: 'Job Moderation',
+        count,
+        description: `${count} ${count === 1 ? 'job requires' : 'jobs require'} review.`,
+        actionLabel: 'Review Jobs',
+        actionUrl: '/admin/jobs',
+      });
+    }
+
+    // 3. Security Alerts
+    if (pendingAlertsCount > 0) {
+      items.push({
+        id: 'security-alerts',
+        title: 'Security Alerts',
+        count: pendingAlertsCount,
+        description: `${pendingAlertsCount} security ${
+          pendingAlertsCount === 1 ? 'alert requires' : 'alerts require'
+        } investigation.`,
+        actionLabel: 'Inspect Alerts',
+        onAction: () => {
+          const firstPending = alerts.find((a) => a.reviewStatus === 'PENDING') || alerts[0];
+          if (firstPending) setReviewingAlert(firstPending);
+        },
+      });
+    }
+
+    // 4. Suspended Accounts
+    if ((stats.suspendedAccounts ?? 0) > 0) {
+      const count = stats.suspendedAccounts;
+      items.push({
+        id: 'suspended-accounts',
+        title: 'Suspended Accounts',
+        count,
+        description: `${count} ${
+          count === 1 ? 'account is suspended and requires' : 'accounts are suspended and require'
+        } review.`,
+        actionLabel: 'Review Accounts',
+        actionUrl: '/admin/users?status=suspended',
+      });
+    }
+
+    return items;
+  }, [stats, pendingAlertsCount, alerts]);
+
+  // Loading Skeleton State
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <Skeleton className="h-28 rounded-3xl" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
+        <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-slate-800/80 pb-5">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48 rounded-lg" />
+            <Skeleton className="h-4 w-96 max-w-full rounded-lg" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-28 rounded-xl" />
+            <Skeleton className="h-8 w-20 rounded-xl" />
+          </div>
         </div>
-        <Skeleton className="h-44 rounded-3xl" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-80 rounded-3xl" />
-          <Skeleton className="h-80 rounded-3xl" />
+        <Skeleton className="h-11 w-full rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
         </div>
+        <Skeleton className="h-36 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
 
-  if (error || !stats) {
+  // Error State with Retry
+  if (error || (!stats && !isLoading)) {
     return (
-      <div className="p-8 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-center space-y-4 max-w-xl mx-auto my-12">
-        <div className="p-3.5 w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center">
-          <AlertTriangle className="w-7 h-7" />
+      <div className="p-8 rounded-2xl bg-slate-900/80 border border-rose-500/30 text-center space-y-4 max-w-lg mx-auto my-16">
+        <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 mx-auto flex items-center justify-center">
+          <AlertTriangle className="w-6 h-6" />
         </div>
-        <div className="space-y-1">
-          <h2 className="text-lg font-bold text-white tracking-tight">Platform Operations Center Unavailable</h2>
-          <p className="text-xs text-rose-300 leading-relaxed">
-            {error || 'Unable to retrieve real-time governance and recruitment analytics from the PostgreSQL database.'}
+        <div className="space-y-1.5">
+          <h2 className="text-base font-bold text-white">Unable to load dashboard data. Please try again.</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            {error || 'Unable to connect to backend services. Please check database connectivity and retry.'}
           </p>
         </div>
-        <Button variant="primary" size="sm" onClick={() => loadDashboardData()}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => loadDashboardData()}
+          className="bg-violet-600 hover:bg-violet-500 text-white"
+        >
           Retry Connection
         </Button>
       </div>
     );
   }
 
-  const adminName = user?.name || 'Marcus Vance';
-  const adminEmail = user?.email || 'admin@ai-ats.internal';
-  const pendingAlertsCount = alerts.filter((a) => a.reviewStatus === 'PENDING').length;
-  const totalPersistedAccounts = (stats.totalCandidates || 0) + (stats.totalRecruiters || 0);
+  const cleanAdminName = voiceAssistantService.sanitizeDisplayName(user?.name);
+  const adminName = cleanAdminName || 'Administrator';
 
   return (
-    <div className="space-y-8 pb-12 animate-fade-in text-slate-100">
-      {/* 1. PROFESSIONAL ADMIN COMMAND HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+    <div className="space-y-6 text-slate-100">
+      {/* ==================================================
+          1. SIMPLIFIED PAGE HEADER
+          ================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
         <div>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 mb-1 tracking-wider uppercase">
-            <span>Administrator</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-violet-400">System Overview</span>
-          </div>
-
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            Platform Operations Center
-          </h1>
-          <p className="text-xs lg:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Monitor recruitment activity, account governance, job publishing, and platform integrity from one centralized workspace.
+          <h1 className="text-2xl font-bold text-white tracking-tight">Admin Overview</h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Monitor accounts, recruiter verification, and recruitment activity from one place.
           </p>
         </div>
 
-        {/* Right Action Bar & Administrator Profile */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Admin Identity Pill */}
-          <div className="hidden xl:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs shadow-sm">
-            <div className="w-6 h-6 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-[10px]">
-              {adminName[0]}
+        {/* Right Action Bar */}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {/* Current administrator's identity */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+            <div className="w-5 h-5 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center font-bold text-[10px]">
+              {adminName.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <p className="font-bold text-white leading-tight">{adminName}</p>
-              <p className="text-[10px] text-slate-400 font-mono leading-tight">{adminEmail}</p>
-            </div>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-violet-500/15 text-violet-300 border border-violet-500/20">
-              GOVERNOR
-            </span>
+            <span className="font-medium text-white">{adminName}</span>
           </div>
 
-          {/* Refresh Dashboard */}
-          <button
-            onClick={() => loadDashboardData(true)}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all duration-200"
-            title={lastRefreshedAt ? `Last synchronized: ${lastRefreshedAt.toLocaleTimeString()}` : 'Synchronize live records'}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-violet-400' : ''}`} />
-            <span>Refresh</span>
-          </button>
-
-          {/* View Audit Log */}
+          {/* Optional link to Audit & Security */}
           <Link
             to="/admin/audit"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all duration-200"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-colors"
           >
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
             <span>Audit & Security</span>
           </Link>
 
-          {/* Manage Users */}
-          <Link
-            to="/admin/users"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all duration-200 shadow-md shadow-violet-950/40"
+          {/* Refresh Button */}
+          <button
+            onClick={() => loadDashboardData(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+            title={lastRefreshedAt ? `Last refreshed: ${lastRefreshedAt.toLocaleTimeString()}` : 'Refresh data'}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Manage Users</span>
-          </Link>
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-violet-400' : 'text-slate-400'}`} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. OPERATIONAL STATUS BANNER */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm text-xs">
-        <div className="flex items-center gap-2.5 px-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <div>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase block">Database Engine</span>
-            <span className="font-bold text-slate-200">PostgreSQL Connected</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 px-2 border-l border-slate-800">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
-          <div>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase block">Security Perimeter</span>
-            <span className="font-bold text-slate-200">Single-Admin Enforced</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 px-2 border-l border-slate-800">
+      {/* ==================================================
+          2. COMPACT PLATFORM STATUS STRIP
+          ================================================== */}
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 px-4 py-2.5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300">
+        {/* Database Connection Status */}
+        <div className="flex items-center gap-2">
           <span
-            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-              stats.pendingVerifications > 0 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+            className={`w-2 h-2 rounded-full ${
+              dbStatus === 'Connected'
+                ? 'bg-emerald-400'
+                : dbStatus === 'Degraded'
+                ? 'bg-amber-400'
+                : dbStatus === 'Unavailable'
+                ? 'bg-rose-400'
+                : 'bg-slate-500'
             }`}
           />
-          <div>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase block">Recruiter Review Queue</span>
-            <span className={`font-bold ${stats.pendingVerifications > 0 ? 'text-amber-300' : 'text-slate-200'}`}>
-              {stats.pendingVerifications === 0 ? 'Queue Clear' : `${stats.pendingVerifications} Pending`}
-            </span>
-          </div>
+          <span className="text-slate-400">Database:</span>
+          <span className="font-semibold text-white">{dbStatus}</span>
         </div>
 
-        <div className="flex items-center gap-2.5 px-2 border-l border-slate-800">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0" />
-          <div>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase block">Job Moderation</span>
-            <span className="font-bold text-cyan-300">{stats.activeJobs} Active Requisitions</span>
-          </div>
-        </div>
+        <span className="hidden sm:inline text-slate-700">|</span>
 
-        <div className="col-span-2 md:col-span-1 flex items-center gap-2.5 px-2 border-l border-slate-800">
+        {/* Recruiter Verification Queue Status */}
+        <div className="flex items-center gap-2">
           <span
-            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-              pendingAlertsCount > 0 ? 'bg-rose-400 animate-pulse' : 'bg-emerald-400'
+            className={`w-2 h-2 rounded-full ${
+              stats.pendingVerifications > 0
+                ? 'bg-amber-400 animate-pulse'
+                : 'bg-emerald-400'
             }`}
           />
+          <span className="text-slate-400">Recruiter Reviews:</span>
+          <span className={`font-semibold ${stats.pendingVerifications > 0 ? 'text-amber-300' : 'text-white'}`}>
+            {stats.pendingVerifications > 0 ? `${stats.pendingVerifications} Pending` : 'Up to date'}
+          </span>
+        </div>
+
+        <span className="hidden sm:inline text-slate-700">|</span>
+
+        {/* Platform Alerts */}
+        <div className="flex items-center gap-2">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              pendingAlertsCount > 0
+                ? 'bg-rose-400 animate-pulse'
+                : 'bg-emerald-400'
+            }`}
+          />
+          <span className="text-slate-400">Security Alerts:</span>
+          <span className={`font-semibold ${pendingAlertsCount > 0 ? 'text-rose-300' : 'text-white'}`}>
+            {pendingAlertsCount > 0 ? `${pendingAlertsCount} Open` : '0 Open'}
+          </span>
+        </div>
+      </div>
+
+      {/* ==================================================
+          3. FOUR PRIMARY SUMMARY CARDS (GRID)
+          ================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* CARD 1: REGISTERED USERS */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all flex flex-col justify-between">
           <div>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase block">Security Anomalies</span>
-            <span className={`font-bold ${pendingAlertsCount > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
-              {pendingAlertsCount === 0 ? 'Zero Flags' : `${pendingAlertsCount} Unresolved`}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. INTELLIGENT OVERVIEW METRICS (GRID) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Card 1: Registered Accounts */}
-        <Link
-          to="/admin/users"
-          className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all duration-200 group block"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Registered Accounts</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
-              <Users className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-white tracking-tight">{totalPersistedAccounts}</div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span className="text-blue-400 group-hover:underline inline-flex items-center gap-0.5">
-              Manage accounts <ArrowRight className="w-3 h-3" />
-            </span>
-            <span>{stats.activeUsers} active</span>
-          </div>
-        </Link>
-
-        {/* Card 2: Candidates */}
-        <Link
-          to="/admin/users?role=candidate"
-          className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all duration-200 group block"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidates</span>
-            <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
-              <UserCheck className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-sky-300 tracking-tight">{stats.totalCandidates}</div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span className="text-sky-400 group-hover:underline inline-flex items-center gap-0.5">
-              Candidate directory <ArrowRight className="w-3 h-3" />
-            </span>
-            <span>Job seeker pool</span>
-          </div>
-        </Link>
-
-        {/* Card 3: Recruiters */}
-        <Link
-          to="/admin/users?role=recruiter"
-          className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all duration-200 group block"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiters</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
-              <Building2 className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-indigo-300 tracking-tight">{stats.totalRecruiters}</div>
-          <div className="mt-2 text-[10px] text-slate-400 truncate">
-            <span className="text-emerald-400 font-semibold">{stats.verifiedRecruiters} verified</span> ·{' '}
-            <span className="text-amber-400 font-semibold">{stats.pendingVerifications} pending</span> ·{' '}
-            <span className="text-rose-400 font-semibold">{stats.rejectedRecruiters} rejected</span>
-          </div>
-        </Link>
-
-        {/* Card 4: Pending Verification */}
-        <Link
-          to="/admin/recruiters"
-          className={`p-4 rounded-2xl border transition-all duration-200 group block ${
-            stats.pendingVerifications > 0
-              ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/60'
-              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Review</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-amber-300 tracking-tight">{stats.pendingVerifications}</span>
-            {stats.pendingVerifications > 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">
-                ACTION REQ
-              </span>
-            )}
-          </div>
-          <div className="mt-2 text-[11px] text-amber-400 group-hover:underline inline-flex items-center gap-0.5">
-            Open review queue <ArrowRight className="w-3 h-3" />
-          </div>
-        </Link>
-
-        {/* Card 5: Verified Employers */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Verified Recruiters</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-emerald-300 tracking-tight">{stats.verifiedRecruiters}</div>
-          <p className="mt-2 text-[11px] text-slate-400">Authorized to publish requisitions</p>
-        </div>
-
-        {/* Card 6: Active Job Postings */}
-        <Link
-          to="/admin/jobs"
-          className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all duration-200 group block"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Job Postings</span>
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
-              <Briefcase className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-cyan-300 tracking-tight">{stats.activeJobs}</div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span className="text-cyan-400 group-hover:underline inline-flex items-center gap-0.5">
-              Moderate postings <ArrowRight className="w-3 h-3" />
-            </span>
-            <span>{stats.totalJobs} total</span>
-          </div>
-        </Link>
-
-        {/* Card 7: Total Applications */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Applications</span>
-            <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
-              <FileText className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-violet-300 tracking-tight">
-            {analytics?.totalApplications ?? stats.totalApplications}
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span>{analytics?.shortlisted ?? stats.shortlistedCount} shortlisted</span>
-            <span className="text-emerald-400 font-semibold">{analytics?.successfulHires ?? stats.selectedCount} hires</span>
-          </div>
-        </div>
-
-        {/* Card 8: Suspended Accounts */}
-        <Link
-          to="/admin/users?status=suspended"
-          className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all duration-200 group block"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Suspended Accounts</span>
-            <div className="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform">
-              <UserX className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-rose-300 tracking-tight">{stats.suspendedAccounts}</div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span className="text-rose-400 group-hover:underline inline-flex items-center gap-0.5">
-              Inspect restricted <ArrowRight className="w-3 h-3" />
-            </span>
-            <span>{stats.suspendedAccounts === 0 ? 'Perimeter clean' : 'Access blocked'}</span>
-          </div>
-        </Link>
-      </div>
-
-      {/* ─── 3.5 DEDICATED RECRUITER TRUST & RISK MANAGEMENT SECTION ─── */}
-      <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-extrabold text-white tracking-tight">Recruiter Trust & Risk Management</h2>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                  GOVERNANCE
-                </span>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Registered Users</span>
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <Users className="w-4 h-4" />
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Evidence-based recruiter vetting, company authenticity checks, job safety moderation, and AI-assisted risk monitoring.
-              </p>
             </div>
+            <div className="text-3xl font-extrabold text-white tracking-tight">
+              {stats.totalUsers ?? (stats.totalCandidates + stats.totalRecruiters)}
+              <span className="text-sm font-normal text-slate-400 ml-1.5">total</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              <span className="text-slate-300 font-medium">{stats.totalCandidates}</span> Candidates
+              <span className="mx-2 text-slate-600">|</span>
+              <span className="text-slate-300 font-medium">{stats.totalRecruiters}</span> Recruiters
+            </p>
           </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80">
+            <Link
+              to="/admin/users"
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 transition-colors group"
+            >
+              <span>Manage Users</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+        {/* CARD 2: RECRUITER VERIFICATION */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recruiter Verification</span>
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-3xl font-extrabold text-white tracking-tight">
+              {stats.pendingVerifications}
+              <span className="text-sm font-normal text-amber-300 ml-1.5">Pending</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              <span className="text-emerald-400 font-medium">{stats.verifiedRecruiters}</span> Verified
+              <span className="mx-2 text-slate-600">|</span>
+              <span className="text-slate-400 font-medium">{stats.rejectedRecruiters ?? 0}</span> Rejected
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80">
             <Link
               to="/admin/recruiters"
-              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-indigo-950/40"
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 transition-colors group"
             >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Verification Queue</span>
+              <span>Review Applications</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
+          </div>
+        </div>
+
+        {/* CARD 3: JOB POSTINGS */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Job Postings</span>
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                <Briefcase className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-3xl font-extrabold text-white tracking-tight">
+              {stats.activeJobs}
+              <span className="text-sm font-normal text-cyan-300 ml-1.5">Active</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              <span className="text-slate-300 font-medium">{stats.jobsPendingModeration ?? 0}</span> Pending Moderation
+              <span className="mx-2 text-slate-600">|</span>
+              <span className="text-slate-400 font-medium">{stats.totalJobs}</span> Total
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80">
             <Link
               to="/admin/jobs"
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 transition-colors group"
             >
-              <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Job Moderation</span>
+              <span>Manage Jobs</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-xs">
-          <button
-            onClick={() => setTrustTab('recruiter')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all ${
-              trustTab === 'recruiter'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>A. Recruiter Verification</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-900/60 font-mono">
-              {stats.totalRecruiters}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setTrustTab('company')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all ${
-              trustTab === 'company'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>B. Company Verification</span>
-            {(stats.companiesAwaitingReview ?? 0) > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setTrustTab('jobSafety')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all ${
-              trustTab === 'jobSafety'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>C. Job Safety Moderation</span>
-            {(stats.jobsPendingModeration ?? 0) > 0 && (
-              <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300 font-mono">
-                {stats.jobsPendingModeration}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setTrustTab('riskReview')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all ${
-              trustTab === 'riskReview'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>D. Risk Review & Signals</span>
-            {(stats.highPriorityRiskCases ?? 0) > 0 && (
-              <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-500/20 text-rose-300 font-mono">
-                {stats.highPriorityRiskCases} High
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* VIEW A: RECRUITER VERIFICATION OVERVIEW */}
-        {trustTab === 'recruiter' && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Registered Recruiters</span>
-                <div className="text-xl font-black text-white">{stats.totalRecruiters}</div>
-                <p className="text-[10px] text-slate-400">Total accounts with recruiter role</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Pending Review</span>
-                <div className="text-xl font-black text-amber-300">{stats.pendingVerifications}</div>
-                <p className="text-[10px] text-amber-200/70">Awaiting initial evaluation</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Verified Recruiters</span>
-                <div className="text-xl font-black text-emerald-300">{stats.verifiedRecruiters}</div>
-                <p className="text-[10px] text-emerald-200/70">Authorized job posters</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Rejected Applications</span>
-                <div className="text-xl font-black text-rose-300">{stats.rejectedRecruiters}</div>
-                <p className="text-[10px] text-rose-200/70">Declined verification requests</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Suspended Recruiters</span>
-                <div className="text-xl font-black text-rose-400">{stats.suspendedRecruiters}</div>
-                <p className="text-[10px] text-slate-400">Restricted for compliance review</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">Additional Evidence Req.</span>
-                <div className="text-xl font-black text-cyan-300">{stats.additionalEvidenceRequiredRecruiters ?? 0}</div>
-                <p className="text-[10px] text-cyan-200/70">Guidance sent to recruiter</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Verification requires independent admin review. Registration alone never grants publishing privileges.</span>
-              </span>
-              <Link to="/admin/recruiters" className="text-indigo-400 hover:underline font-semibold flex items-center gap-1">
-                Open Workspace <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW B: COMPANY VERIFICATION OVERVIEW */}
-        {trustTab === 'company' && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Awaiting Review</span>
-                <div className="text-xl font-black text-amber-300">{stats.companiesAwaitingReview ?? 0}</div>
-                <p className="text-[10px] text-amber-200/70">Entities with unverified profile</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Verified Identities</span>
-                <div className="text-xl font-black text-emerald-300">{stats.companiesVerified ?? 0}</div>
-                <p className="text-[10px] text-emerald-200/70">Authenticity checks confirmed</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">Association Pending</span>
-                <div className="text-xl font-black text-indigo-300">{stats.companyAssociationChecksPending ?? 0}</div>
-                <p className="text-[10px] text-indigo-200/70">Representative checks ongoing</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Verification Discrepancies</span>
-                <div className="text-xl font-black text-rose-300">{stats.companyDiscrepanciesCount ?? 0}</div>
-                <p className="text-[10px] text-rose-200/70">Website or registry mismatch</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Re-verification Required</span>
-                <div className="text-xl font-black text-white">{stats.companiesReverificationRequired ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Changes requiring re-audit</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Company authenticity reviews verify business registration numbers, tax IDs, and official domain emails.</span>
-              </span>
-              <Link to="/admin/recruiters" className="text-indigo-400 hover:underline font-semibold flex items-center gap-1">
-                Inspect Company Checks <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW C: JOB SAFETY OVERVIEW */}
-        {trustTab === 'jobSafety' && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Pending Moderation</span>
-                <div className="text-xl font-black text-amber-300">{stats.jobsPendingModeration ?? 0}</div>
-                <p className="text-[10px] text-amber-200/70">Submitted awaiting approval</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Published Jobs</span>
-                <div className="text-xl font-black text-emerald-300">{stats.jobsPublished ?? stats.activeJobs}</div>
-                <p className="text-[10px] text-emerald-200/70">Live in candidate discovery</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Rejected Jobs</span>
-                <div className="text-xl font-black text-rose-300">{stats.jobsRejected ?? 0}</div>
-                <p className="text-[10px] text-rose-200/70">Requisition feedback returned</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-rose-950/30 border border-rose-500/40 space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Flagged Suspicious</span>
-                <div className="text-xl font-black text-rose-300">{stats.jobsFlaggedSuspicious ?? 0}</div>
-                <p className="text-[10px] text-rose-200/70">Safety rule alerts triggered</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">Candidate Reported</span>
-                <div className="text-xl font-black text-indigo-300">{stats.jobsCandidateReported ?? 0}</div>
-                <p className="text-[10px] text-indigo-200/70">Active complaints submitted</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Unpublished / Investigation</span>
-                <div className="text-xl font-black text-white">{stats.jobsUnpublishedForInvestigation ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Withdrawn from discovery</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Jobs remain hidden from candidates until approved by an administrator and associated with an active verified recruiter.</span>
-              </span>
-              <Link to="/admin/jobs" className="text-cyan-400 hover:underline font-semibold flex items-center gap-1">
-                Go to Moderation Console <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW D: RISK REVIEW OVERVIEW */}
-        {trustTab === 'riskReview' && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="p-3.5 rounded-2xl bg-rose-950/25 border border-rose-500/40 space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">High-Priority Cases</span>
-                <div className="text-xl font-black text-rose-300">{stats.highPriorityRiskCases ?? 0}</div>
-                <p className="text-[10px] text-rose-200/70">Requires urgent decision</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Duplicate Profiles</span>
-                <div className="text-xl font-black text-white">{stats.duplicateRecruiterProfilesCount ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Shared phone or identity records</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Info Mismatches</span>
-                <div className="text-xl font-black text-amber-300">{stats.companyInfoMismatchesCount ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Email vs company website domain</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Unresolved Checks</span>
-                <div className="text-xl font-black text-cyan-300">{stats.unresolvedAssociationChecksCount ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Pending employer authorization</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Moderation Violations</span>
-                <div className="text-xl font-black text-rose-400">{stats.repeatedModerationViolationsCount ?? 0}</div>
-                <p className="text-[10px] text-slate-400">Repeat rejections on requisitions</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Open Complaints</span>
-                <div className="text-xl font-black text-amber-300">{stats.openCandidateComplaintsCount ?? 0}</div>
-                <p className="text-[10px] text-amber-200/70">Candidate reports awaiting review</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                <span>Explainable AI heuristics assist administrator review. AI never automatically approves, rejects, or suspends accounts.</span>
-              </span>
-              <Link to="/admin/audit" className="text-rose-400 hover:underline font-semibold flex items-center gap-1">
-                View Risk & Security Logs <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 4. RECRUITMENT OPERATIONS PIPELINE */}
-      <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        {/* CARD 4: CANDIDATE APPLICATIONS */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all flex flex-col justify-between">
           <div>
-            <h2 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Layers className="w-4 h-4 text-violet-400" />
-              <span>Recruitment Operations Lifecycle</span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              Real-time pipeline progression derived directly from candidate application statuses in PostgreSQL.
-            </p>
-          </div>
-          <div className="text-[11px] text-slate-400 font-mono">
-            Overall Placement Rate:{' '}
-            <strong className="text-emerald-400 font-bold">
-              {analytics?.overallPlacementRate ? `${analytics.overallPlacementRate}%` : stats.placementRate ? `${stats.placementRate}%` : 'Not available yet'}
-            </strong>
-          </div>
-        </div>
-
-        {/* Pipeline Stage Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1">
-          {/* Stage 1: Active Jobs */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">1. Active Jobs</span>
-            <div className="text-xl font-black text-cyan-300">{stats.activeJobs}</div>
-            <p className="text-[10px] text-slate-400">Published open</p>
-          </div>
-
-          {/* Stage 2: Applied */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">2. Applied</span>
-            <div className="text-xl font-black text-white">{analytics?.totalApplications ?? stats.totalApplications}</div>
-            <p className="text-[10px] text-slate-400">Submissions</p>
-          </div>
-
-          {/* Stage 3: Under Review */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">3. In Review</span>
-            <div className="text-xl font-black text-amber-300">{analytics?.awaitingReview ?? stats.pendingApplications}</div>
-            <p className="text-[10px] text-slate-400">Screening queue</p>
-          </div>
-
-          {/* Stage 4: Shortlisted */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">4. Shortlisted</span>
-            <div className="text-xl font-black text-indigo-300">{analytics?.shortlisted ?? stats.shortlistedCount}</div>
-            <p className="text-[10px] text-slate-400">
-              {analytics?.applicationToShortlistRate ? `${analytics.applicationToShortlistRate}% rate` : 'Qualified'}
-            </p>
-          </div>
-
-          {/* Stage 5: Interviewing */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">5. Interview</span>
-            <div className="text-xl font-black text-violet-300">{analytics?.interviewsScheduled ?? 0}</div>
-            <p className="text-[10px] text-slate-400">
-              {analytics?.shortlistToInterviewRate ? `${analytics.shortlistToInterviewRate}% advanced` : 'Evaluations'}
-            </p>
-          </div>
-
-          {/* Stage 6: Selected / Hired */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1 relative group">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">6. Hired</span>
-            <div className="text-xl font-black text-emerald-400">{analytics?.successfulHires ?? stats.selectedCount}</div>
-            <p className="text-[10px] text-emerald-400/80 font-semibold">Placement verified</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. PARTICIPATION & PERFORMANCE (SPLIT PANELS) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel A: Candidate Activity */}
-        <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                <UserCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Candidate Pool Dynamics</h3>
-                <p className="text-[11px] text-slate-400">Registered job seekers & engagement</p>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Candidate Applications</span>
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <FileText className="w-4 h-4" />
               </div>
             </div>
-            <Link to="/admin/users?role=candidate" className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1 font-semibold">
-              <span>View pool</span> <ArrowRight className="w-3 h-3" />
+            <div className="text-3xl font-extrabold text-white tracking-tight">
+              {analytics?.totalApplications ?? stats.totalApplications}
+              <span className="text-sm font-normal text-slate-400 ml-1.5">Total</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              <span className="text-amber-300 font-medium">{analytics?.awaitingReview ?? stats.pendingApplications ?? 0}</span> In Review
+              <span className="mx-2 text-slate-600">|</span>
+              <span className="text-indigo-300 font-medium">{analytics?.shortlisted ?? stats.shortlistedCount ?? 0}</span> Shortlisted
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80">
+            <Link
+              to="/admin/jobs"
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 transition-colors group"
+            >
+              <span>View Recruitment Activity</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
-
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Total Candidates</span>
-              <p className="text-lg font-black text-white">{stats.totalCandidates}</p>
-              <p className="text-[10px] text-slate-400">Registered platform profiles</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Total Applications</span>
-              <p className="text-lg font-black text-sky-300">{analytics?.totalApplications ?? stats.totalApplications}</p>
-              <p className="text-[10px] text-slate-400">Submitted submissions</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Interviews Scheduled</span>
-              <p className="text-lg font-black text-violet-300">{analytics?.interviewsScheduled ?? 0}</p>
-              <p className="text-[10px] text-slate-400">Employer interview invites</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Successful Hires</span>
-              <p className="text-lg font-black text-emerald-300">{analytics?.successfulHires ?? stats.selectedCount}</p>
-              <p className="text-[10px] text-emerald-400/80 font-medium">Offers & confirmed hires</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Panel B: Recruiter Activity */}
-        <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Recruiter & Employer Operations</h3>
-                <p className="text-[11px] text-slate-400">Company verification & job publishing</p>
-              </div>
-            </div>
-            <Link to="/admin/recruiters" className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold">
-              <span>Verifications</span> <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Total Recruiters</span>
-              <p className="text-lg font-black text-white">{stats.totalRecruiters}</p>
-              <p className="text-[10px] text-slate-400">Employer accounts in DB</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Verified Recruiters</span>
-              <p className="text-lg font-black text-emerald-300">{stats.verifiedRecruiters}</p>
-              <p className="text-[10px] text-slate-400">Authorized hiring managers</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Published Requisitions</span>
-              <p className="text-lg font-black text-cyan-300">{stats.totalJobs}</p>
-              <p className="text-[10px] text-slate-400">{stats.activeJobs} currently active</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase">Pending Review</span>
-              <p className="text-lg font-black text-amber-300">{stats.pendingVerifications}</p>
-              <p className="text-[10px] text-slate-400">Employer verification queue</p>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* 6. ADMINISTRATOR TASK CENTER ("REQUIRES YOUR ATTENTION") */}
-      <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      {/* ==================================================
+          4. REQUIRES ATTENTION SECTION
+          ================================================== */}
+      <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400" />
-            <h2 className="text-base font-extrabold text-white tracking-tight">Requires Your Attention</h2>
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <h2 className="text-base font-bold text-white tracking-tight">Requires Attention</h2>
           </div>
-          <span className="text-xs text-slate-500 font-medium">Urgent Administrative Tasks</span>
+          {attentionItems.length > 0 && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              {attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
         </div>
 
-        {stats.pendingVerifications === 0 && pendingAlertsCount === 0 && stats.suspendedAccounts === 0 ? (
-          <div className="py-8 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <Check className="w-5 h-5" />
+        {attentionItems.length === 0 ? (
+          <div className="py-6 flex items-center justify-center gap-3 text-center text-slate-400 text-sm">
+            <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4" />
             </div>
-            <p className="text-sm font-bold text-white">All caught up — Platform in full compliance & optimal standing</p>
-            <p className="text-xs text-slate-400">No pending employer verification requests or security violations require action.</p>
+            <span>You're all caught up. No pending actions require attention.</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {/* Task 1: Recruiter Verifications */}
-            {stats.pendingVerifications > 0 && (
-              <div className="p-4 rounded-2xl bg-amber-950/15 border border-amber-500/30 flex flex-col justify-between space-y-3">
-                <div className="space-y-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {attentionItems.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700/80 flex flex-col justify-between transition-all"
+              >
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Recruiter Verification</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
-                      HIGH PRIORITY
+                    <span className="text-xs font-bold text-white">{item.title}</span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      {item.count} Pending
                     </span>
                   </div>
-                  <h4 className="text-sm font-bold text-white">
-                    {stats.pendingVerifications} Recruiter {stats.pendingVerifications === 1 ? 'Application' : 'Applications'} Awaiting Review
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Unverified recruiters cannot publish active job requisitions until administrator approval is granted.
-                  </p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
                 </div>
-                <Link
-                  to="/admin/recruiters"
-                  className="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs text-center transition-colors block shadow-md shadow-amber-950/50"
-                >
-                  Review Credentials
-                </Link>
-              </div>
-            )}
-
-            {/* Task 2: Security & Risk Alerts */}
-            {pendingAlertsCount > 0 && (
-              <div className="p-4 rounded-2xl bg-rose-950/15 border border-rose-500/30 flex flex-col justify-between space-y-3">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Security Anomaly</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">
-                      SECURITY REVIEW
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white">
-                    {pendingAlertsCount} Unresolved Security {pendingAlertsCount === 1 ? 'Alert' : 'Alerts'}
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Risk indicators logged by automated detection rules (duplicate registration, impersonation, or unverified publishing attempts).
-                  </p>
-                </div>
-                <button
-                  onClick={() => alerts.length > 0 && setReviewingAlert(alerts[0])}
-                  className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs text-center transition-colors block shadow-md shadow-rose-950/50"
-                >
-                  Inspect Security Alerts
-                </button>
-              </div>
-            )}
-
-            {/* Task 3: Suspended Accounts */}
-            {stats.suspendedAccounts > 0 && (
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between space-y-3">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account Governance</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
-                      GOVERNANCE
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white">
-                    {stats.suspendedAccounts} Suspended {stats.suspendedAccounts === 1 ? 'Account' : 'Accounts'}
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    User accounts currently restricted by moderation. Review for reactivation or permanent removal.
-                  </p>
-                </div>
-                <Link
-                  to="/admin/users?status=suspended"
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs text-center transition-colors block border border-slate-700"
-                >
-                  Manage Suspended Accounts
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 7. PLATFORM INTEGRITY & SECURITY ALERTS */}
-      <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-base font-extrabold text-white tracking-tight">Platform Integrity & Security Alerts</h2>
-          </div>
-          <span className="text-xs text-slate-500 font-mono">Automated Anomaly Detection</span>
-        </div>
-
-        {alerts.length === 0 ? (
-          <div className="py-6 text-center text-slate-500 text-xs italic">
-            Zero security violations or suspicious account attempts detected. Single-administrator perimeter intact.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-800/80">
-            {alerts.slice(0, 5).map((al) => (
-              <div key={al.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        al.riskLevel === 'HIGH'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : al.riskLevel === 'MEDIUM'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      {al.riskLevel} RISK
-                    </span>
-                    <span className="font-bold text-white">{al.riskCategory}</span>
-                    <span className="text-slate-500 text-[10px] font-mono">{al.accountEmail}</span>
-                  </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">{al.description}</p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      al.reviewStatus === 'PENDING'
-                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-                        : al.reviewStatus === 'CONFIRMED'
-                        ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
-                        : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                    }`}
-                  >
-                    {al.reviewStatus}
-                  </span>
-                  {al.reviewStatus === 'PENDING' && (
+                <div className="mt-4 pt-3 border-t border-slate-800/60">
+                  {item.onAction ? (
                     <button
-                      onClick={() => setReviewingAlert(al)}
-                      className="px-2.5 py-1 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 text-[11px] font-semibold transition-colors"
+                      onClick={item.onAction}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs text-center transition-colors"
                     >
-                      Review
+                      {item.actionLabel}
                     </button>
+                  ) : (
+                    <Link
+                      to={item.actionUrl || '#'}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs text-center transition-colors block"
+                    >
+                      {item.actionLabel}
+                    </Link>
                   )}
                 </div>
               </div>
@@ -1121,210 +571,89 @@ export const AdminDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* 8. RECENT PLATFORM ACTIVITY STREAM & QUICK ACTIONS (SPLIT) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Administrative Actions */}
-        <div className="space-y-4">
-          <h3 className="text-base font-extrabold text-white tracking-tight">Quick Administrative Actions</h3>
-          <div className="space-y-2.5">
-            <Link
-              to="/admin/recruiters"
-              className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Review Recruiter Verifications</h4>
-                  <p className="text-[10px] text-slate-400">{stats.pendingVerifications} in queue</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/admin/users"
-              className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Identity & Access Governance</h4>
-                  <p className="text-[10px] text-slate-400">Manage candidates & recruiters</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/admin/jobs"
-              className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
-                  <Briefcase className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Moderate Job Postings</h4>
-                  <p className="text-[10px] text-slate-400">{stats.activeJobs} active requisitions</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/admin/audit"
-              className="p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Audit & Security Center</h4>
-                  <p className="text-[10px] text-slate-400">Enterprise telemetry & audit trail</p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform group-hover:translate-x-1" />
-            </Link>
+      {/* ==================================================
+          5. RECENT ACTIVITY SECTION
+          ================================================== */}
+      <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div>
+            <h2 className="text-base font-bold text-white tracking-tight">Recent Activity</h2>
+            <p className="text-xs text-slate-400">Latest administrator actions and platform events.</p>
           </div>
+          <Link
+            to="/admin/audit"
+            className="text-xs font-semibold text-violet-400 hover:text-violet-300 inline-flex items-center gap-1 transition-colors self-start sm:self-auto"
+          >
+            <span>View All in Audit & Security</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Live System Activity Feed */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h3 className="text-base font-extrabold text-white tracking-tight">Recent Platform Activity Stream</h3>
-              <p className="text-xs text-slate-500">Chronological PostgreSQL Audit Trail</p>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px]">
-              <button
-                onClick={() => setActivityFilter('all')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                  activityFilter === 'all' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setActivityFilter('accounts')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                  activityFilter === 'accounts' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Accounts
-              </button>
-              <button
-                onClick={() => setActivityFilter('verification')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                  activityFilter === 'verification' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Verification
-              </button>
-              <button
-                onClick={() => setActivityFilter('security')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                  activityFilter === 'security' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Security
-              </button>
-            </div>
+        {logs.length === 0 ? (
+          <div className="py-8 text-center text-slate-500 text-xs italic">
+            No recent activity is available.
           </div>
-
-          <Card glass className="p-4 divide-y divide-slate-800/60 max-h-96 overflow-y-auto">
-            {filteredLogs.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 text-xs italic">
-                No activity records found for the selected filter.
-              </div>
-            ) : (
-              filteredLogs.slice(0, 10).map((log) => {
-                const roleUpper = (log.actorRole || '').toUpperCase();
-                return (
-                  <div key={log.id} className="py-3 first:pt-0 last:pb-0 flex items-start justify-between gap-3 text-xs">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{log.actorName}</span>
-                        <Badge variant={roleUpper === 'ADMIN' ? 'warning' : 'primary'} size="sm">
-                          {roleUpper || 'USER'}
-                        </Badge>
-                      </div>
-                      <p className="text-slate-300 text-[11px] truncate">
-                        <span className="font-bold text-violet-300">{log.action}: </span>
-                        <span>{log.target}</span>
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-slate-500 shrink-0 font-mono">
-                      {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </Card>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead>
+                <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="pb-2.5 font-medium">Action</th>
+                  <th className="pb-2.5 font-medium">Actor</th>
+                  <th className="pb-2.5 font-medium">Target / Resource</th>
+                  <th className="pb-2.5 font-medium">Date & Time</th>
+                  <th className="pb-2.5 font-medium text-right">Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {logs.slice(0, 8).map((log) => {
+                  const isSuccess = !log.result || log.result.toUpperCase() === 'SUCCESS';
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 font-semibold text-white max-w-[200px] truncate pr-3">
+                        {log.action}
+                      </td>
+                      <td className="py-3 text-slate-300 pr-3 whitespace-nowrap">
+                        <span>{log.actorName}</span>
+                        {log.actorRole && (
+                          <span className="text-[10px] text-slate-500 uppercase ml-1.5 font-mono">
+                            ({log.actorRole})
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 text-slate-400 max-w-[280px] truncate pr-3 font-mono text-[11px]" title={log.target}>
+                        {log.target}
+                      </td>
+                      <td className="py-3 text-slate-400 whitespace-nowrap pr-3 font-mono text-[11px]">
+                        {formatTimestamp(log.timestamp)}
+                      </td>
+                      <td className="py-3 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            isSuccess
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}
+                        >
+                          {log.result ? log.result.toUpperCase() : 'SUCCESS'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* 9. MODAL: SYSTEM ACTIVITY & AUDIT LOG */}
-      <Modal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        title="SYSTEM ACTIVITY & AUDIT LOG"
-        maxWidth="2xl"
-      >
-        <div className="space-y-4 text-xs text-left">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-slate-400">Persisted audit events from PostgreSQL database.</p>
-            <div className="w-64">
-              <input
-                type="text"
-                placeholder="Search audit trail..."
-                value={auditSearchTerm}
-                onChange={(e) => setAuditSearchTerm(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
-              />
-            </div>
-          </div>
-
-          <div className="max-h-96 overflow-y-auto divide-y divide-slate-800/80 border border-slate-800 rounded-xl bg-slate-950">
-            {filteredAuditLogs.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">No activity records matched your audit search.</div>
-            ) : (
-              filteredAuditLogs.map((log) => (
-                <div key={log.id} className="p-3 hover:bg-slate-900/50 transition-colors space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-violet-300">{log.action}</span>
-                    <span className="text-[10px] text-slate-500">{log.timestamp ? formatFullDate(log.timestamp) : ''}</span>
-                  </div>
-                  <p className="text-slate-300 text-xs">{log.target}</p>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                    <span>Actor: <strong className="text-slate-400">{log.actorName}</strong> ({log.actorRole})</span>
-                    {log.ipAddress && <span>IP: {log.ipAddress}</span>}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="flex items-center justify-end pt-2 border-t border-slate-800">
-            <Button variant="secondary" size="sm" onClick={() => setIsAuditModalOpen(false)}>
-              Close Audit Log
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* 10. MODAL: SECURITY ALERT REVIEW */}
+      {/* ==================================================
+          6. MODAL: SECURITY ALERT REVIEW
+          ================================================== */}
       <Modal
         isOpen={!!reviewingAlert}
         onClose={() => !isSubmittingReview && setReviewingAlert(null)}
-        title="SECURITY ALERT MODERATION"
+        title="Security Alert Review"
         maxWidth="md"
       >
         {reviewingAlert && (
@@ -1332,7 +661,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 space-y-1.5">
               <div className="flex items-center gap-2 text-rose-300 font-bold">
                 <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>Risk Anomaly: {reviewingAlert.riskCategory}</span>
+                <span>Anomaly: {reviewingAlert.riskCategory}</span>
               </div>
               <p className="text-slate-300 text-[11px] leading-relaxed">{reviewingAlert.description}</p>
             </div>
@@ -1352,7 +681,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="block font-semibold text-slate-300">Administrative Decision:</label>
               <select
                 value={alertReviewDecision}
@@ -1365,7 +694,7 @@ export const AdminDashboard: React.FC = () => {
               </select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="block font-semibold text-slate-300">Action to Take:</label>
               <select
                 value={alertReviewAction}
@@ -1378,7 +707,7 @@ export const AdminDashboard: React.FC = () => {
               </select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="block font-semibold text-slate-300">Administrative Note (Optional):</label>
               <input
                 type="text"
@@ -1386,7 +715,8 @@ export const AdminDashboard: React.FC = () => {
                 value={alertReviewNote}
                 onChange={(e) => setAlertReviewNote(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-violet-500"
-              />
+              >
+              </input>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

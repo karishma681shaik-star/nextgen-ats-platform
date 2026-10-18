@@ -17,6 +17,7 @@ public class JobDTO {
     private String salaryMin;
     private String salaryMax;
     private String currency;
+    private String salaryPeriod;
     private String description;
     private List<String> requirements;
     private List<String> responsibilities;
@@ -38,6 +39,14 @@ public class JobDTO {
     private String approvedBy;
     private String approvedAt;
     private String moderatedAt;
+    private String closedReason;
+    private String closedAt;
+
+    public String getClosedReason() { return closedReason; }
+    public void setClosedReason(String closedReason) { this.closedReason = closedReason; }
+
+    public String getClosedAt() { return closedAt; }
+    public void setClosedAt(String closedAt) { this.closedAt = closedAt; }
 
     public String getRecruiterId() { return recruiterId; }
     public void setRecruiterId(String recruiterId) { this.recruiterId = recruiterId; }
@@ -87,6 +96,8 @@ public class JobDTO {
     public void setSalaryMax(String salaryMax) { this.salaryMax = salaryMax; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+    public String getSalaryPeriod() { return salaryPeriod; }
+    public void setSalaryPeriod(String salaryPeriod) { this.salaryPeriod = salaryPeriod; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public List<String> getRequirements() { return requirements; }

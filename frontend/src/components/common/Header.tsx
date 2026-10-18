@@ -1,25 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
   Sparkles,
   User as UserIcon,
   LogOut,
-  FileText,
   Settings,
   Search,
   Command,
   Shield,
   Briefcase,
   ChevronDown,
-  Camera
+  ChevronRight,
+  ArrowRight,
+  Camera,
+  Volume2,
+  Building,
+  Sliders,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { RoleSwitcher } from './RoleSwitcher';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { Avatar } from '../ui/Avatar';
 import { UserAvatarModal } from './UserAvatarModal';
+import { ExperiencePreferencesModal } from './ExperiencePreferencesModal';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { cn } from '../../utils/cn';
 
 interface HeaderProps {
@@ -31,6 +39,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
   const { user, role, logout } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isExpModalOpen, setIsExpModalOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -40,17 +51,37 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
         setIsProfileMenuOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
     if (isProfileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isProfileMenuOpen]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleConfirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      sessionStorage.removeItem('ai_ats_play_intro_candidate');
+      sessionStorage.removeItem('ai_ats_play_intro_recruiter');
+      sessionStorage.removeItem('ai_ats_play_intro_admin');
+      sessionStorage.removeItem('ai_ats_intro_seen_candidate');
+      sessionStorage.removeItem('ai_ats_intro_seen_recruiter');
+      sessionStorage.removeItem('ai_ats_intro_seen_admin');
+      setShowLogoutConfirm(false);
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const getRoleTheme = () => {
@@ -112,169 +143,275 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
         </div>
 
         {/* Right Side: Role Persona Badge, Role Switcher, Notifications, User Menu */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <RoleSwitcher />
           <NotificationsDropdown />
 
+          {/* Quick Experience & Voice Assistant Preferences */}
+          <button
+            type="button"
+            onClick={() => setIsExpModalOpen(true)}
+            className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/[0.06] border border-transparent hover:border-slate-700/60 transition-all cursor-pointer"
+            title="Experience & Voice Preferences"
+            aria-label="Experience & Voice Preferences"
+          >
+            <Volume2 className="w-4 h-4" />
+          </button>
+
           {/* User Profile Dropdown */}
           <div className="relative flex items-center" ref={profileMenuRef}>
-            <div className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/[0.06] transition-colors border border-transparent hover:border-white/10">
-              {/* Direct Avatar Clicker with Camera Badge */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsProfileMenuOpen(false);
-                  setIsAvatarModalOpen(true);
-                }}
-                className="relative group/avatar shrink-0 cursor-pointer p-0.5 rounded-full hover:ring-2 hover:ring-purple-500/50 transition-all"
-                title="Click to change profile photo"
-                aria-label="Change profile photo"
-              >
+            {/* Unified Profile Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+              className={cn(
+                'flex items-center gap-2.5 p-1.5 pr-2.5 rounded-xl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50',
+                isProfileMenuOpen
+                  ? 'bg-white/[0.08] border border-white/15'
+                  : 'hover:bg-slate-800/60 border border-transparent hover:border-slate-700/60'
+              )}
+              aria-label="User account menu"
+              aria-haspopup="true"
+              aria-expanded={isProfileMenuOpen}
+            >
+              <div className="relative shrink-0">
                 <Avatar src={user?.avatar} name={user?.name || 'User'} size="md" status="online" />
-                <span className="absolute -bottom-0.5 -right-0.5 p-1 rounded-full bg-purple-600 hover:bg-purple-500 text-white shadow-md border border-[#060b18] group-hover/avatar:scale-115 transition-transform">
-                  <Camera className="w-2.5 h-2.5" />
+              </div>
+
+              <div className="hidden md:flex flex-col text-left">
+                <span className="text-xs font-bold text-white leading-tight truncate max-w-[120px]">
+                  {user?.name || 'Authorized User'}
                 </span>
-              </button>
+                <span className={cn('text-[10px] font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-1', roleTheme.pill.split(' ')[1])}>
+                  <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', roleTheme.dot)} />
+                  {role}
+                </span>
+              </div>
 
-              {/* Menu Toggle for Dropdown */}
-              <button
-                type="button"
-                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center gap-1.5 text-left cursor-pointer pr-1"
-                aria-label="Toggle user menu"
-                aria-expanded={isProfileMenuOpen}
-              >
-                <div className="hidden md:flex flex-col">
-                  <span className="text-xs font-bold text-white leading-none">{user?.name || 'Authorized User'}</span>
-                  <span className={cn('text-[10px] font-bold uppercase tracking-wider capitalize mt-0.5 inline-flex items-center gap-1', roleTheme.pill.split(' ')[1])}>
-                    <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', roleTheme.dot)} />
-                    {role}
-                  </span>
-                </div>
-                <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 hidden sm:inline transition-transform duration-200', isProfileMenuOpen && 'rotate-180')} />
-              </button>
-            </div>
+              <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 hidden sm:inline transition-transform duration-200', isProfileMenuOpen && 'rotate-180')} />
+            </button>
 
-            {isProfileMenuOpen && (
-              <div
-                className="absolute right-0 mt-2 w-64 bg-[#0a0f1d] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-150 glass-card-elevated"
-              >
-                {/* User Info Header with Quick Edit Photo Trigger */}
-                <div className="p-3.5 border-b border-white/[0.08] bg-white/[0.02] flex items-center gap-3">
-                  <div
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      setIsAvatarModalOpen(true);
-                    }}
-                    className="relative group/avatar cursor-pointer shrink-0"
-                    title="Click to edit profile photo"
-                  >
-                    <Avatar src={user?.avatar} name={user?.name || 'User'} size="md" status="online" />
-                    <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center text-white backdrop-blur-[1px]">
-                      <Camera className="w-3.5 h-3.5 text-purple-300" />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-bold text-white truncate">{user?.name || 'Authorized User'}</p>
-                      <button
-                        type="button"
+            {/* Dropdown Menu Container */}
+            <AnimatePresence>
+              {isProfileMenuOpen && (
+                <motion.div
+                  role="menu"
+                  aria-label="User profile options"
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-[#0c1328]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/90 z-50 overflow-hidden text-left"
+                >
+                  {/* Profile Header */}
+                  <div className="p-4 border-b border-white/[0.08] bg-white/[0.02]">
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className="relative shrink-0 group cursor-pointer"
                         onClick={() => {
                           setIsProfileMenuOpen(false);
                           setIsAvatarModalOpen(true);
                         }}
-                        className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition-all cursor-pointer"
-                        title="Edit profile photo"
+                        title="Click to edit profile photo"
                       >
-                        <Camera className="w-3 h-3" />
-                        <span>Edit</span>
-                      </button>
+                        <Avatar
+                          src={user?.avatar}
+                          name={user?.name || 'User'}
+                          size="lg"
+                          status="online"
+                          className="ring-2 ring-white/10 group-hover:ring-indigo-500/60 transition-all duration-200"
+                        />
+                        <div className="absolute inset-0 rounded-full bg-black/45 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                          <Camera className="w-3.5 h-3.5 text-white drop-shadow" />
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-slate-100 truncate tracking-tight" title={user?.name || 'Authorized User'}>
+                            {user?.name || 'Authorized User'}
+                          </p>
+                        </div>
+
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className={cn('text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 inline-flex items-center gap-1.5', roleTheme.pill)}>
+                            <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', roleTheme.dot)} />
+                            {role === 'admin' ? 'ADMINISTRATOR' : role.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 font-mono truncate mt-1.5 block max-w-full" title={user?.email || 'No email registered'}>
+                          {user?.email || 'authenticated@session'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
                   </div>
-                </div>
 
-                <div className="py-1">
-                  {/* Change Profile Photo Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      setIsAvatarModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-purple-300 hover:text-white hover:bg-purple-500/10 transition-colors text-left cursor-pointer"
-                  >
-                    <Camera className="w-4 h-4 text-purple-400" />
-                    <span>Change Profile Photo</span>
-                  </button>
+                  {/* Role-Aware Menu Options */}
+                  <div className="p-2 space-y-1">
+                    {/* Common Option: Edit Profile & Photo */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setIsAvatarModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 group cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 group-hover:text-indigo-300 group-hover:scale-105 transition-all">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                          Edit Profile & Photo
+                        </div>
+                        <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                          Update your name, picture, and personal details.
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
 
-                  {role === 'candidate' && (
-                    <>
+                    {/* CANDIDATE ROLE OPTIONS */}
+                    {role === 'candidate' && (
                       <Link
                         to="/candidate/profile"
                         onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 group cursor-pointer"
                       >
-                        <UserIcon className="w-4 h-4 text-indigo-400" />
-                        <span>Candidate Profile</span>
+                        <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 group-hover:text-indigo-300 group-hover:scale-105 transition-all">
+                          <UserCheck className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                            Candidate Profile
+                          </div>
+                          <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                            View and manage your professional candidate information.
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </Link>
-                      <Link
-                        to="/candidate/resumes"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
-                      >
-                        <FileText className="w-4 h-4 text-cyan-400" />
-                        <span>Resume Management</span>
-                      </Link>
-                    </>
-                  )}
-                  {role === 'recruiter' && (
-                    <>
-                      <Link
-                        to="/recruiter/company"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
-                      >
-                        <Settings className="w-4 h-4 text-purple-400" />
-                        <span>Company Branding</span>
-                      </Link>
-                      <Link
-                        to="/recruiter/jobs/new"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
-                      >
-                        <Briefcase className="w-4 h-4 text-fuchsia-400" />
-                        <span>Create Job Listing</span>
-                      </Link>
-                    </>
-                  )}
-                  {role === 'admin' && (
-                    <Link
-                      to="/admin/audit"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
-                    >
-                      <Shield className="w-4 h-4 text-emerald-400" />
-                      <span>Audit & Security</span>
-                    </Link>
-                  )}
-                </div>
+                    )}
 
-                <div className="border-t border-white/[0.08] pt-1">
-                  <button
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
+                    {/* RECRUITER ROLE OPTIONS */}
+                    {role === 'recruiter' && (
+                      <>
+                        <Link
+                          to="/recruiter/company"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group cursor-pointer"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 group-hover:text-purple-300 group-hover:scale-105 transition-all">
+                            <Building className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                              Company Profile
+                            </div>
+                            <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                              Manage company profile and branding assets.
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/recruiter/jobs"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group cursor-pointer"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center shrink-0 text-fuchsia-400 group-hover:text-fuchsia-300 group-hover:scale-105 transition-all">
+                            <Sliders className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                              Recruitment Preferences
+                            </div>
+                            <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                              Manage job listings and candidate pipelines.
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                        </Link>
+                      </>
+                    )}
+
+                    {/* ADMINISTRATOR ROLE OPTIONS */}
+                    {role === 'admin' && (
+                      <Link
+                        to="/admin/audit"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 group cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400 group-hover:text-emerald-300 group-hover:scale-105 transition-all">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                            Account & Security
+                          </div>
+                          <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                            Review audit logs, system health, and security.
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </Link>
+                    )}
+
+                    {/* Experience & Audio (Available for Recruiter & Admin) */}
+                    {role !== 'candidate' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          setIsExpModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 group cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 text-cyan-400 group-hover:text-cyan-300 group-hover:scale-105 transition-all">
+                          <Volume2 className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                            Experience & Audio
+                          </div>
+                          <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                            Personalize voice assistance and interface preferences.
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Restrained & Safe Sign Out Option */}
+                  <div className="border-t border-white/[0.08] p-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-rose-500/[0.08] focus:bg-rose-500/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 group cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 text-rose-400 group-hover:text-rose-300 group-hover:scale-105 transition-all">
+                        <LogOut className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-rose-300 group-hover:text-rose-200 transition-colors">
+                          Sign Out
+                        </div>
+                        <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                          Securely end your current session.
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-rose-400/50 group-hover:text-rose-300 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -283,6 +420,24 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
       <UserAvatarModal
         isOpen={isAvatarModalOpen}
         onClose={() => setIsAvatarModalOpen(false)}
+      />
+
+      {/* Experience & Voice Preferences Modal */}
+      <ExperiencePreferencesModal
+        isOpen={isExpModalOpen}
+        onClose={() => setIsExpModalOpen(false)}
+      />
+
+      {/* Safe Sign Out Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleConfirmLogout}
+        title="Sign Out of Session"
+        message="Are you sure you want to end your current authenticated session? Any unsaved edits will be discarded."
+        confirmText="Sign Out"
+        variant="danger"
+        isLoading={isLoggingOut}
       />
     </header>
   );

@@ -13,19 +13,36 @@ export const RoleSwitcher: React.FC = () => {
 
   const handleRoleChange = async (newRole: Role) => {
     if (newRole === role) return;
-    const switchedUser = await switchRole(newRole);
-    showToast({
-      type: 'info',
-      title: `Switched to ${newRole.toUpperCase()} View`,
-      message: `Active persona: ${switchedUser.name}`
-    });
+    try {
+      const switchedUser = await switchRole(newRole);
+      showToast({
+        type: 'info',
+        title: `Switched to ${newRole.toUpperCase()} View`,
+        message: `Active persona: ${switchedUser.name}`
+      });
 
-    if (newRole === 'candidate') {
-      navigate('/candidate');
-    } else if (newRole === 'recruiter') {
-      navigate('/recruiter');
-    } else if (newRole === 'admin') {
-      navigate('/admin');
+      if (newRole === 'candidate') {
+        navigate('/candidate');
+      } else if (newRole === 'recruiter') {
+        sessionStorage.setItem('ai_ats_play_intro_recruiter', 'true');
+        navigate('/recruiter');
+      } else if (newRole === 'admin') {
+        sessionStorage.setItem('ai_ats_play_intro_admin', 'true');
+        navigate('/admin');
+      }
+    } catch (err: any) {
+      showToast({
+        type: 'warning',
+        title: 'Authentication Required',
+        message: err.message || 'Please log in with credentials authorized for this portal.'
+      });
+      if (newRole === 'candidate') {
+        navigate('/login/candidate');
+      } else if (newRole === 'recruiter') {
+        navigate('/login/recruiter');
+      } else if (newRole === 'admin') {
+        navigate('/admin/login');
+      }
     }
   };
 

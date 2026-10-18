@@ -17,6 +17,7 @@ public class JobRequest {
     private String salaryMin;
     private String salaryMax;
     private String currency;
+    private String salaryPeriod;
 
     @NotBlank
     private String description;
@@ -53,6 +54,8 @@ public class JobRequest {
 
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+    public String getSalaryPeriod() { return salaryPeriod; }
+    public void setSalaryPeriod(String salaryPeriod) { this.salaryPeriod = salaryPeriod; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

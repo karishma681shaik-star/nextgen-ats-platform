@@ -18,10 +18,9 @@ import { useToast } from '../../context/ToastContext';
 import { Job, Resume } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
-import { Skeleton } from '../../components/ui/Skeleton';
 import { Modal } from '../../components/ui/Modal';
-import { formatCurrency, formatFullDate } from '../../utils/formatters';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
 
 export const SavedJobsPage: React.FC = () => {
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
@@ -99,14 +98,12 @@ export const SavedJobsPage: React.FC = () => {
   };
 
   const renderSalary = (job: Job) => {
-    if (job.salary && typeof job.salary.min === 'number' && typeof job.salary.max === 'number') {
-      return `${formatCurrency(job.salary.min)} - ${formatCurrency(job.salary.max)} / yr`;
-    }
     const anyJob = job as any;
-    if (anyJob.salaryMin && anyJob.salaryMax) {
-      return `${formatCurrency(Number(anyJob.salaryMin))} - ${formatCurrency(Number(anyJob.salaryMax))} / yr`;
-    }
-    return 'Competitive Salary';
+    const min = job.salary?.min ?? anyJob.salaryMin;
+    const max = job.salary?.max ?? anyJob.salaryMax;
+    const currency = job.salary?.currency ?? anyJob.currency ?? 'INR';
+    const period = job.salary?.period ?? anyJob.salaryPeriod ?? 'yearly';
+    return formatSalaryRange(min, max, currency, period, 'Competitive Salary');
   };
 
   return (

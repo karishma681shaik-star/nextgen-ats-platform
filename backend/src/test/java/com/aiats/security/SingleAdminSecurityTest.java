@@ -1,11 +1,13 @@
 package com.aiats.security;
 
+import com.aiats.dto.auth.AdminBootstrapRequest;
 import com.aiats.dto.auth.LoginRequest;
 import com.aiats.dto.auth.RegisterRequest;
 import com.aiats.entity.Role;
 import com.aiats.entity.User;
 import com.aiats.entity.UserStatus;
 import com.aiats.exception.BadRequestException;
+import com.aiats.exception.DuplicateResourceException;
 import com.aiats.repository.CandidateProfileRepository;
 import com.aiats.repository.CompanyRepository;
 import com.aiats.repository.PasswordResetTokenRepository;
@@ -225,5 +227,106 @@ public class SingleAdminSecurityTest {
         assertFalse(tokenProvider.validateToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.tampered.token"));
         assertFalse(tokenProvider.validateToken(""));
         assertFalse(tokenProvider.validateToken(null));
+    }
+
+    @Test
+    @DisplayName("TEST 9: Initial admin bootstrap provisions sole administrator")
+    void testBootstrapAdmin_success() {
+        authService.setConfiguredBootstrapToken("secure-test-token-12345");
+
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(0L);
+        when(userRepository.existsByEmailIgnoreCase("newadmin@company.internal")).thenReturn(false);
+        when(passwordEncoder.encode("StrongPassword123!")).thenReturn("hashed_strong_pass");
+
+        User savedAdmin = new User();
+        savedAdmin.setId(UUID.randomUUID());
+        savedAdmin.setEmail("newadmin@company.internal");
+        savedAdmin.setFullName("Platform Chief Admin");
+        savedAdmin.setRole(Role.ADMIN);
+        savedAdmin.setStatus(UserStatus.ACTIVE);
+
+        when(userRepository.save(any(User.class))).thenReturn(savedAdmin);
+
+        AdminBootstrapRequest request = new AdminBootstrapRequest(
+                "Platform Chief Admin",
+                "newadmin@company.internal",
+                "StrongPassword123!",
+                "secure-test-token-12345"
+        );
+
+        var response = authService.bootstrapAdmin(request, "127.0.0.1");
+
+        assertNotNull(response);
+        assertEquals("admin", response.getUser().getRole());
+        assertEquals("newadmin@company.internal", response.getUser().getEmail());
+        assertNotNull(response.getToken());
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("TEST 10: Repeated admin bootstrap is rejected with 409 Conflict / DuplicateResourceException")
+    void testBootstrapAdmin_repeatedBootstrap_rejected() {
+        authService.setConfiguredBootstrapToken("secure-test-token-12345");
+
+        // Admin already exists in DB
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+        AdminBootstrapRequest request = new AdminBootstrapRequest(
+                "Second Admin",
+                "attacker@company.internal",
+                "StrongPassword123!",
+                "secure-test-token-12345"
+        );
+
+        DuplicateResourceException ex = assertThrows(DuplicateResourceException.class, () -> {
+            authService.bootstrapAdmin(request, "127.0.0.1");
+        });
+
+        assertTrue(ex.getMessage().contains("Administrator account has already been provisioned"));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("TEST 10b: Admin bootstrap with invalid token is rejected with BadRequestException")
+    void testBootstrapAdmin_invalidToken_rejected() {
+        authService.setConfiguredBootstrapToken("correct-token-999");
+
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(0L);
+
+        AdminBootstrapRequest request = new AdminBootstrapRequest(
+                "Attacker Admin",
+                "attacker@company.internal",
+                "StrongPassword123!",
+                "wrong-token"
+        );
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            authService.bootstrapAdmin(request, "127.0.0.1");
+        });
+
+        assertTrue(ex.getMessage().contains("Invalid bootstrap token"));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("TEST 12: Profile update cannot change user role to ADMIN")
+    void testUpdateProfile_cannotChangeUserRole() {
+        UUID userId = UUID.randomUUID();
+        User candidate = new User();
+        candidate.setId(userId);
+        candidate.setEmail("candidate@test.com");
+        candidate.setFullName("Normal Candidate");
+        candidate.setRole(Role.CANDIDATE);
+        candidate.setStatus(UserStatus.ACTIVE);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(candidate));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = authService.updateProfile(userId, "Updated Candidate Name", "https://avatar.url/pic.png", "127.0.0.1");
+
+        assertNotNull(updated);
+        assertEquals("candidate", updated.getRole());
+        assertEquals("Updated Candidate Name", updated.getName());
+        assertEquals(Role.CANDIDATE, candidate.getRole());
     }
 }

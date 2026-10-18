@@ -128,7 +128,7 @@ export const ResetPasswordPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <Input
                 label="Registered Email"
                 type="email"
@@ -139,6 +139,10 @@ export const ResetPasswordPage: React.FC = () => {
                   if (error) setError('');
                 }}
                 leftIcon={<Mail className="w-4 h-4" />}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
 
@@ -153,6 +157,9 @@ export const ResetPasswordPage: React.FC = () => {
                   if (error) setError('');
                 }}
                 leftIcon={<KeyRound className="w-4 h-4" />}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 helperText="Check your email inbox for the 6-digit code (valid for 10 minutes)"
                 required
               />
@@ -172,11 +179,15 @@ export const ResetPasswordPage: React.FC = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="new-password"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
 
@@ -195,11 +206,15 @@ export const ResetPasswordPage: React.FC = () => {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="new-password"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
               />
 
@@ -213,8 +228,9 @@ export const ResetPasswordPage: React.FC = () => {
                 type="submit"
                 variant="glow"
                 size="lg"
-                className="w-full font-bold shadow-lg mt-2"
+                className="w-full font-bold shadow-lg mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 isLoading={isLoading}
+                disabled={isLoading}
               >
                 Update Password
               </Button>

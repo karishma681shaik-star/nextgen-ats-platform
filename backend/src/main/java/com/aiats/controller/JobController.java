@@ -93,6 +93,16 @@ public class JobController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Job updated successfully"));
     }
 
+    @RequestMapping(value = "/{jobId}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
+    @PreAuthorize("hasRole('RECRUITER')")
+    public ResponseEntity<ApiResponse<JobDTO>> updateJobStatus(
+            @PathVariable UUID jobId,
+            @Valid @RequestBody com.aiats.dto.job.JobStatusUpdateRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        JobDTO updated = jobService.updateJobStatus(principal.getId(), jobId, request.getStatus(), request.getReason());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Job status updated successfully"));
+    }
+
     @DeleteMapping("/{jobId}")
     @PreAuthorize("hasRole('RECRUITER')")
     public ResponseEntity<ApiResponse<Void>> deleteJob(

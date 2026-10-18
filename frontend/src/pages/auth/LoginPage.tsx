@@ -45,6 +45,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
   const [authError, setAuthError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
+  // Ensure fields are strictly empty and reset whenever portal changes
+  React.useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setAuthError(null);
+    setErrors({});
+  }, [portal]);
+
   const isCandidate = portal === 'candidate';
 
   const portalConfig = useMemo(() => {
@@ -146,6 +154,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
         title: `Welcome back, ${loggedUser.name}!`,
         message: `Authenticated as ${loggedUser.role.charAt(0).toUpperCase() + loggedUser.role.slice(1)}`,
       });
+
+      // Trigger cinematic dashboard entrance animation for authenticated session
+      sessionStorage.setItem(`ai_ats_play_intro_${loggedUser.role}`, 'true');
 
       const destination = (location.state as any)?.from?.pathname;
       if (destination && destination.startsWith(portalConfig.dashboardPath)) {
@@ -252,11 +263,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
 
         {/* Login Form Card */}
         <Card glass className={`p-6 sm:p-8 border border-white/10 shadow-2xl relative`}>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <Input
               label="Email Address"
+              name={`${portal}_login_email`}
+              id={`${portal}-email`}
               type="email"
-              placeholder="name@example.com"
+              placeholder={isCandidate ? "candidate@example.com" : "recruiter@company.com"}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -265,13 +278,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
               }}
               error={errors.email}
               leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
-              autoComplete="email"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              data-lpignore="true"
               required
             />
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                <label htmlFor={`${portal}-password`} className="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
                   Password
                 </label>
                 <Link
@@ -282,8 +299,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
                 </Link>
               </div>
               <Input
+                name={`${portal}_login_password`}
+                id={`${portal}-password`}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -302,7 +321,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
-                autoComplete="current-password"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                data-lpignore="true"
                 required
               />
             </div>
@@ -312,8 +335,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
                 type="submit"
                 variant={portalConfig.buttonVariant}
                 size="lg"
-                className="w-full font-bold shadow-lg"
+                className="w-full font-bold shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 isLoading={isLoading}
+                disabled={isLoading}
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >
                 {portalConfig.buttonText}

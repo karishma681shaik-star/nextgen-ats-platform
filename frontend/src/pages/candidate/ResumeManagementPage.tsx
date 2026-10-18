@@ -25,6 +25,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import { candidateService } from '../../services';
+import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
 import { Resume } from '../../types';
 import { Card } from '../../components/ui/Card';
@@ -149,6 +150,7 @@ export const ResumeManagementPage: React.FC = () => {
           title: 'Resume parsed successfully!',
           message: 'Redirecting to your builder.'
         });
+        actionFeedbackService.resumeUploaded(file.name);
         setTimeout(() => {
           setCreateModalOpen(false);
           setUploadStep(0);

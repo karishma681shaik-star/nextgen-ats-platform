@@ -29,9 +29,9 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
-import { Skeleton } from '../../components/ui/Skeleton';
 import { Modal } from '../../components/ui/Modal';
-import { formatCurrency, formatFullDate } from '../../utils/formatters';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
 
 export const JobModerationPage: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -570,7 +570,7 @@ export const JobModerationPage: React.FC = () => {
                       {/* Meta Footer */}
                       <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 pt-1">
                         <span className="text-emerald-400 font-bold font-mono">
-                          {formatCurrency(job.salary?.min || 0)} - {formatCurrency(job.salary?.max || 0)}
+                          {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency, job.salary?.period)}
                         </span>
                         <span>•</span>
                         <span>Posted {job.postedDate ? formatFullDate(job.postedDate) : 'Recently'}</span>
@@ -825,7 +825,12 @@ export const JobModerationPage: React.FC = () => {
               <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Compensation</span>
                 <span className="text-xs font-bold text-emerald-400 font-mono">
-                  {formatCurrency(selectedJobForDetails.salary?.min || 0)} - {formatCurrency(selectedJobForDetails.salary?.max || 0)}
+                  {formatSalaryRange(
+                    selectedJobForDetails.salary?.min,
+                    selectedJobForDetails.salary?.max,
+                    selectedJobForDetails.salary?.currency,
+                    selectedJobForDetails.salary?.period
+                  )}
                 </span>
               </div>
               <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">

@@ -82,9 +82,9 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { ProgressBar } from '../../components/ui/ProgressBar';
-import { Modal } from '../../components/ui/Modal';
 import { ReportIssue } from '../../components/common/ReportIssue';
 import { cn } from '../../utils/cn';
+import { formatSalaryRange } from '../../utils/formatters';
 
 // Spacing & Typography Configuration
 interface SpacingConfig {
@@ -15205,7 +15205,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 <div className="text-[11px] text-slate-400 flex items-center flex-wrap gap-x-2.5 gap-y-1">
                                   <span>💼 {job.experienceRequiredYears ? `${job.experienceRequiredYears}+ years` : (job.experienceLevel || '2+ years')}</span>
                                   <span>•</span>
-                                  <span>💵 {job.salary && job.salary.min ? `${job.salary.currency === 'INR' ? '₹' : '$'}${job.salary.min.toLocaleString()} - ${job.salary.currency === 'INR' ? '₹' : '$'}${job.salary.max.toLocaleString()}` : 'Not disclosed'}</span>
+                                  <span>💵 {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency || 'INR', job.salary?.period, 'Not disclosed')}</span>
                                   <span>•</span>
                                   <span>📍 {job.location || 'Remote / Hybrid'}</span>
                                 </div>
@@ -15383,7 +15383,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         location: 'Remote',
                         type: 'Full-time',
                         experienceLevel: 'Mid Level',
-                        salary: { min: 0, max: 0, currency: 'USD', period: 'yearly' },
+                        salary: { min: 0, max: 0, currency: 'INR', period: 'yearly' },
                         description: manualJobDescription,
                         responsibilities: [],
                         requirements: [manualJobDescription.slice(0, 100)],

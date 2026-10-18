@@ -202,7 +202,7 @@ public class AuthService {
 
             // Notify Lead Administrator of new recruiter requiring verification review
             if (notificationService != null) {
-                userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").ifPresent(admin -> {
+                userRepository.findByRole(Role.ADMIN).stream().findFirst().ifPresent(admin -> {
                     notificationService.createNotification(
                             admin,
                             "New Recruiter Verification Required",
@@ -226,6 +226,13 @@ public class AuthService {
         return new AuthResponse(token, new UserDTO(savedUser));
     }
 
+    @org.springframework.beans.factory.annotation.Value("${app.admin.bootstrap-token:}")
+    private String configuredBootstrapToken;
+
+    public void setConfiguredBootstrapToken(String configuredBootstrapToken) {
+        this.configuredBootstrapToken = configuredBootstrapToken;
+    }
+
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -235,7 +242,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         // Enforce role consistency if a specific persona was requested
         if (request.getRole() != null && !request.getRole().isBlank()) {
@@ -352,6 +359,75 @@ public class AuthService {
         }
     }
 
+    /**
+     * Secure Single-Administrator Bootstrap:
+     * 1. Detects whether a platform administrator has already been provisioned.
+     * 2. If an administrator exists, the bootstrap operation is permanently disabled.
+     * 3. Requires an authorized installation-specific secret token.
+     * 4. Hashes password using Spring Security BCryptPasswordEncoder.
+     * 5. Atomic synchronization prevents concurrent provisioning.
+     */
+    @Transactional
+    public synchronized AuthResponse bootstrapAdmin(AdminBootstrapRequest request, String clientIp) {
+        if (request == null || request.getEmail() == null || request.getPassword() == null) {
+            throw new BadRequestException("Bootstrap request must contain valid administrator credentials.");
+        }
+
+        // 1. Single-Admin Policy: Check if an administrator already exists
+        long adminCount = userRepository.countByRole(Role.ADMIN);
+        if (adminCount > 0) {
+            logger.warn("SECURITY AUDIT: Blocked bootstrap attempt from IP [{}]. An administrator already exists.", clientIp);
+            throw new DuplicateResourceException("Administrator account has already been provisioned. Bootstrap operation is permanently disabled.");
+        }
+
+        // 2. Validate bootstrap token against server-side configuration
+        String token = request.getBootstrapToken() != null ? request.getBootstrapToken().trim() : "";
+        if (configuredBootstrapToken == null || configuredBootstrapToken.trim().isBlank()) {
+            logger.error("SECURITY ALERT: Bootstrap attempt rejected. No ADMIN_BOOTSTRAP_TOKEN is configured in server environment.");
+            throw new BadRequestException("Administrator bootstrap is disabled: Server has not configured an authorized bootstrap token (ADMIN_BOOTSTRAP_TOKEN).");
+        }
+
+        if (!configuredBootstrapToken.trim().equals(token)) {
+            logger.warn("SECURITY AUDIT: Unauthorized bootstrap attempt with invalid token from IP [{}]", clientIp);
+            throw new BadRequestException("Invalid bootstrap token. Authorization denied.");
+        }
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateResourceException("An account with this email address already exists.");
+        }
+
+        User admin = new User();
+        admin.setEmail(normalizedEmail);
+        admin.setFullName(request.getFullName() != null && !request.getFullName().trim().isBlank()
+                ? request.getFullName().trim() : "Lead System Administrator");
+        admin.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        admin.setRole(Role.ADMIN);
+        admin.setStatus(UserStatus.ACTIVE);
+        admin.setAvatarUrl("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80");
+        admin.setTitle("Lead System Administrator");
+
+        User savedAdmin = userRepository.save(admin);
+
+        logger.info("SECURITY AUDIT: Single administrator account successfully bootstrapped [{}] from IP [{}]",
+                savedAdmin.getEmail(), clientIp);
+
+        if (activityLogService != null) {
+            activityLogService.logActivity(
+                    savedAdmin.getId(), savedAdmin.getFullName(), Role.ADMIN,
+                    "Administrator Bootstrapped",
+                    "Initial platform administrator provisioned via authorized server bootstrap.",
+                    clientIp
+            );
+        }
+
+        String jwt = tokenProvider.generateTokenFromUser(
+                savedAdmin.getId(), savedAdmin.getEmail(), savedAdmin.getRole().name(), savedAdmin.getFullName()
+        );
+
+        return new AuthResponse(jwt, new UserDTO(savedAdmin));
+    }
+
     @Transactional(readOnly = true)
     public UserDTO getCurrentUser(UUID userId) {
         User user = userRepository.findById(userId)
@@ -463,10 +539,57 @@ public class AuthService {
 
     @Transactional
     public UserDTO updateAvatar(UUID userId, String avatarUrl) {
+        return updateProfile(userId, null, avatarUrl, "127.0.0.1");
+    }
+
+    @Transactional
+    public UserDTO updateProfile(UUID userId, String name, String avatarUrl, String ipAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        user.setAvatarUrl(avatarUrl);
+
+        boolean nameChanged = false;
+        boolean avatarChanged = false;
+        String oldName = user.getFullName();
+
+        if (name != null) {
+            String trimmedName = name.trim();
+            if (trimmedName.isEmpty()) {
+                throw new BadRequestException("Display name cannot be empty");
+            }
+            if (trimmedName.length() < 2 || trimmedName.length() > 100) {
+                throw new BadRequestException("Display name must be between 2 and 100 characters");
+            }
+            if (!trimmedName.equals(oldName)) {
+                user.setFullName(trimmedName);
+                nameChanged = true;
+            }
+        }
+
+        if (avatarUrl != null) {
+            String trimmedAvatar = avatarUrl.trim();
+            if (!trimmedAvatar.equals(user.getAvatarUrl())) {
+                user.setAvatarUrl(trimmedAvatar.isEmpty() ? null : trimmedAvatar);
+                avatarChanged = true;
+            }
+        }
+
+        user.setUpdatedAt(Instant.now());
         User saved = userRepository.save(user);
+
+        if (activityLogService != null && (nameChanged || avatarChanged)) {
+            String changeDesc = (nameChanged && avatarChanged) ? "display name and profile photo"
+                    : nameChanged ? "display name to \"" + user.getFullName() + "\""
+                    : "profile photo";
+            activityLogService.logActivity(
+                    user.getId(),
+                    user.getFullName(),
+                    user.getRole(),
+                    "Profile Updated",
+                    "Updated " + changeDesc,
+                    ipAddress != null ? ipAddress : "127.0.0.1"
+            );
+        }
+
         return new UserDTO(saved);
     }
 }

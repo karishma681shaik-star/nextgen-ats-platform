@@ -47,6 +47,9 @@ public class RecruiterService {
     public RecruiterStatsDTO getStats(UUID recruiterId) {
         long activeJobs = jobRepository.countByRecruiterIdAndStatus(recruiterId, JobStatus.ACTIVE);
         long totalApplicants = applicationRepository.countByJobRecruiterId(recruiterId);
+        long applied = applicationRepository.countByJobRecruiterIdAndStatus(recruiterId, ApplicationStatus.APPLIED);
+        long underReview = applicationRepository.countByJobRecruiterIdAndStatus(recruiterId, ApplicationStatus.UNDER_REVIEW);
+        long needsReview = applied + underReview;
         long shortlisted = applicationRepository.countByJobRecruiterIdAndStatus(recruiterId, ApplicationStatus.SHORTLISTED);
         long interviews = applicationRepository.countByJobRecruiterIdAndStatus(recruiterId, ApplicationStatus.INTERVIEW);
         long hires = applicationRepository.countByJobRecruiterIdAndStatus(recruiterId, ApplicationStatus.SELECTED);
@@ -54,6 +57,7 @@ public class RecruiterService {
         RecruiterStatsDTO dto = new RecruiterStatsDTO();
         dto.setActiveJobs(activeJobs);
         dto.setTotalApplicants(totalApplicants);
+        dto.setNeedsReview(needsReview);
         dto.setShortlisted(shortlisted);
         dto.setInterviewsScheduled(interviews);
         dto.setHiresThisMonth(hires);
@@ -260,7 +264,7 @@ public class RecruiterService {
         }
 
         if (notificationRepository != null) {
-            userRepository.findByEmailIgnoreCase("admin@ai-ats.internal").ifPresent(adminUser -> {
+            userRepository.findByRole(Role.ADMIN).stream().findFirst().ifPresent(adminUser -> {
                 String notifTitle = "Recruiter Verification Resubmitted";
                 String notifMessage = "Recruiter " + recruiter.getFullName() + " (" + company.getName()
                         + ") has submitted updated verification information and company profile corrections for administrative review.";

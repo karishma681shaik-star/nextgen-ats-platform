@@ -24,6 +24,7 @@ public class ApplicationService {
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
     private final SecurityAlertService securityAlertService;
+    private final JobDeadlineService jobDeadlineService;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ApplicationService(ApplicationRepository applicationRepository, JobRepository jobRepository,
@@ -31,7 +32,8 @@ public class ApplicationService {
                               CandidateProfileRepository candidateProfileRepository,
                               ActivityLogService activityLogService,
                               NotificationService notificationService,
-                              SecurityAlertService securityAlertService) {
+                              SecurityAlertService securityAlertService,
+                              JobDeadlineService jobDeadlineService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
@@ -40,6 +42,7 @@ public class ApplicationService {
         this.activityLogService = activityLogService;
         this.notificationService = notificationService;
         this.securityAlertService = securityAlertService;
+        this.jobDeadlineService = jobDeadlineService;
     }
 
     @Transactional
@@ -48,6 +51,20 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
+
+        // Enforce job lifecycle: only ACTIVE jobs can accept applications
+        if (job.getStatus() != com.aiats.entity.JobStatus.ACTIVE) {
+            throw new BadRequestException("This job is currently " + job.getStatus().toFrontendStatus() + " and is not accepting applications.");
+        }
+
+        // Just-in-time deadline enforcement: reject if deadline has passed
+        if (jobDeadlineService != null && jobDeadlineService.isDeadlinePassed(job.getDeadline())) {
+            job.setStatus(com.aiats.entity.JobStatus.CLOSED);
+            job.setClosedReason("DEADLINE_EXPIRED");
+            job.setClosedAt(java.time.Instant.now());
+            jobRepository.save(job);
+            throw new BadRequestException("The application deadline for this job has passed. New applications are no longer accepted.");
+        }
 
         // Check duplicate active application
         if (applicationRepository.existsByCandidateIdAndJobId(candidateId, jobId)) {
