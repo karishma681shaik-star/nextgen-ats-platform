@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { CandidateProfile, Resume, ATSAnalysis, Application, Job } from '../../types';
+import { CandidateProfile, Resume, ATSAnalysis, Application, Job, ProfileReadinessData } from '../../types';
 import { mapJobDtoToJob, jobApi } from './jobApi';
 import { storage } from '../mock/storage';
 
@@ -9,6 +9,7 @@ export interface CandidateDashboardData {
   candidateTitle: string;
   avatar?: string;
   profileCompletion: number;
+  profileReadiness?: ProfileReadinessData;
   atsScore: number | null;
   atsStatus: 'NO_RESUME' | 'PROCESSING' | 'PARSED_PENDING_ANALYSIS' | 'ATS_SCORE_AVAILABLE' | 'ANALYSIS_FAILED';
   atsTier?: string;
@@ -37,7 +38,8 @@ export const candidateApi = {
       candidateEmail: raw.candidateEmail || '',
       candidateTitle: raw.candidateTitle || 'Candidate',
       avatar: raw.avatar,
-      profileCompletion: typeof raw.profileCompletion === 'number' ? raw.profileCompletion : 0,
+      profileCompletion: typeof raw.profileCompletion === 'number' ? raw.profileCompletion : (raw.profileReadiness?.completionPercentage ?? 0),
+      profileReadiness: raw.profileReadiness || undefined,
       atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : null,
       atsStatus: raw.atsStatus || (raw.hasPrimaryResume ? 'ATS_SCORE_AVAILABLE' : 'NO_RESUME'),
       atsTier: raw.atsTier,
@@ -98,6 +100,10 @@ export const candidateApi = {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+  },
+
+  async getReadiness(): Promise<ProfileReadinessData> {
+    return apiClient<ProfileReadinessData>('/candidate/readiness');
   },
 
   async getResumes(): Promise<Resume[]> {

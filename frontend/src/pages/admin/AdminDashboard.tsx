@@ -11,9 +11,12 @@ import {
   Activity,
   Check,
   ShieldAlert,
+  Volume2
 } from 'lucide-react';
 import { adminService } from '../../services';
-import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
+import { voiceAssistantService, WorkspaceContext } from '../../services/audio/voiceAssistantService';
+import { soundEffectService } from '../../services/audio/soundEffectService';
+import { AIAssistantEmblem, AIAudioWaveform } from '../../components/common/AIAssistantEmblem';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import {
@@ -66,9 +69,17 @@ export const AdminDashboard: React.FC = () => {
   const [alertReviewAction, setAlertReviewAction] = useState<'RESOLVED' | 'SUSPEND_ACCOUNT' | 'DISMISSED'>('RESOLVED');
   const [alertReviewNote, setAlertReviewNote] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
+  }, []);
+
+  // Subscribe to real-time speech synthesis state
+  useEffect(() => {
+    return voiceAssistantService.subscribe((speaking) => {
+      setIsAiSpeaking(speaking);
+    });
   }, []);
 
   const loadDashboardData = async (silent = false) => {
@@ -120,6 +131,31 @@ export const AdminDashboard: React.FC = () => {
   const pendingAlertsCount = useMemo(() => {
     return alerts.filter((a) => a.reviewStatus === 'PENDING').length;
   }, [alerts]);
+
+  // Automatic full-length welcome speech trigger on login
+  useEffect(() => {
+    if (!isLoading && user) {
+      const userIdKey = user?.id || 'admin_session';
+      const welcomeKey = `ai_ats_voice_welcome_done_${userIdKey}`;
+      const isPending = sessionStorage.getItem('ai_ats_pending_voice_welcome') === 'true';
+      const alreadySpoken = sessionStorage.getItem(welcomeKey) === 'true';
+
+      if (isPending && !alreadySpoken && !voiceAssistantService.isSpeaking()) {
+        sessionStorage.setItem(welcomeKey, 'true');
+        sessionStorage.removeItem('ai_ats_pending_voice_welcome');
+        const context: WorkspaceContext = {
+          pendingRecruiterCount: stats?.pendingVerifications || 0,
+          flaggedAccountsCount: pendingAlertsCount || 0,
+          systemAlertsCount: health?.incidents && health.incidents.length > 0 ? health.incidents.length : 0,
+        };
+        voiceAssistantService.welcomeUser(
+          user,
+          'admin',
+          context
+        );
+      }
+    }
+  }, [isLoading, user, stats?.pendingVerifications, pendingAlertsCount, health?.incidents?.length]);
 
   // Handle Security Alert Review submission
   const handleConfirmAlertReview = async () => {
@@ -280,8 +316,29 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
-  const cleanAdminName = voiceAssistantService.sanitizeDisplayName(user?.name);
+  const cleanAdminName = voiceAssistantService.resolveFullName(user);
   const adminName = cleanAdminName || 'Administrator';
+
+  const handleListenGreeting = () => {
+    soundEffectService.playActionChime();
+    const context: WorkspaceContext = {
+      pendingRecruiterCount: stats?.pendingVerifications || 0,
+      flaggedAccountsCount: pendingAlertsCount || 0,
+      systemAlertsCount: health?.incidents && health.incidents.length > 0 ? health.incidents.length : 0,
+    };
+    if (voiceAssistantService.isSpeaking()) {
+      voiceAssistantService.stop();
+    } else if (voiceAssistantService.isAutoplayBlocked()) {
+      voiceAssistantService.retryBlockedSpeech();
+    } else {
+      voiceAssistantService.welcomeUser(
+        user || { name: adminName, role: 'admin' },
+        'admin',
+        context,
+        { force: true }
+      );
+    }
+  };
 
   return (
     <div className="space-y-6 text-slate-100">
@@ -298,6 +355,28 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Right Action Bar */}
         <div className="flex items-center gap-3 self-start sm:self-auto">
+          {/* Ambient Voice Assistant Trigger */}
+          <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-violet-950/40 border border-violet-500/20 backdrop-blur-md">
+            <AIAssistantEmblem size="sm" isSpeaking={isAiSpeaking} />
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-violet-300">Nexus AI</span>
+              <span className="text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+                {isAiSpeaking ? 'Speaking...' : voiceAssistantService.isAutoplayBlocked() ? 'Tap to play' : 'Voice Assistant'}
+              </span>
+            </div>
+            <AIAudioWaveform isSpeaking={isAiSpeaking} />
+            <button
+              type="button"
+              onClick={handleListenGreeting}
+              title={isAiSpeaking ? 'Stop voice assistant' : voiceAssistantService.isAutoplayBlocked() ? 'Enable voice welcome' : 'Listen to personalized greeting'}
+              aria-label={isAiSpeaking ? 'Stop voice assistant' : 'Listen to personalized greeting'}
+              className="ml-1 p-1 rounded-lg text-slate-400 hover:text-violet-300 hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-violet-400 cursor-pointer"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Current administrator's identity */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
             <div className="w-5 h-5 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center font-bold text-[10px]">
@@ -715,8 +794,7 @@ export const AdminDashboard: React.FC = () => {
                 value={alertReviewNote}
                 onChange={(e) => setAlertReviewNote(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-violet-500"
-              >
-              </input>
+              />
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

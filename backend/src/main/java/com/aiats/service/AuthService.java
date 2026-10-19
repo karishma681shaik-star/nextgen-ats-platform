@@ -183,7 +183,6 @@ public class AuthService {
             CandidateProfile profile = new CandidateProfile(savedUser);
             profile.setTitle("Software Engineer");
             profile.setLocation("San Francisco, CA");
-            profile.setProfileCompletion(40);
             candidateProfileRepository.save(profile);
 
             if (activityLogService != null) {

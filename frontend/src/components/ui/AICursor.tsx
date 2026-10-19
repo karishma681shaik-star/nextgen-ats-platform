@@ -136,17 +136,17 @@ export const AICursor: React.FC = () => {
       >
         <motion.div
           animate={{
-            width: mode === 'button' && hoveredRect ? hoveredRect.width + 16 : 28,
-            height: mode === 'button' && hoveredRect ? hoveredRect.height + 12 : 28,
-            borderRadius: mode === 'button' ? '12px' : '50%',
-            borderColor: mode === 'button' ? 'rgba(56, 189, 248, 0.6)' : 'rgba(168, 85, 247, 0.4)',
-            backgroundColor: mode === 'button' ? 'rgba(56, 189, 248, 0.04)' : 'rgba(168, 85, 247, 0.02)',
+            width: mode === 'button' ? 36 : 26,
+            height: mode === 'button' ? 36 : 26,
+            borderRadius: '50%',
+            borderColor: mode === 'button' ? 'rgba(99, 102, 241, 0.45)' : 'rgba(168, 85, 247, 0.3)',
+            backgroundColor: mode === 'button' ? 'rgba(99, 102, 241, 0.06)' : 'rgba(168, 85, 247, 0.02)',
             boxShadow:
               mode === 'button'
-                ? '0 0 20px rgba(56, 189, 248, 0.35), inset 0 0 10px rgba(56, 189, 248, 0.15)'
-                : '0 0 12px rgba(168, 85, 247, 0.15)',
+                ? '0 0 14px rgba(99, 102, 241, 0.25)'
+                : '0 0 8px rgba(168, 85, 247, 0.1)',
           }}
-          transition={{ type: 'spring', damping: 24, stiffness: 300, mass: 0.6 }}
+          transition={{ type: 'spring', damping: 26, stiffness: 320, mass: 0.5 }}
           className="relative border border-solid backdrop-blur-[0.5px] transition-shadow duration-300"
         >
           {/* Subtle AI Radar pulse rings */}

@@ -80,14 +80,21 @@ export const DepthCard = React.forwardRef<HTMLDivElement, DepthCardProps>(
         onMouseLeave={handleMouseLeave}
         style={transformStyle}
         className={cn(
-          'relative rounded-2xl overflow-hidden border border-white/[0.08] bg-[#0a0f1d]/85 transition-all duration-300',
+          'relative rounded-2xl overflow-hidden border border-indigo-500/30 bg-[#0a0f1d]/90 transition-all duration-300 card-shine-all-sides',
           glass && 'glass-card',
-          hoverEffect && 'hover:border-indigo-500/40 hover:shadow-[0_20px_50px_rgba(99,102,241,0.18)] cursor-pointer',
+          hoverEffect && 'hover:border-indigo-400/60 cursor-pointer',
           gradientBorder && 'gradient-border',
           className
         )}
         {...props}
       >
+        {/* ── 4-Side Perimeter Light Rims & Inward Reflection ───────────────── */}
+        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-400/70 to-transparent pointer-events-none z-20" />
+        <div className="absolute left-0 inset-y-0 w-[1.5px] bg-gradient-to-b from-transparent via-indigo-400/60 to-transparent pointer-events-none z-20" />
+        <div className="absolute right-0 inset-y-0 w-[1.5px] bg-gradient-to-b from-transparent via-cyan-400/60 to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-0 pointer-events-none z-0 rounded-2xl bg-[radial-gradient(ellipse_at_top,rgba(165,180,252,0.18)_0%,transparent_60%),radial-gradient(ellipse_at_bottom,rgba(192,132,252,0.14)_0%,transparent_60%),radial-gradient(ellipse_at_left,rgba(99,102,241,0.12)_0%,transparent_50%),radial-gradient(ellipse_at_right,rgba(56,189,248,0.12)_0%,transparent_50%)]" />
+
         {/* Dynamic Light Sheen Overlay */}
         {hoverEffect && !disableTilt && (
           <div 
@@ -98,7 +105,7 @@ export const DepthCard = React.forwardRef<HTMLDivElement, DepthCardProps>(
         
         {/* Soft Ambient Border Glow overlay */}
         {isHovered && hoverEffect && (
-          <div className="absolute inset-0 border border-indigo-500/20 rounded-2xl pointer-events-none z-20" />
+          <div className="absolute inset-0 border border-indigo-400/30 rounded-2xl pointer-events-none z-20" />
         )}
 
         <div className="relative z-0">

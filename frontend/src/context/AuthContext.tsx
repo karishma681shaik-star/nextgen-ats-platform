@@ -12,6 +12,7 @@ import {
   RegisterData,
   LoginCredentials,
 } from '../services';
+import { voiceAssistantService } from '../services/audio/voiceAssistantService';
 
 interface AuthContextType {
   user: User | null;
@@ -252,6 +253,15 @@ export const AuthProvider: React.FC<{
     setIsLoading(true);
 
     try {
+      voiceAssistantService.stop();
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('ai_ats_pending_voice_welcome');
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith('ai_ats_voice_welcome_done_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
 
       await authService.logout();
 

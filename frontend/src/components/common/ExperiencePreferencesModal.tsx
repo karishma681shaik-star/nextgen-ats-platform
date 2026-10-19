@@ -29,16 +29,30 @@ export const ExperiencePreferencesModal: React.FC<ExperiencePreferencesModalProp
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [cinematicEnabled, setCinematicEnabled] = useState<boolean>(true);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       setVoiceEnabled(voiceAssistantService.isEnabled());
+      soundEffectService.setEnabled(true);
       setSoundEnabled(soundEffectService.isEnabled());
       const cin = localStorage.getItem('ai_ats_pref_cinematic_enabled');
       setCinematicEnabled(cin === null ? true : cin === 'true');
       setSelectedVoiceName(voiceAssistantService.getSelectedVoiceName());
+      setAvailableVoices(voiceAssistantService.getAvailableVoices());
     }
   }, [isOpen]);
+
+  const handleSelectVoice = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const voiceName = e.target.value;
+    setSelectedVoiceName(voiceName);
+    voiceAssistantService.setSelectedVoiceByName(voiceName);
+    showToast({
+      type: 'info',
+      title: 'Voice Updated',
+      message: `Nexus AI voice set to ${voiceName}.`,
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -84,16 +98,18 @@ export const ExperiencePreferencesModal: React.FC<ExperiencePreferencesModalProp
 
   const handleReset = () => {
     voiceAssistantService.setEnabled(true);
+    voiceAssistantService.resetToRecommendedVoice();
     soundEffectService.setEnabled(true);
     localStorage.setItem('ai_ats_pref_cinematic_enabled', 'true');
     localStorage.removeItem('ai_ats_disable_cinematic_intro');
     setVoiceEnabled(true);
     setSoundEnabled(true);
     setCinematicEnabled(true);
+    setSelectedVoiceName(voiceAssistantService.getSelectedVoiceName());
     showToast({
       type: 'success',
       title: 'Preferences Reset',
-      message: 'Experience and audio settings restored to default.',
+      message: 'Experience and audio settings restored to default soft, comfortable voice.',
     });
   };
 
@@ -131,36 +147,55 @@ export const ExperiencePreferencesModal: React.FC<ExperiencePreferencesModalProp
 
         {/* Toggles */}
         <div className="mt-4 space-y-3.5">
-          {/* Female Voice Assistant */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
-                <Headphones className="w-4 h-4" />
+          {/* Soft & Comfortable Voice Assistant */}
+          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                  <Headphones className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Natural Soft Voice Assistant</p>
+                  <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                    Warm, comfortable, and executive voice for sign-in welcomes and announcements
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-white">Natural Female Voice Assistant</p>
-                <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
-                  Announces sign-in welcome, job postings, and applications
-                </p>
-                <p className="text-[10px] font-mono text-cyan-400/80 mt-1 truncate max-w-[220px]">
-                  Active: {selectedVoiceName}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleVoice}
-              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                voiceEnabled ? 'bg-indigo-600' : 'bg-slate-750'
-              }`}
-              aria-label="Toggle voice assistant"
-            >
-              <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
-                  voiceEnabled ? 'left-6' : 'left-1'
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                  voiceEnabled ? 'bg-indigo-600' : 'bg-slate-750'
                 }`}
-              />
-            </button>
+                aria-label="Toggle voice assistant"
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
+                    voiceEnabled ? 'left-6' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {voiceEnabled && availableVoices.length > 0 && (
+              <div className="pt-2.5 border-t border-slate-800/80 space-y-1.5">
+                <label className="text-[11px] font-medium text-slate-300 flex items-center justify-between">
+                  <span>Voice Personality</span>
+                  <span className="text-[10px] text-cyan-400/90 font-mono">Soft & Professional</span>
+                </label>
+                <select
+                  value={selectedVoiceName}
+                  onChange={handleSelectVoice}
+                  className="w-full px-2.5 py-1.5 text-xs bg-slate-950 border border-slate-750 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer"
+                >
+                  {availableVoices.map((v) => (
+                    <option key={v.name} value={v.name}>
+                      {voiceAssistantService.getFormattedVoiceLabel(v)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Interface Confirmation Chimes */}

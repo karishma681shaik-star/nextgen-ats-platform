@@ -43,6 +43,17 @@ class CandidateServiceDashboardTest {
 
     @BeforeEach
     void setUp() {
+        ProfileReadinessService profileReadinessService = new ProfileReadinessService(
+                userRepository,
+                profileRepository,
+                skillRepository,
+                educationRepository,
+                experienceRepository,
+                projectRepository,
+                certificationRepository,
+                resumeRepository
+        );
+
         candidateService = new CandidateService(
                 profileRepository,
                 skillRepository,
@@ -58,7 +69,8 @@ class CandidateServiceDashboardTest {
                 applicationService,
                 jobRepository,
                 jobService,
-                savedJobRepository
+                savedJobRepository,
+                profileReadinessService
         );
 
         userId = UUID.randomUUID();

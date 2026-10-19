@@ -34,6 +34,9 @@ public class CandidateDashboardDTO {
     private long rejectedCount;
     private long savedJobsCount;
 
+    // Dynamic, weighted profile readiness breakdown
+    private ProfileReadinessDTO profileReadiness;
+
     // Content Checklist for exact score breakdown
     private Map<String, Boolean> checklist;
 
@@ -42,6 +45,9 @@ public class CandidateDashboardDTO {
     private List<ApplicationDTO> recentApplications;
 
     public CandidateDashboardDTO() {}
+
+    public ProfileReadinessDTO getProfileReadiness() { return profileReadiness; }
+    public void setProfileReadiness(ProfileReadinessDTO profileReadiness) { this.profileReadiness = profileReadiness; }
 
     public String getCandidateName() { return candidateName; }
     public void setCandidateName(String candidateName) { this.candidateName = candidateName; }

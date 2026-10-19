@@ -147,17 +147,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
           <RoleSwitcher />
           <NotificationsDropdown />
 
-          {/* Quick Experience & Voice Assistant Preferences */}
-          <button
-            type="button"
-            onClick={() => setIsExpModalOpen(true)}
-            className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-white/[0.06] border border-transparent hover:border-slate-700/60 transition-all cursor-pointer"
-            title="Experience & Voice Preferences"
-            aria-label="Experience & Voice Preferences"
-          >
-            <Volume2 className="w-4 h-4" />
-          </button>
-
           {/* User Profile Dropdown */}
           <div className="relative flex items-center" ref={profileMenuRef}>
             {/* Unified Profile Trigger Button */}
@@ -201,11 +190,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.98 }}
                   transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-[#0c1328]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/90 z-50 overflow-hidden text-left"
+                  className="absolute right-0 top-full mt-2 w-[310px] sm:w-[320px] max-w-[calc(100vw-2rem)] bg-[#0c1328]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/90 z-50 overflow-hidden text-left"
                 >
                   {/* Profile Header */}
-                  <div className="p-4 border-b border-white/[0.08] bg-white/[0.02]">
-                    <div className="flex items-center gap-3.5">
+                  <div className="p-3.5 border-b border-white/[0.08] bg-white/[0.02]">
+                    <div className="flex items-center gap-3">
                       <div
                         className="relative shrink-0 group cursor-pointer"
                         onClick={() => {
@@ -217,30 +206,37 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                         <Avatar
                           src={user?.avatar}
                           name={user?.name || 'User'}
-                          size="lg"
+                          size="md"
                           status="online"
-                          className="ring-2 ring-white/10 group-hover:ring-indigo-500/60 transition-all duration-200"
+                          className={cn(
+                            'ring-2 ring-white/10 transition-all duration-200',
+                            role === 'recruiter'
+                              ? 'group-hover:ring-purple-500/60'
+                              : role === 'admin'
+                              ? 'group-hover:ring-emerald-500/60'
+                              : 'group-hover:ring-indigo-500/60'
+                          )}
                         />
                         <div className="absolute inset-0 rounded-full bg-black/45 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
-                          <Camera className="w-3.5 h-3.5 text-white drop-shadow" />
+                          <Camera className="w-3 h-3 text-white drop-shadow" />
                         </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-slate-100 truncate tracking-tight" title={user?.name || 'Authorized User'}>
+                          <p className="text-xs sm:text-sm font-bold text-slate-100 truncate tracking-tight font-display" title={user?.name || 'Authorized User'}>
                             {user?.name || 'Authorized User'}
                           </p>
                         </div>
 
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className={cn('text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 inline-flex items-center gap-1.5', roleTheme.pill)}>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span className={cn('text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 inline-flex items-center gap-1', roleTheme.pill)}>
                             <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', roleTheme.dot)} />
                             {role === 'admin' ? 'ADMINISTRATOR' : role.toUpperCase()}
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-slate-400 font-mono truncate mt-1.5 block max-w-full" title={user?.email || 'No email registered'}>
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate mt-1 block max-w-full" title={user?.email || 'No email registered'}>
                           {user?.email || 'authenticated@session'}
                         </p>
                       </div>
@@ -248,25 +244,37 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                   </div>
 
                   {/* Role-Aware Menu Options */}
-                  <div className="p-2 space-y-1">
-                    {/* Common Option: Edit Profile & Photo */}
+                  <div className="p-1.5 space-y-0.5">
+                    {/* Option: Edit Profile */}
                     <button
                       type="button"
                       onClick={() => {
                         setIsProfileMenuOpen(false);
                         setIsAvatarModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 group cursor-pointer"
+                      className={cn(
+                        'w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 group cursor-pointer',
+                        role === 'recruiter' ? 'focus-visible:ring-purple-500/50' : 'focus-visible:ring-indigo-500/50'
+                      )}
                     >
-                      <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 group-hover:text-indigo-300 group-hover:scale-105 transition-all">
+                      <div
+                        className={cn(
+                          'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 transition-all duration-150',
+                          role === 'recruiter'
+                            ? 'bg-purple-500/10 border-purple-500/20 text-purple-400 group-hover:bg-purple-500/15 group-hover:text-purple-300'
+                            : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/15 group-hover:text-indigo-300'
+                        )}
+                      >
                         <UserIcon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
-                          Edit Profile & Photo
+                          {role === 'recruiter' ? 'Edit Profile' : 'Edit Profile & Photo'}
                         </div>
                         <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
-                          Update your name, picture, and personal details.
+                          {role === 'recruiter'
+                            ? 'Update your personal details and photo.'
+                            : 'Update your name, picture, and personal details.'}
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -277,9 +285,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                       <Link
                         to="/candidate/profile"
                         onClick={() => setIsProfileMenuOpen(false)}
-                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 group cursor-pointer"
+                        className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 group cursor-pointer"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 group-hover:text-indigo-300 group-hover:scale-105 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 group-hover:bg-indigo-500/15 group-hover:text-indigo-300 transition-all duration-150">
                           <UserCheck className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -294,47 +302,26 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                       </Link>
                     )}
 
-                    {/* RECRUITER ROLE OPTIONS */}
+                    {/* RECRUITER ROLE OPTIONS: Company Profile */}
                     {role === 'recruiter' && (
-                      <>
-                        <Link
-                          to="/recruiter/company"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group cursor-pointer"
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 group-hover:text-purple-300 group-hover:scale-105 transition-all">
-                            <Building className="w-4 h-4" />
+                      <Link
+                        to="/recruiter/company"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 group-hover:bg-purple-500/15 group-hover:text-purple-300 transition-all duration-150">
+                          <Building className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
+                            Company Profile
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
-                              Company Profile
-                            </div>
-                            <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
-                              Manage company profile and branding assets.
-                            </div>
+                          <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
+                            Manage your company information.
                           </div>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                        </Link>
-
-                        <Link
-                          to="/recruiter/jobs"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 group cursor-pointer"
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center shrink-0 text-fuchsia-400 group-hover:text-fuchsia-300 group-hover:scale-105 transition-all">
-                            <Sliders className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
-                              Recruitment Preferences
-                            </div>
-                            <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
-                              Manage job listings and candidate pipelines.
-                            </div>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                        </Link>
-                      </>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </Link>
                     )}
 
                     {/* ADMINISTRATOR ROLE OPTIONS */}
@@ -342,9 +329,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                       <Link
                         to="/admin/audit"
                         onClick={() => setIsProfileMenuOpen(false)}
-                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 group cursor-pointer"
+                        className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 group cursor-pointer"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400 group-hover:text-emerald-300 group-hover:scale-105 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400 group-hover:bg-emerald-500/15 group-hover:text-emerald-300 transition-all duration-150">
                           <Shield className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -358,44 +345,19 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                         <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </Link>
                     )}
-
-                    {/* Experience & Audio (Available for Recruiter & Admin) */}
-                    {role !== 'candidate' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsProfileMenuOpen(false);
-                          setIsExpModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-white/[0.06] focus:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 group cursor-pointer"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 text-cyan-400 group-hover:text-cyan-300 group-hover:scale-105 transition-all">
-                          <Volume2 className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
-                            Experience & Audio
-                          </div>
-                          <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
-                            Personalize voice assistance and interface preferences.
-                          </div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                      </button>
-                    )}
                   </div>
 
                   {/* Restrained & Safe Sign Out Option */}
-                  <div className="border-t border-white/[0.08] p-2 mt-1">
+                  <div className="border-t border-white/[0.08] p-1.5 mt-0.5">
                     <button
                       type="button"
                       onClick={() => {
                         setIsProfileMenuOpen(false);
                         setShowLogoutConfirm(true);
                       }}
-                      className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150 hover:bg-rose-500/[0.08] focus:bg-rose-500/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 group cursor-pointer"
+                      className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 hover:bg-rose-500/[0.08] focus:bg-rose-500/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 group cursor-pointer"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 text-rose-400 group-hover:text-rose-300 group-hover:scale-105 transition-all">
+                      <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 text-rose-400 group-hover:bg-rose-500/15 group-hover:text-rose-300 transition-all duration-150">
                         <LogOut className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -403,7 +365,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                           Sign Out
                         </div>
                         <div className="text-[11px] text-slate-400 group-hover:text-slate-300 truncate leading-tight mt-0.5">
-                          Securely end your current session.
+                          Securely end your session.
                         </div>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-rose-400/50 group-hover:text-rose-300 group-hover:translate-x-0.5 transition-all shrink-0" />

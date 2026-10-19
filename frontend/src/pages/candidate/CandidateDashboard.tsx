@@ -7,94 +7,25 @@ import {
   ArrowRight,
   Star,
   Trophy,
-  ChevronRight,
-  Layers,
-  Upload,
   MapPin,
   Building,
-  UserCheck,
-  Volume2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService, CandidateDashboardData } from '../../services';
-import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
+import { voiceAssistantService, WorkspaceContext } from '../../services/audio/voiceAssistantService';
 import { soundEffectService } from '../../services/audio/soundEffectService';
-import { AIAssistantEmblem, AIAudioWaveform } from '../../components/common/AIAssistantEmblem';
-import { Job, Application } from '../../types';
 import { Button } from '../../components/ui/Button';
-import { cn } from '../../utils/cn';
 import { formatSalaryRange } from '../../utils/formatters';
 import { DepthCard } from '../../components/ui/DepthCard';
 import { useToast } from '../../context/ToastContext';
 import { CreateResumeModal } from '../../components/candidate/CreateResumeModal';
-
-// ─── Stat Metric Card ────────────────────────────────────────────────────────
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle: string;
-  icon: React.ReactNode;
-  iconBg: string;
-  linkTo?: string;
-  linkLabel?: string;
-  badgeText?: string;
-  badgeColor?: string;
-  onActionClick?: () => void;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  iconBg,
-  linkTo,
-  linkLabel,
-  badgeText,
-  badgeColor = 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
-  onActionClick
-}) => (
-  <DepthCard hoverEffect={true} glass={true} className="p-5 flex flex-col justify-between h-full">
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{title}</span>
-        <div className={cn('p-2 rounded-xl shrink-0', iconBg)}>
-          {icon}
-        </div>
-      </div>
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <span className="text-xl sm:text-2xl font-black text-white truncate max-w-full" title={String(value)}>
-          {value}
-        </span>
-      </div>
-      <p className="text-[11px] text-slate-400 font-medium leading-relaxed truncate">{subtitle}</p>
-    </div>
-    <div className="pt-3 border-t border-white/[0.04] mt-3 flex items-center justify-between">
-      {badgeText && (
-        <span className={cn('inline-block text-[10px] font-bold px-2 py-0.5 rounded-md', badgeColor)}>
-          {badgeText}
-        </span>
-      )}
-      {linkTo ? (
-        <Link
-          to={linkTo}
-          className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold transition-colors ml-auto"
-        >
-          {linkLabel} <ArrowRight className="w-3 h-3" />
-        </Link>
-      ) : onActionClick ? (
-        <button
-          type="button"
-          onClick={onActionClick}
-          className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold transition-colors ml-auto cursor-pointer"
-        >
-          {linkLabel} <ArrowRight className="w-3 h-3" />
-        </button>
-      ) : null}
-    </div>
-  </DepthCard>
-);
+import { CandidateHeroSection } from '../../components/candidate/CandidateHeroSection';
+import { CandidateMetricCard } from '../../components/candidate/CandidateMetricCard';
+import { CandidateResumeIntelligenceSection } from '../../components/candidate/CandidateResumeIntelligenceSection';
+import { CandidateApplicationJourneySection } from '../../components/candidate/CandidateApplicationJourneySection';
+import { CandidateSkillRoadmapSection } from '../../components/candidate/CandidateSkillRoadmapSection';
+import { CardReflectiveShine } from '../../components/common/CardReflectiveShine';
 
 // ─── Main Candidate Dashboard Component ──────────────────────────────────────
 export const CandidateDashboard: React.FC = () => {
@@ -104,6 +35,7 @@ export const CandidateDashboard: React.FC = () => {
 
   const [dashboardData, setDashboardData] = useState<CandidateDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createModalMode, setCreateModalMode] = useState<'choice' | 'upload'>('choice');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -111,10 +43,12 @@ export const CandidateDashboard: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      setDashboardError(null);
       const data = await candidateService.getDashboard();
       setDashboardData(data);
     } catch (err) {
       console.error('Failed to load candidate dashboard', err);
+      setDashboardError('Unable to calculate profile readiness. Please try again.');
       // Graceful fallback without hardcoded fake scores
       setDashboardData({
         candidateName: user?.name || 'Candidate',
@@ -144,17 +78,62 @@ export const CandidateDashboard: React.FC = () => {
     loadData();
   }, []);
 
+  // Subscribe to real-time speech synthesis state
+  useEffect(() => {
+    return voiceAssistantService.subscribe((speaking) => {
+      setIsAiSpeaking(speaking);
+    });
+  }, []);
+
+  // Automatic full-length welcome speech trigger on login
+  useEffect(() => {
+    if (!isLoading && (user || dashboardData)) {
+      const activeUser = user || (dashboardData?.candidateName ? { name: dashboardData.candidateName, role: 'candidate' } : null);
+      if (!activeUser) return;
+
+      const userIdKey = user?.id || 'candidate_session';
+      const welcomeKey = `ai_ats_voice_welcome_done_${userIdKey}`;
+      const isPending = sessionStorage.getItem('ai_ats_pending_voice_welcome') === 'true';
+      const alreadySpoken = sessionStorage.getItem(welcomeKey) === 'true';
+
+      if (isPending && !alreadySpoken && !voiceAssistantService.isSpeaking()) {
+        sessionStorage.setItem(welcomeKey, 'true');
+        sessionStorage.removeItem('ai_ats_pending_voice_welcome');
+        const context: WorkspaceContext = {
+          hasResume: dashboardData?.hasPrimaryResume ?? false,
+          profileCompletion: dashboardData?.profileCompletion ?? 0,
+          activeApplicationsCount: dashboardData?.activeApplicationsCount ?? 0,
+          hasATSAnalysis: dashboardData?.atsScore !== null && dashboardData?.atsScore !== undefined
+        };
+        voiceAssistantService.welcomeUser(activeUser, 'candidate', context);
+      }
+    }
+  }, [isLoading, user, dashboardData]);
+
   const handleOpenUpload = () => {
     setCreateModalMode('upload');
     setCreateModalOpen(true);
   };
 
   const handleListenGreeting = () => {
-    const nameToSpeak = user?.name || dashboardData?.candidateName || 'Candidate';
-    setIsAiSpeaking(true);
     soundEffectService.playActionChime();
-    voiceAssistantService.welcomeUser({ name: nameToSpeak, role: 'candidate' }, 'candidate');
-    setTimeout(() => setIsAiSpeaking(false), 3200);
+    const context: WorkspaceContext = {
+      hasResume: dashboardData?.hasPrimaryResume ?? false,
+      profileCompletion: dashboardData?.profileCompletion ?? 0,
+      activeApplicationsCount: dashboardData?.activeApplicationsCount ?? 0,
+      hasATSAnalysis: dashboardData?.atsScore !== null && dashboardData?.atsScore !== undefined
+    };
+    if (voiceAssistantService.isSpeaking()) {
+      voiceAssistantService.stop();
+    } else {
+      voiceAssistantService.setEnabled(true);
+      voiceAssistantService.welcomeUser(
+        user || { name: dashboardData?.candidateName, role: 'candidate' },
+        'candidate',
+        context,
+        { force: true }
+      );
+    }
   };
 
   // Normalizer for application status pill styling
@@ -211,200 +190,205 @@ export const CandidateDashboard: React.FC = () => {
 
   if (isLoading || !dashboardData) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-40 w-full rounded-3xl bg-slate-800/40 border border-white/5" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 rounded-2xl bg-slate-800/40 border border-white/5" />
-          ))}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs w-fit">
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+          <span>Calculating profile readiness and workspace analytics...</span>
         </div>
-        <div className="h-80 w-full rounded-2xl bg-slate-800/40 border border-white/5" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 h-64 rounded-2xl bg-slate-800/40 border border-white/5" />
-          <div className="lg:col-span-5 h-64 rounded-2xl bg-slate-800/40 border border-white/5" />
+        <div className="space-y-6 animate-pulse">
+          <div className="h-44 w-full rounded-3xl bg-slate-800/40 border border-white/5" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 rounded-2xl bg-slate-800/40 border border-white/5" />
+            ))}
+          </div>
+          <div className="h-80 w-full rounded-2xl bg-slate-800/40 border border-white/5" />
         </div>
       </div>
     );
   }
 
   const displayName = user?.name || dashboardData.candidateName || 'Candidate';
-  const cleanName = voiceAssistantService.sanitizeDisplayName(displayName);
+  const cleanName = voiceAssistantService.resolveFullName(user || { name: displayName });
   const profileCompletion = dashboardData.profileCompletion;
 
   return (
-    <div className="space-y-7 pb-12">
-      {/* ── SECTION 1 — WELCOME HEADER ───────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-3xl border border-indigo-500/20 p-6 sm:p-7 shadow-lg"
-        style={{
-          background: 'linear-gradient(135deg, rgba(20,24,48,0.85) 0%, rgba(13,18,34,0.95) 100%)'
-        }}
-      >
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-xl">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Welcome back{cleanName ? `, ${cleanName}` : ''}! 👋
-              </h1>
-              <p className="text-sm text-slate-300/85 mt-1 leading-relaxed">
-                Your next career opportunity starts here.
-              </p>
-            </div>
-
-            {/* Profile Completion Indicator (Separate from ATS score) */}
-            <div className="pt-2 max-w-md">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-semibold text-slate-300">
-                  Profile completion: <span className="text-white font-bold">{profileCompletion}%</span>
-                </span>
-                <Link
-                  to="/candidate/profile"
-                  className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors flex items-center gap-1"
-                >
-                  Complete profile <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
-                  style={{ width: `${profileCompletion}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Complete your profile to help recruiters understand your background.
-              </p>
-            </div>
-          </div>
-
-          {/* Action Hub & Voice Emblem */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            {/* Ambient Voice Assistant Trigger */}
-            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 backdrop-blur-md">
-              <AIAssistantEmblem size="sm" isSpeaking={isAiSpeaking} />
-              <div className="flex flex-col text-left">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-indigo-300">Nexus AI</span>
-                <span className="text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Voice Assistant
-                </span>
-              </div>
-              <AIAudioWaveform isSpeaking={isAiSpeaking} />
-              <button
-                type="button"
-                onClick={handleListenGreeting}
-                title="Listen to personalized greeting"
-                aria-label="Listen to personalized greeting"
-                className="ml-1 p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
-              >
-                <Volume2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <Button
-              variant="glow"
-              size="sm"
-              leftIcon={<Upload className="w-4 h-4" />}
-              onClick={handleOpenUpload}
-            >
-              Upload / Update Resume
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Briefcase className="w-4 h-4" />}
-              onClick={() => navigate('/candidate/jobs')}
-            >
-              Explore Jobs
-            </Button>
-          </div>
+    <div className="space-y-8 pb-16">
+      {dashboardError && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-rose-300 text-xs">
+          <span>{dashboardError}</span>
+          <Button variant="secondary" size="sm" onClick={loadData}>
+            Retry
+          </Button>
         </div>
-      </motion.div>
+      )}
 
-      {/* ── SECTION 2 — CAREER SNAPSHOT ──────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <StatCard
+      {/* ── SECTION 1 — CINEMATIC 3D CAREER WORKSPACE HERO ─────────────────── */}
+      <CandidateHeroSection
+        user={user}
+        dashboardData={dashboardData}
+        cleanName={cleanName}
+        profileCompletion={profileCompletion}
+        isAiSpeaking={isAiSpeaking}
+        onListenGreeting={handleListenGreeting}
+        onOpenUpload={handleOpenUpload}
+        onExploreJobs={() => navigate('/candidate/jobs')}
+      />
+
+      {/* ── SECTION 2 — CAREER SNAPSHOT (METRIC CARDS) ──────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1: Resume Status */}
+        <CandidateMetricCard
+          index={0}
           title="Resume Status"
           value={dashboardData.hasPrimaryResume ? (dashboardData.primaryResumeFileName || 'Active') : 'No Resume'}
           subtitle={dashboardData.hasPrimaryResume ? 'Parsed & evaluated' : 'Upload to start matching'}
           icon={<FileText className="w-5 h-5 text-indigo-400" />}
-          iconBg="bg-indigo-500/10"
+          iconBg="bg-indigo-500/10 border border-indigo-500/20"
           badgeText={dashboardData.hasPrimaryResume ? 'Active' : 'Action Required'}
           badgeColor={dashboardData.hasPrimaryResume ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30'}
           linkTo={dashboardData.hasPrimaryResume ? '/candidate/resumes' : undefined}
           linkLabel={dashboardData.hasPrimaryResume ? 'Manage resume' : 'Upload resume'}
           onActionClick={!dashboardData.hasPrimaryResume ? handleOpenUpload : undefined}
+          accentGraphic={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-indigo-400/40">
+              <rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="8" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="8" y1="16" x2="11" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          }
         />
 
-        <StatCard
+        {/* Metric 2: Active Applications */}
+        <CandidateMetricCard
+          index={1}
           title="Active Applications"
           value={dashboardData.activeApplicationsCount}
+          numericValue={dashboardData.activeApplicationsCount}
           subtitle="In review with hiring teams"
           icon={<Clock className="w-5 h-5 text-blue-400" />}
-          iconBg="bg-blue-500/10"
+          iconBg="bg-blue-500/10 border border-blue-500/20"
           badgeText={dashboardData.activeApplicationsCount > 0 ? `${dashboardData.activeApplicationsCount} active` : 'None pending'}
           badgeColor="bg-blue-500/15 text-blue-300 border-blue-500/30"
           linkTo="/candidate/applications"
           linkLabel="Track status"
+          accentGraphic={
+            <svg width="32" height="16" viewBox="0 0 32 16" fill="none" className="text-blue-400/50">
+              <circle cx="5" cy="8" r="3" fill="currentColor" fillOpacity="0.4" />
+              <line x1="8" y1="8" x2="13" y2="8" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" />
+              <circle cx="16" cy="8" r="3.5" fill="currentColor" />
+              <line x1="19.5" y1="8" x2="24" y2="8" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" />
+              <circle cx="27" cy="8" r="3" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          }
         />
 
-        <StatCard
+        {/* Metric 3: Shortlisted */}
+        <CandidateMetricCard
+          index={2}
           title="Shortlisted"
           value={dashboardData.shortlistedCount}
+          numericValue={dashboardData.shortlistedCount}
           subtitle="Advanced to candidate shortlist"
           icon={<Star className="w-5 h-5 text-purple-400" />}
-          iconBg="bg-purple-500/10"
+          iconBg="bg-purple-500/10 border border-purple-500/20"
           badgeText={dashboardData.shortlistedCount > 0 ? 'Shortlisted' : 'None yet'}
           badgeColor="bg-purple-500/15 text-purple-300 border-purple-500/30"
           linkTo="/candidate/applications"
           linkLabel="View shortlisted"
+          accentGraphic={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-purple-400/40">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
+          }
         />
 
-        <StatCard
+        {/* Metric 4: Interviews & Offers */}
+        <CandidateMetricCard
+          index={3}
           title="Interviews & Offers"
           value={dashboardData.interviewsCount + dashboardData.selectedCount}
+          numericValue={dashboardData.interviewsCount + dashboardData.selectedCount}
           subtitle={`${dashboardData.interviewsCount} interview · ${dashboardData.selectedCount} offer`}
           icon={<Trophy className="w-5 h-5 text-emerald-400" />}
-          iconBg="bg-emerald-500/10"
+          iconBg="bg-emerald-500/10 border border-emerald-500/20"
           badgeText={dashboardData.selectedCount > 0 ? 'Selected Offer' : dashboardData.interviewsCount > 0 ? 'Interview Stage' : 'Ready'}
           badgeColor="bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
           linkTo="/candidate/applications"
           linkLabel="View stages"
+          accentGraphic={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-emerald-400/40">
+              <path d="M6 9V3H18V9C18 12.31 15.31 15 12 15C8.69 15 6 12.31 6 9Z" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 15V19M8 21H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M6 5H4C2.9 5 2 5.9 2 7V8C2 9.1 2.9 10 4 10H6" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M18 5H20C21.1 5 22 5.9 22 7V8C22 9.1 21.1 10 20 10H18" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          }
         />
-      </motion.div>
+      </div>
 
-      {/* ── SECTION 3 — RECRUITER REQUISITIONS (FULL WIDTH) ──────────────────── */}
+      {/* ── SECTION 3 — BUILD A STRONGER RESUME (RESUME INTELLIGENCE) ────────── */}
+      <CandidateResumeIntelligenceSection
+        dashboardData={dashboardData}
+        onOpenUpload={handleOpenUpload}
+      />
+
+      {/* ── SECTION 4 — RECRUITER REQUISITIONS (JOB DISCOVERY & ATS MATCH) ─────── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <DepthCard hoverEffect={false} glass={true} className="overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center">
-                <Briefcase className="w-4 h-4 text-indigo-400" />
+        <DepthCard hoverEffect={false} glass={true} className="overflow-hidden rounded-3xl border border-white/[0.08] hover:border-indigo-500/25 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] card-shine-all-sides transition-all duration-300 relative group">
+          {/* ── 4-Side Perimeter Light Rims & Inward Reflection ───────────────────── */}
+          <CardReflectiveShine variant="purple" rounded="rounded-3xl" hasHoverSweep={true} />
+
+          {/* Header Banner with 3D ATS Job Matching Visual */}
+          <div className="relative overflow-hidden border-b border-white/[0.06] p-6 bg-gradient-to-r from-[#0d1633] via-[#090e24] to-[#060a18]">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-8 space-y-2">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
+                  <Briefcase className="w-3 h-3 text-indigo-400" />
+                  Verified Tech Requisitions & ATS Matching
+                </div>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                  Discover relevant career opportunities
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300/80 leading-relaxed max-w-xl">
+                  Active job requisitions posted by verified employers, matched directly with your parsed skills and ATS profile telemetry.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/candidate/jobs"
+                    className="inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white font-semibold transition-colors bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 rounded-xl border border-white/[0.08]"
+                  >
+                    Browse all openings <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-white">Recruiter Requisitions</h2>
-                <p className="text-[11px] text-slate-400">Real opportunities posted by verified employers</p>
+
+              {/* 3D ATS Match Visual Card */}
+              <div className="md:col-span-4 relative hidden sm:block">
+                <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-white/10 shadow-lg group bg-slate-900">
+                  <img
+                    src="/assets/candidate/ats_matching_3d.jpg"
+                    alt="3D ATS Intelligent Job Matching"
+                    className="w-full h-full object-cover filter brightness-[0.92] contrast-[1.05]"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#060a18]/70 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute bottom-2 left-2 right-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-cyan-300 flex items-center justify-between">
+                    <span>ATS Matching</span>
+                    <span className="text-emerald-400 font-bold">Active Engine</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <Link
-              to="/candidate/jobs"
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
-            >
-              Browse all jobs <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
+          {/* Job Listings from real backend */}
           <div className="divide-y divide-white/[0.04]">
             {dashboardData.recommendedJobs && dashboardData.recommendedJobs.length > 0 ? (
               dashboardData.recommendedJobs.map((job) => (
@@ -480,144 +464,29 @@ export const CandidateDashboard: React.FC = () => {
         </DepthCard>
       </motion.div>
 
-      {/* ── SECTION 4 — PIPELINE & PROFILE READINESS ─────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-      >
-        {/* ── Left: My Active Applications ─────────────────────────────────── */}
-        <div className="lg:col-span-7 flex flex-col">
-          <DepthCard hoverEffect={false} glass={true} className="overflow-hidden flex-1 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center">
-                  <Layers className="w-4 h-4 text-purple-400" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-white">My Active Applications</h2>
-                  <p className="text-[11px] text-slate-400">Live submission pipeline status</p>
-                </div>
-              </div>
-              <Link
-                to="/candidate/applications"
-                className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
-              >
-                All applications ({dashboardData.totalApplicationsCount}) <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+      {/* ── SECTION 5 — APPLICATION JOURNEY & PIPELINE ───────────────────────── */}
+      <CandidateApplicationJourneySection
+        dashboardData={dashboardData}
+        renderStatusBadge={renderStatusBadge}
+      />
 
-            <div className="divide-y divide-white/[0.04] flex-1">
-              {dashboardData.recentApplications && dashboardData.recentApplications.length > 0 ? (
-                dashboardData.recentApplications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="flex items-center justify-between gap-4 px-6 py-3.5 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-white truncate">{app.jobTitle}</p>
-                      <p className="text-xs text-slate-400 truncate">
-                        {app.company} · Applied {app.appliedDate}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {renderStatusBadge(app.status)}
-                      <Link to="/candidate/applications" className="text-slate-500 hover:text-slate-300 transition-colors">
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-6 py-10 text-center flex-1 flex flex-col items-center justify-center">
-                  <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-60" />
-                  <p className="text-sm text-slate-400">You haven't submitted any job applications yet.</p>
-                  <Link to="/candidate/jobs" className="inline-block mt-3">
-                    <Button variant="secondary" size="sm">
-                      Explore Open Jobs
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </DepthCard>
-        </div>
+      {/* ── SECTION 6 — PROFILE READINESS & VIRTUAL INTERVIEW ROADMAP ────────── */}
+      <CandidateSkillRoadmapSection
+        dashboardData={dashboardData}
+      />
 
-        {/* ── Right: Profile Readiness & Portal Shortcuts ──────────────────── */}
-        <div className="lg:col-span-5 flex flex-col">
-          <DepthCard hoverEffect={false} glass={true} className="overflow-hidden flex-1 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-white">Profile Readiness</h2>
-                  <p className="text-[11px] text-slate-400">Independent candidate completeness</p>
-                </div>
-              </div>
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                {profileCompletion}%
-              </span>
-            </div>
-
-            <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Profile completeness</span>
-                  <span className="font-bold text-emerald-400">{profileCompletion}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                    style={{ width: `${profileCompletion}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed pt-0.5">
-                  Keep your background and skill proficiencies up to date for better recruiter discovery.
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-white/[0.06] space-y-2">
-                <Link
-                  to="/candidate/profile"
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] text-xs font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  <span>Edit Profile & Skills</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </Link>
-                <Link
-                  to="/candidate/resumes"
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] text-xs font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  <span>Manage All Resumes</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </Link>
-                <Link
-                  to="/candidate/saved-jobs"
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] text-xs font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  <span>Saved Jobs ({dashboardData.savedJobsCount})</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </Link>
-              </div>
-            </div>
-          </DepthCard>
-        </div>
-      </motion.div>
-
-      {/* Resume Creation / Upload Modal */}
+      {/* Create/Upload Resume Modal */}
       <CreateResumeModal
         isOpen={createModalOpen}
-        initialMode={createModalMode}
         onClose={() => setCreateModalOpen(false)}
+        initialMode={createModalMode}
         onSuccess={() => {
           setCreateModalOpen(false);
           loadData();
           showToast({
             type: 'success',
-            title: 'Resume uploaded and parsed successfully!'
+            title: 'Resume Uploaded',
+            message: 'Resume uploaded and ATS analysis initiated successfully.'
           });
         }}
       />

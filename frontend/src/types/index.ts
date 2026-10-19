@@ -102,6 +102,28 @@ export interface CandidateProfile {
   projects: Project[];
   certifications: Certification[];
   profileCompletion: number; // 0 to 100
+  profileReadiness?: ProfileReadinessData;
+}
+
+export interface ProfileReadinessCriterion {
+  key: string;
+  label: string;
+  weight: number;
+  completed: boolean;
+  helpText?: string;
+  actionRoute?: string;
+  actionLabel?: string;
+}
+
+export interface ProfileReadinessData {
+  completionPercentage: number;
+  completedItems: number;
+  totalItems: number;
+  missingItems: string[];
+  guidance?: string;
+  nextActionLabel?: string;
+  nextActionRoute?: string;
+  criteria: ProfileReadinessCriterion[];
 }
 
 export interface Resume {
@@ -379,6 +401,7 @@ export interface PlatformHealthResponse {
   totalServicesMonitored: number;
   healthyServicesCount: number;
   services: PlatformHealthItem[];
+  incidents?: any[];
 }
 
 export interface RecruiterStats {

@@ -22,6 +22,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { BackgroundEffects } from '../../components/ui/BackgroundEffects';
+import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 import { Role } from '../../types';
 import { cn } from '../../utils/cn';
 
@@ -78,6 +79,10 @@ export const RegisterPage: React.FC = () => {
     try {
       setIsLoading(true);
       setErrors({});
+
+      // Pre-authorize audio context on user gesture
+      voiceAssistantService.unlockAudio();
+
       const newUser = await register({
         name,
         email,
@@ -91,6 +96,16 @@ export const RegisterPage: React.FC = () => {
         title: 'Account Created Successfully!',
         message: `Welcome to AI ATS Platform, ${newUser.name}.`,
       });
+
+      // Trigger cinematic dashboard entrance animation for new registration
+      sessionStorage.setItem(`ai_ats_play_intro_${role}`, 'true');
+      sessionStorage.removeItem(`ai_ats_intro_seen_${role}`);
+
+      // Signal pending automatic voice welcome for this session
+      sessionStorage.setItem('ai_ats_pending_voice_welcome', 'true');
+      if (newUser?.id) {
+        sessionStorage.removeItem(`ai_ats_voice_welcome_done_${newUser.id}`);
+      }
 
       const searchParams = new URLSearchParams(location.search);
       const redirectParam = searchParams.get('redirect');

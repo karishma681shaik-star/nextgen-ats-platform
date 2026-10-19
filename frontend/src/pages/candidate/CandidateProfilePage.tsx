@@ -38,7 +38,9 @@ import {
 } from 'lucide-react';
 import { candidateService } from '../../services';
 import { sendCopilotMessage } from '../../services/api/copilotApi';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useSearchParams } from 'react-router-dom';
 import {
   CandidateProfile,
   Education,
@@ -52,6 +54,8 @@ import { Textarea } from '../../components/ui/Textarea';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { CandidateProfileHero } from '../../components/candidate/CandidateProfileHero';
+import { CandidateProfileStrengthCard } from '../../components/candidate/CandidateProfileStrengthCard';
 
 // Preset sample data for 1-click profile booster if user has empty profile
 const SAMPLE_BOOSTER_DATA: Partial<CandidateProfile> = {
@@ -203,6 +207,8 @@ const AVATAR_PRESETS = [
 ];
 
 export const CandidateProfilePage: React.FC = () => {
+  const { updateProfile: updateAuthProfile } = useAuth();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'overview' | 'personal' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -314,6 +320,34 @@ export const CandidateProfilePage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Deep-linking to incomplete profile sections via ?action=...
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (!action) return;
+    if (action === 'about' || action === 'headline' || action === 'bio') {
+      setActiveTab('personal');
+      setAboutModalOpen(true);
+    } else if (action === 'education') {
+      setActiveTab('education');
+      setEditingEdu(null);
+      setEduModalOpen(true);
+    } else if (action === 'experience') {
+      setActiveTab('experience');
+      setEditingExp(null);
+      setExpModalOpen(true);
+    } else if (action === 'skills') {
+      setActiveTab('skills');
+    } else if (action === 'project' || action === 'projects') {
+      setActiveTab('projects');
+      setEditingProj(null);
+      setProjModalOpen(true);
+    } else if (action === 'certification' || action === 'certifications') {
+      setActiveTab('certifications');
+      setEditingCert(null);
+      setCertModalOpen(true);
+    }
+  }, [searchParams]);
+
   // 3D Parallax Tracking
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
@@ -393,7 +427,10 @@ export const CandidateProfilePage: React.FC = () => {
 
   const checklist = getProfileChecklist(profile);
   const calculatedCompletion = checklist.reduce((acc, item) => acc + (item.completed ? item.points : 0), 0);
-  const profileCompletionRate = Math.min(100, Math.max(10, calculatedCompletion));
+  const profileCompletionRate = Math.min(
+    100,
+    Math.max(0, typeof profile?.profileCompletion === 'number' ? profile.profileCompletion : calculatedCompletion)
+  );
 
   const getProfileStrengthInfo = (score: number) => {
     if (score >= 90) {
@@ -663,9 +700,10 @@ export const CandidateProfilePage: React.FC = () => {
     if (!profile) return;
     try {
       setIsSaving(true);
+      const newName = aboutFormData.name.trim() || profile.name;
       const updated: CandidateProfile = {
         ...profile,
-        name: aboutFormData.name.trim() || profile.name,
+        name: newName,
         title: aboutFormData.title.trim() || profile.title,
         location: aboutFormData.location.trim() || profile.location,
         bio: aboutFormData.bio.trim() || profile.bio,
@@ -677,6 +715,13 @@ export const CandidateProfilePage: React.FC = () => {
       };
       setProfile(updated);
       await candidateService.updateProfile(updated);
+      if (newName && updateAuthProfile) {
+        try {
+          await updateAuthProfile({ name: newName });
+        } catch (authErr) {
+          console.warn('Could not sync auth profile name:', authErr);
+        }
+      }
       setAboutModalOpen(false);
       setIsEditingAboutInline(false);
       showToast({

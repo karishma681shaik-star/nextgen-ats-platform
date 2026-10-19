@@ -42,6 +42,14 @@ public class CandidateController {
         return ResponseEntity.ok(ApiResponse.success(dashboard));
     }
 
+    @GetMapping("/readiness")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<com.aiats.dto.candidate.ProfileReadinessDTO>> getReadiness(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        com.aiats.dto.candidate.ProfileReadinessDTO readiness = candidateService.getProfileReadiness(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(readiness));
+    }
+
     @GetMapping("/profile")
     @PreAuthorize("hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<CandidateProfileDTO>> getMyProfile(

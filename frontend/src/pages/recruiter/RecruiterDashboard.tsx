@@ -16,10 +16,13 @@ import {
   MapPin,
   RotateCcw,
   Eye,
-  Trash2
+  Trash2,
+  Volume2
 } from 'lucide-react';
 import { recruiterService, jobService } from '../../services';
-import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
+import { voiceAssistantService, WorkspaceContext } from '../../services/audio/voiceAssistantService';
+import { soundEffectService } from '../../services/audio/soundEffectService';
+import { AIAssistantEmblem, AIAudioWaveform } from '../../components/common/AIAssistantEmblem';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import {
@@ -74,6 +77,7 @@ export const RecruiterDashboard: React.FC = () => {
   const [viewingProfile, setViewingProfile] = useState<Application | null>(null);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Verification Helpers
@@ -100,7 +104,7 @@ export const RecruiterDashboard: React.FC = () => {
   // Display recruiter name
   const recruiterDisplayName = useMemo(() => {
     const raw = user?.name || verificationDetail?.recruiterName;
-    const sanitized = voiceAssistantService.sanitizeDisplayName(raw);
+    const sanitized = voiceAssistantService.resolveFullName(user || { name: raw });
     if (sanitized && sanitized.toLowerCase() !== 'first') {
       return sanitized;
     }
@@ -173,6 +177,13 @@ export const RecruiterDashboard: React.FC = () => {
     loadDashboardData();
   }, [loadDashboardData]);
 
+  // Subscribe to real-time speech synthesis state
+  useEffect(() => {
+    return voiceAssistantService.subscribe((speaking) => {
+      setIsAiSpeaking(speaking);
+    });
+  }, []);
+
   // Derived Metric Values
   const activeJobsList = useMemo(() => {
     return jobs.filter((j) => j.status?.toLowerCase() === 'active' && !isDeadlinePassed(j.deadline));
@@ -185,6 +196,33 @@ export const RecruiterDashboard: React.FC = () => {
   const interviewCandidates = useMemo(() => {
     return applicants.filter((a) => a.status === 'Interview');
   }, [applicants]);
+
+  // Automatic full-length welcome speech trigger on login
+  useEffect(() => {
+    if (!isLoading && user) {
+      const userIdKey = user?.id || 'recruiter_session';
+      const welcomeKey = `ai_ats_voice_welcome_done_${userIdKey}`;
+      const isPending = sessionStorage.getItem('ai_ats_pending_voice_welcome') === 'true';
+      const alreadySpoken = sessionStorage.getItem(welcomeKey) === 'true';
+
+      if (isPending && !alreadySpoken && !voiceAssistantService.isSpeaking()) {
+        sessionStorage.setItem(welcomeKey, 'true');
+        sessionStorage.removeItem('ai_ats_pending_voice_welcome');
+        const context: WorkspaceContext = {
+          isVerified,
+          verificationStatus,
+          activeJobsCount: activeJobsList.length,
+          pendingReviewCount: candidatesNeedingReview.length,
+          interviewsCount: interviewCandidates.length,
+        };
+        voiceAssistantService.welcomeUser(
+          user,
+          'recruiter',
+          context
+        );
+      }
+    }
+  }, [isLoading, user, isVerified, verificationStatus, activeJobsList.length, candidatesNeedingReview.length, interviewCandidates.length]);
 
   // Next Best Action (Deterministic logic with strict priority)
   const nextBestAction = useMemo(() => {
@@ -414,6 +452,29 @@ export const RecruiterDashboard: React.FC = () => {
     }
   };
 
+  const handleListenGreeting = () => {
+    soundEffectService.playActionChime();
+    const context: WorkspaceContext = {
+      isVerified,
+      verificationStatus,
+      activeJobsCount: activeJobsList.length,
+      pendingReviewCount: candidatesNeedingReview.length,
+      interviewsCount: interviewCandidates.length,
+    };
+    if (voiceAssistantService.isSpeaking()) {
+      voiceAssistantService.stop();
+    } else if (voiceAssistantService.isAutoplayBlocked()) {
+      voiceAssistantService.retryBlockedSpeech();
+    } else {
+      voiceAssistantService.welcomeUser(
+        user || { name: recruiterDisplayName, role: 'recruiter' },
+        'recruiter',
+        context,
+        { force: true }
+      );
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       {/* ══════════════════════════════════════════════════════════════════════════
@@ -474,6 +535,28 @@ export const RecruiterDashboard: React.FC = () => {
 
           {/* Primary & Secondary Actions */}
           <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0">
+            {/* Ambient Voice Assistant Trigger */}
+            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-purple-950/40 border border-purple-500/20 backdrop-blur-md">
+              <AIAssistantEmblem size="sm" isSpeaking={isAiSpeaking} />
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-300">Nexus AI</span>
+                <span className="text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+                  {isAiSpeaking ? 'Speaking...' : voiceAssistantService.isAutoplayBlocked() ? 'Tap to play' : 'Voice Assistant'}
+                </span>
+              </div>
+              <AIAudioWaveform isSpeaking={isAiSpeaking} />
+              <button
+                type="button"
+                onClick={handleListenGreeting}
+                title={isAiSpeaking ? 'Stop voice assistant' : voiceAssistantService.isAutoplayBlocked() ? 'Enable voice welcome' : 'Listen to personalized greeting'}
+                aria-label={isAiSpeaking ? 'Stop voice assistant' : 'Listen to personalized greeting'}
+                className="ml-1 p-1.5 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-400 cursor-pointer"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <Link to="/recruiter/jobs" id="btn-view-my-jobs">
               <Button
                 variant="secondary"

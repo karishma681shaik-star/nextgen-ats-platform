@@ -28,6 +28,7 @@ public class CandidateService {
     private final JobRepository jobRepository;
     private final JobService jobService;
     private final SavedJobRepository savedJobRepository;
+    private final ProfileReadinessService profileReadinessService;
 
     public CandidateService(CandidateProfileRepository profileRepository,
                             CandidateSkillRepository skillRepository,
@@ -43,7 +44,8 @@ public class CandidateService {
                             ApplicationService applicationService,
                             JobRepository jobRepository,
                             JobService jobService,
-                            SavedJobRepository savedJobRepository) {
+                            SavedJobRepository savedJobRepository,
+                            ProfileReadinessService profileReadinessService) {
         this.profileRepository = profileRepository;
         this.skillRepository = skillRepository;
         this.educationRepository = educationRepository;
@@ -59,6 +61,7 @@ public class CandidateService {
         this.jobRepository = jobRepository;
         this.jobService = jobService;
         this.savedJobRepository = savedJobRepository;
+        this.profileReadinessService = profileReadinessService;
     }
 
     @Transactional(readOnly = true)
@@ -164,7 +167,8 @@ public class CandidateService {
             certificationRepository.saveAll(certs);
         }
 
-        profile.setProfileCompletion(computeCompletion(profile, request));
+        ProfileReadinessDTO readiness = profileReadinessService.calculateReadiness(user, profile);
+        profile.setProfileCompletion(readiness.getCompletionPercentage());
         CandidateProfile saved = profileRepository.save(profile);
         return toDTO(saved);
     }
@@ -176,18 +180,6 @@ public class CandidateService {
                 target.add(new CandidateSkill(profile, name.trim(), type));
             }
         });
-    }
-
-    private int computeCompletion(CandidateProfile profile, CandidateProfileRequest req) {
-        int score = 0;
-        if (profile.getUser().getFullName() != null && !profile.getUser().getFullName().isBlank()) score += 10;
-        if (profile.getBio() != null && !profile.getBio().isBlank()) score += 15;
-        if (profile.getTitle() != null && !profile.getTitle().isBlank()) score += 10;
-        if (req.getSkills() != null && req.getSkills().getTechnical() != null && !req.getSkills().getTechnical().isEmpty()) score += 20;
-        if (req.getEducation() != null && !req.getEducation().isEmpty()) score += 15;
-        if (req.getExperience() != null && !req.getExperience().isEmpty()) score += 20;
-        if (req.getProjects() != null && !req.getProjects().isEmpty()) score += 10;
-        return Math.min(score, 100);
     }
 
     private CandidateProfile getOrCreate(UUID userId) {
@@ -312,46 +304,17 @@ public class CandidateService {
         dto.setCandidateTitle(profile.getTitle() != null && !profile.getTitle().isBlank() ? profile.getTitle() : "Candidate");
         dto.setAvatar(user.getAvatarUrl());
 
-        // 1. Precise section completeness check
-        boolean hasContact = user.getFullName() != null && !user.getFullName().isBlank()
-                && ((profile.getLocation() != null && !profile.getLocation().isBlank())
-                || (user.getPhone() != null && !user.getPhone().isBlank()));
-        boolean hasTitleBio = (profile.getTitle() != null && !profile.getTitle().isBlank())
-                || (profile.getBio() != null && !profile.getBio().isBlank());
-        List<CandidateSkill> skills = skillRepository.findByCandidateProfileId(profile.getId());
-        boolean hasSkills = !skills.isEmpty();
-        List<Experience> exps = experienceRepository.findByCandidateProfileId(profile.getId());
-        boolean hasExperience = !exps.isEmpty();
-        List<Education> edus = educationRepository.findByCandidateProfileId(profile.getId());
-        boolean hasEducation = !edus.isEmpty();
-        List<Certification> certs = certificationRepository.findByCandidateProfileId(profile.getId());
-        List<Project> projs = projectRepository.findByCandidateProfileId(profile.getId());
-        boolean hasCertOrProj = !certs.isEmpty() || !projs.isEmpty();
+        // 1. Dynamic, truthful weighted profile readiness calculation
+        ProfileReadinessDTO readiness = profileReadinessService.calculateReadiness(user, profile);
+        dto.setProfileReadiness(readiness);
+        dto.setProfileCompletion(readiness.getCompletionPercentage());
 
-        // Calculate exact profile completion %
-        int completion = 0;
-        if (hasContact) completion += 20;
-        if (hasTitleBio) completion += 15;
-        if (hasSkills) completion += 25;
-        if (hasExperience) completion += 20;
-        if (hasEducation) completion += 15;
-        if (hasCertOrProj) completion += 5;
-        completion = Math.min(100, Math.max(completion, profile.getProfileCompletion()));
-
-        if (profile.getProfileCompletion() != completion) {
-            profile.setProfileCompletion(completion);
-            profileRepository.save(profile);
-        }
-        dto.setProfileCompletion(completion);
-
-        // Content Checklist
+        // Content Checklist derived from real criteria status
         Map<String, Boolean> checklist = new LinkedHashMap<>();
-        checklist.put("Contact & Personal Details", hasContact);
-        checklist.put("Professional Headline & Bio", hasTitleBio);
-        checklist.put("Skills & Competencies", hasSkills);
-        checklist.put("Work Experience History", hasExperience);
-        checklist.put("Academic & Educational Background", hasEducation);
-        checklist.put("Certifications & Key Projects", hasCertOrProj);
+        for (ProfileReadinessCriterionDTO crit : readiness.getCriteria()) {
+            checklist.put(crit.getLabel(), crit.isCompleted());
+        }
+        dto.setChecklist(checklist);
 
         // 2. Primary resume & Exact ATS score
         Optional<Resume> primaryResumeOpt = resumeRepository.findByUserIdAndPrimaryTrue(userId);
@@ -363,8 +326,6 @@ public class CandidateService {
         }
 
         boolean hasResume = primaryResumeOpt.isPresent();
-        checklist.put("Primary Resume Uploaded", hasResume);
-        dto.setChecklist(checklist);
         dto.setHasPrimaryResume(hasResume);
 
         if (!hasResume) {
@@ -406,12 +367,12 @@ public class CandidateService {
                 } else {
                     // Check readiness from actual resume content
                     try {
-                        com.aiats.dto.resume.ResumeReadinessDTO readiness = resumeService.checkReadiness(userId, primary.getId());
-                        if (readiness != null && readiness.getReadinessScore() > 0) {
+                        com.aiats.dto.resume.ResumeReadinessDTO resumeReadiness = resumeService.checkReadiness(userId, primary.getId());
+                        if (resumeReadiness != null && resumeReadiness.getReadinessScore() > 0) {
                             dto.setAtsStatus("ATS_SCORE_AVAILABLE");
-                            dto.setAtsScore(readiness.getReadinessScore());
-                            dto.setAtsTier(readiness.getTier());
-                            dto.setAtsSummary(readiness.getMessage());
+                            dto.setAtsScore(resumeReadiness.getReadinessScore());
+                            dto.setAtsTier(resumeReadiness.getTier());
+                            dto.setAtsSummary(resumeReadiness.getMessage());
                             dto.setLastAnalyzedDate(primary.getUpdatedAt() != null ? primary.getUpdatedAt().toString() : (primary.getCreatedAt() != null ? primary.getCreatedAt().toString() : null));
                         } else {
                             dto.setAtsStatus("PARSED_PENDING_ANALYSIS");
@@ -491,5 +452,10 @@ public class CandidateService {
         dto.setRejected(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.REJECTED));
         dto.setWithdrawn(applicationRepository.countByCandidateIdAndStatus(candidateId, ApplicationStatus.WITHDRAWN));
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileReadinessDTO getProfileReadiness(UUID userId) {
+        return profileReadinessService.calculateReadiness(userId);
     }
 }

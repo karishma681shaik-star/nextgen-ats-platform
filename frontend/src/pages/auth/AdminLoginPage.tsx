@@ -18,6 +18,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { BackgroundEffects } from '../../components/ui/BackgroundEffects';
+import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -53,6 +54,9 @@ export const AdminLoginPage: React.FC = () => {
       setIsLoading(true);
       setErrors({});
 
+      // Unlock speech audio on user gesture
+      voiceAssistantService.unlockAudio();
+
       // 1. Authenticate through administrator endpoint
       const user = await adminLogin({ email, password });
 
@@ -70,6 +74,13 @@ export const AdminLoginPage: React.FC = () => {
 
       // Trigger cinematic dashboard entrance animation
       sessionStorage.setItem('ai_ats_play_intro_admin', 'true');
+      sessionStorage.removeItem('ai_ats_intro_seen_admin');
+
+      // Signal pending automatic voice welcome for this session
+      sessionStorage.setItem('ai_ats_pending_voice_welcome', 'true');
+      if (user?.id) {
+        sessionStorage.removeItem(`ai_ats_voice_welcome_done_${user.id}`);
+      }
 
       const destination = (location.state as any)?.from?.pathname;
       if (destination && destination.startsWith('/admin')) {

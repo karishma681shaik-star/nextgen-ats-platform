@@ -178,7 +178,6 @@ public class DataInitializer implements CommandLineRunner {
         profile.setLocation("Bengaluru, Karnataka, India");
         profile.setGithubUrl("https://github.com/alexrivera-dev");
         profile.setLinkedinUrl("https://www.linkedin.com/in/alexrivera-dev/");
-        profile.setProfileCompletion(95);
         candidateProfileRepository.save(profile);
 
         // Ensure candidate has verified technical skills

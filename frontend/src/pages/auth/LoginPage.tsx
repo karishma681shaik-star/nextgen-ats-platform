@@ -20,6 +20,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { BackgroundEffects } from '../../components/ui/BackgroundEffects';
+import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 
 export interface LoginPageProps {
   portal?: 'candidate' | 'recruiter';
@@ -112,6 +113,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
       setIsLoading(true);
       setErrors({});
 
+      // Unlock speech audio on user gesture for seamless automatic welcome playback
+      voiceAssistantService.unlockAudio();
+
       // 1. Authenticate with backend API using existing credentials contract
       const loggedUser = await login({ email, password });
 
@@ -157,6 +161,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
 
       // Trigger cinematic dashboard entrance animation for authenticated session
       sessionStorage.setItem(`ai_ats_play_intro_${loggedUser.role}`, 'true');
+      sessionStorage.removeItem(`ai_ats_intro_seen_${loggedUser.role}`);
+
+      // Signal pending automatic voice welcome for this session
+      sessionStorage.setItem('ai_ats_pending_voice_welcome', 'true');
+      if (loggedUser?.id) {
+        sessionStorage.removeItem(`ai_ats_voice_welcome_done_${loggedUser.id}`);
+      }
 
       const searchParams = new URLSearchParams(location.search);
       const redirectParam = searchParams.get('redirect');
