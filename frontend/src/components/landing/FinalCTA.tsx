@@ -24,43 +24,55 @@ import { useToast } from '../../context/ToastContext';
 import { candidateService } from '../../services';
 import { Resume } from '../../types';
 
-// Cohesive pair of premium SVG document icons inspired by Reference Image 1
-const PdfDocumentIcon: React.FC<{ className?: string }> = ({ className = 'w-12 h-14' }) => (
+// High-fidelity SVG paper document icons precisely recreating Reference Image 2
+const PdfDocumentIcon: React.FC<{ className?: string }> = ({ className = 'w-[62px] h-[76px]' }) => (
   <svg
-    viewBox="0 0 54 64"
+    viewBox="0 0 62 76"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className={`${className} filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)] hover:scale-105 transition-transform duration-200 select-none`}
+    className={`${className} filter drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)] hover:scale-105 transition-transform duration-200 select-none shrink-0`}
   >
-    <path
-      d="M6 0H38L52 14V58C52 61.3137 49.3137 64 46 64H6C2.68629 64 0 61.3137 0 58V6C0 2.68629 2.68629 0 6 0Z"
-      fill="#F8FAFC"
-    />
-    <path
-      d="M6 0.5H37.8L51.5 14.2V58C51.5 61.0376 49.0376 63.5 46 63.5H6C2.96243 63.5 0.5 61.0376 0.5 58V6C0.5 2.96243 2.96243 0.5 6 0.5Z"
-      stroke="#CBD5E1"
-      strokeWidth="1"
-    />
-    <path
-      d="M38 0V12C38 13.1046 38.8954 14 40 14H52L38 0Z"
-      fill="#E2E8F0"
-    />
-    <path
-      d="M38 0L52 14H40C38.8954 14 38 13.1046 38 12V0Z"
-      stroke="#CBD5E1"
-      strokeWidth="1"
-    />
-    <line x1="10" y1="20" x2="28" y2="20" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-    <line x1="10" y1="26" x2="38" y2="26" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.4" />
-    <line x1="10" y1="32" x2="24" y2="32" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.3" />
+    <defs>
+      <linearGradient id="pdf-paper-grad" x1="0" y1="0" x2="62" y2="76" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="100%" stopColor="#EEF2F6" />
+      </linearGradient>
+      <filter id="pdf-fold-shadow" x="38" y="0" width="24" height="24" filterUnits="userSpaceOnUse">
+        <feDropShadow dx="-1" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.2" />
+      </filter>
+    </defs>
 
-    <rect x="5" y="38" width="34" height="18" rx="4" fill="#DC2626" />
+    {/* Main Paper Body with folded upper-right corner */}
+    <path
+      d="M 5 0 H 43 L 61 17 V 71 C 61 73.7614 58.7614 76 56 76 H 5 C 2.23858 76 0 73.7614 0 71 V 5 C 0 2.23858 2.23858 0 5 0 Z"
+      fill="url(#pdf-paper-grad)"
+      stroke="#CBD5E1"
+      strokeWidth="1.2"
+    />
+
+    {/* Fold Flap in upper-right corner */}
+    <path
+      d="M 43 0 V 13 C 43 15.2091 44.7909 17 47 17 H 61 L 43 0 Z"
+      fill="#E2E8F0"
+      stroke="#CBD5E1"
+      strokeWidth="1.2"
+      strokeLinejoin="round"
+      filter="url(#pdf-fold-shadow)"
+    />
+
+    {/* Preview Document Text Lines */}
+    <line x1="12" y1="26" x2="32" y2="26" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+    <line x1="12" y1="33" x2="48" y2="33" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.45" />
+    <line x1="12" y1="40" x2="28" y2="40" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.35" />
+
+    {/* Red PDF Tag at Bottom */}
+    <rect x="12" y="49" width="38" height="19" rx="4.5" fill="#EF4444" />
     <text
-      x="22"
-      y="51"
+      x="31"
+      y="63"
       textAnchor="middle"
       fill="#FFFFFF"
-      fontSize="9.5"
+      fontSize="10"
       fontWeight="800"
       fontFamily="system-ui, -apple-system, sans-serif"
       letterSpacing="0.6px"
@@ -70,42 +82,54 @@ const PdfDocumentIcon: React.FC<{ className?: string }> = ({ className = 'w-12 h
   </svg>
 );
 
-const DocDocumentIcon: React.FC<{ className?: string }> = ({ className = 'w-12 h-14' }) => (
+const DocDocumentIcon: React.FC<{ className?: string }> = ({ className = 'w-[62px] h-[76px]' }) => (
   <svg
-    viewBox="0 0 54 64"
+    viewBox="0 0 62 76"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className={`${className} filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)] hover:scale-105 transition-transform duration-200 select-none`}
+    className={`${className} filter drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)] hover:scale-105 transition-transform duration-200 select-none shrink-0`}
   >
-    <path
-      d="M6 0H38L52 14V58C52 61.3137 49.3137 64 46 64H6C2.68629 64 0 61.3137 0 58V6C0 2.68629 2.68629 0 6 0Z"
-      fill="#F8FAFC"
-    />
-    <path
-      d="M6 0.5H37.8L51.5 14.2V58C51.5 61.0376 49.0376 63.5 46 63.5H6C2.96243 63.5 0.5 61.0376 0.5 58V6C0.5 2.96243 2.96243 0.5 6 0.5Z"
-      stroke="#CBD5E1"
-      strokeWidth="1"
-    />
-    <path
-      d="M38 0V12C38 13.1046 38.8954 14 40 14H52L38 0Z"
-      fill="#E2E8F0"
-    />
-    <path
-      d="M38 0L52 14H40C38.8954 14 38 13.1046 38 12V0Z"
-      stroke="#CBD5E1"
-      strokeWidth="1"
-    />
-    <line x1="10" y1="20" x2="28" y2="20" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-    <line x1="10" y1="26" x2="38" y2="26" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.4" />
-    <line x1="10" y1="32" x2="24" y2="32" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.3" />
+    <defs>
+      <linearGradient id="doc-paper-grad" x1="0" y1="0" x2="62" y2="76" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="100%" stopColor="#EEF2F6" />
+      </linearGradient>
+      <filter id="doc-fold-shadow" x="38" y="0" width="24" height="24" filterUnits="userSpaceOnUse">
+        <feDropShadow dx="-1" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.2" />
+      </filter>
+    </defs>
 
-    <rect x="5" y="38" width="34" height="18" rx="4" fill="#2563EB" />
+    {/* Main Paper Body with folded upper-right corner */}
+    <path
+      d="M 5 0 H 43 L 61 17 V 71 C 61 73.7614 58.7614 76 56 76 H 5 C 2.23858 76 0 73.7614 0 71 V 5 C 0 2.23858 2.23858 0 5 0 Z"
+      fill="url(#doc-paper-grad)"
+      stroke="#CBD5E1"
+      strokeWidth="1.2"
+    />
+
+    {/* Fold Flap in upper-right corner */}
+    <path
+      d="M 43 0 V 13 C 43 15.2091 44.7909 17 47 17 H 61 L 43 0 Z"
+      fill="#E2E8F0"
+      stroke="#CBD5E1"
+      strokeWidth="1.2"
+      strokeLinejoin="round"
+      filter="url(#doc-fold-shadow)"
+    />
+
+    {/* Preview Document Text Lines */}
+    <line x1="12" y1="26" x2="32" y2="26" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+    <line x1="12" y1="33" x2="48" y2="33" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.45" />
+    <line x1="12" y1="40" x2="28" y2="40" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" opacity="0.35" />
+
+    {/* Blue DOC Tag at Bottom */}
+    <rect x="12" y="49" width="38" height="19" rx="4.5" fill="#2563EB" />
     <text
-      x="22"
-      y="51"
+      x="31"
+      y="63"
       textAnchor="middle"
       fill="#FFFFFF"
-      fontSize="9.5"
+      fontSize="10"
       fontWeight="800"
       fontFamily="system-ui, -apple-system, sans-serif"
       letterSpacing="0.6px"
@@ -344,30 +368,49 @@ export const FinalCTA: React.FC = () => {
   };
 
   return (
-    <section id="resume-upload" className="py-24 relative overflow-hidden bg-slate-950/90 scroll-mt-24">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-gradient-to-tr from-indigo-600/15 via-purple-600/15 to-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute inset-0 bg-tech-grid opacity-15 pointer-events-none" />
+    <section id="resume-upload" className="py-24 sm:py-28 relative overflow-hidden bg-[#040712] scroll-mt-24">
+      {/* Subtle constellation nodes on the right, matching Reference Image 2 */}
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[340px] h-[400px] pointer-events-none opacity-25 hidden lg:block">
+        <svg viewBox="0 0 340 400" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <circle cx="280" cy="80" r="3" fill="#6366F1" opacity="0.6" />
+          <circle cx="220" cy="140" r="3.5" fill="#818CF8" opacity="0.5" />
+          <circle cx="310" cy="180" r="2.5" fill="#6366F1" opacity="0.4" />
+          <circle cx="240" cy="240" r="4" fill="#A5B4FC" opacity="0.6" />
+          <circle cx="290" cy="300" r="3" fill="#6366F1" opacity="0.5" />
+          <circle cx="200" cy="320" r="2" fill="#818CF8" opacity="0.3" />
+          <line x1="280" y1="80" x2="220" y2="140" stroke="#4F46E5" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+          <line x1="220" y1="140" x2="310" y2="180" stroke="#4F46E5" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+          <line x1="220" y1="140" x2="240" y2="240" stroke="#4F46E5" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+          <line x1="240" y1="240" x2="290" y2="300" stroke="#4F46E5" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+          <line x1="240" y1="240" x2="200" y2="320" stroke="#4F46E5" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+        </svg>
+      </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-10">
-        {/* Main Section Header */}
+      {/* Subtle ambient magenta/purple glow at bottom-right edge, matching Reference Image 2 */}
+      <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full bg-purple-600/20 blur-[80px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Main Section Header — Exact Wording, Typography & 3-Line Break from Reference Image 2 */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-3xl mx-auto space-y-3.5"
+          className="text-center max-w-3xl mx-auto"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-semibold text-white tracking-tight leading-[1.2] font-sans">
-            Check Resume score and feedback for free.
+          <h2 className="text-3xl sm:text-4xl md:text-[44px] lg:text-[48px] font-normal sm:font-medium text-white tracking-tight font-sans leading-[1.25] flex flex-col items-center justify-center gap-2 sm:gap-2.5 md:gap-3">
+            <span>Check Resume score and</span>
+            <span>feedback for free.</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-xl mx-auto font-sans">
-            We identify your resume's strengths, prioritize critical fixes, and help optimize it to meet ATS and recruiter expectations — improving your chances of getting shortlisted for interviews.
+          <p className="mt-5 text-[16px] sm:text-[18px] text-[#94a3b8] leading-[27px] max-w-[720px] mx-auto font-normal font-sans">
+            We identify your resume&apos;s strengths, prioritize critical fixes, and help optimize
+            <br className="hidden md:inline" /> it to meet ATS and recruiter expectations — improving your chances of
+            <br className="hidden md:inline" /> getting shortlisted for interviews.
           </p>
         </motion.div>
 
         {/* ------------------------------------------------------------------
-            STAGE 1: RESUME UPLOAD CARD (Inspired by Reference Image 1 & 3)
+            STAGE 1: RESUME UPLOAD CARD — Precisely Matching Reference Image 2
         ------------------------------------------------------------------- */}
         {currentState === 'upload' && (
           <motion.div
@@ -375,22 +418,34 @@ export const FinalCTA: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3 }}
-            className="rounded-[28px] border border-slate-800/90 bg-[#060a18]/95 backdrop-blur-xl p-8 sm:p-10 lg:p-12 w-full max-w-[620px] mx-auto shadow-2xl relative space-y-7"
+            className="mt-12 sm:mt-14 rounded-[20px] p-7 sm:p-8 w-full max-w-[570px] mx-auto relative select-none overflow-hidden"
+            style={{
+              background: 'linear-gradient(180deg, rgba(20, 27, 46, 0.85) 0%, rgba(7, 11, 23, 0.98) 100%)',
+              border: '1px solid rgba(110, 125, 160, 0.28)',
+              boxShadow: '0 0 0 1px rgba(110, 125, 160, 0.05), 0 20px 50px rgba(0, 0, 0, 0.35)',
+            }}
           >
-            <h3 className="text-center text-lg sm:text-[19px] font-semibold text-white tracking-normal font-sans">
-              Upload Your Resume to See ATS Score and Feedback
+            {/* Soft silver-white top border highlight line matching Image 2 */}
+            <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-[1.5px] bg-gradient-to-r from-transparent via-white/75 to-transparent" />
+
+            {/* Soft ambient glass sheen beneath the top border */}
+            <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-[90px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12)_0%,rgba(140,170,220,0.05)_40%,transparent_75%)] rounded-t-[20px]" />
+
+            {/* Card Heading — Two-line wrapping matching Reference Image 2 */}
+            <h3 className="text-center text-[20px] sm:text-[22px] md:text-[23px] font-semibold text-[#F5F6FA] tracking-normal font-sans mb-6 sm:mb-7 leading-[1.38]">
+              Upload Your Resume to See ATS Score and<br className="hidden sm:inline" /> Feedback
             </h3>
 
-            {/* Drag & Drop Upload Zone */}
+            {/* Inner Upload Drop Zone — Height ~258px, Rounded 11px, Dashed Border */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border border-dashed rounded-2xl py-10 px-6 sm:py-12 sm:px-8 text-center transition-all cursor-pointer relative select-none group ${
+              className={`w-full h-[258px] box-border rounded-[11px] border border-dashed text-center transition-all duration-200 cursor-pointer relative select-none flex flex-col items-center justify-center p-4 sm:p-5 mx-auto group ${
                 isDragging
                   ? 'border-indigo-400 bg-indigo-950/25 scale-[1.01]'
-                  : 'border-slate-700/80 hover:border-indigo-500/50 bg-[#090e24]/40 hover:bg-[#090e24]/70'
+                  : 'border-[rgba(110,125,160,0.30)] hover:border-[rgba(160,180,220,0.55)] bg-[rgba(15,20,37,0.55)] hover:bg-[rgba(18,25,48,0.7)]'
               }`}
             >
               <input
@@ -402,32 +457,34 @@ export const FinalCTA: React.FC = () => {
                 id="landing-resume-file-input"
               />
 
-              {/* Cohesive Pair of Premium SVG Document Icons */}
-              <div className="flex items-center justify-center gap-4 mb-5 select-none">
-                <PdfDocumentIcon className="w-12 h-14" />
-                <DocDocumentIcon className="w-12 h-14" />
+              {/* PDF and DOC File Icons side by side with slight illustrative tilt from Image 2 */}
+              <div className="flex items-center justify-center gap-6 sm:gap-7 mb-4 select-none">
+                <div className="-rotate-[3.5deg] hover:rotate-0 transition-transform duration-200">
+                  <PdfDocumentIcon />
+                </div>
+                <div className="rotate-[3.5deg] hover:rotate-0 transition-transform duration-200">
+                  <DocDocumentIcon />
+                </div>
               </div>
 
-              {/* Call-to-action text */}
-              <div className="space-y-3">
-                <p className="text-sm sm:text-base font-normal text-slate-200">
-                  <span className="underline underline-offset-4 decoration-indigo-400 font-semibold hover:text-indigo-300 transition-colors">
-                    Browse file
-                  </span>{' '}
-                  or drag and drop here
-                </p>
+              {/* Upload instruction text with underlined "Browse file" */}
+              <p className="text-[17px] sm:text-[18.5px] md:text-[19px] font-medium text-[#F5F6FA] text-center tracking-normal">
+                <span className="underline underline-offset-4 decoration-slate-400 hover:decoration-white transition-colors cursor-pointer">
+                  Browse file
+                </span>{' '}
+                or drag and drop here
+              </p>
 
-                {/* Trust / Privacy Indicator */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#0b1022] border border-slate-800 text-[11px] text-slate-400">
-                  <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>100% Private. Always.</span>
-                </div>
+              {/* Privacy Indicator Pill: compact dark badge with lock icon matching Image 2 */}
+              <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-[#090e1e] border border-[rgba(110,125,160,0.25)] text-[12.5px] text-slate-300 select-none mt-3.5 shadow-sm">
+                <Lock className="w-3.5 h-3.5 text-slate-300 stroke-[1.8] shrink-0" />
+                <span className="font-medium tracking-tight">100% Private. Always.</span>
               </div>
             </div>
 
             {/* Validation Error Message */}
             {fileError && (
-              <div className="p-3 rounded-xl bg-red-950/30 border border-red-500/40 text-xs text-red-300 flex items-center gap-2">
+              <div className="mt-4 p-3 rounded-xl bg-red-950/30 border border-red-500/40 text-xs text-red-300 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                 <span>{fileError}</span>
               </div>
@@ -435,7 +492,7 @@ export const FinalCTA: React.FC = () => {
 
             {/* Selected File Overview & Trigger Action */}
             {selectedFile && !fileError && (
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-indigo-500/40 flex items-center justify-between gap-3">
+              <div className="mt-4 p-3.5 rounded-xl bg-[#090f23] border border-indigo-500/40 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 truncate">
                   <div className="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
@@ -450,7 +507,11 @@ export const FinalCTA: React.FC = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={handleRemoveFile}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile();
+                    }}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                     title="Remove file"
                   >
@@ -458,7 +519,10 @@ export const FinalCTA: React.FC = () => {
                   </button>
 
                   <Button
-                    onClick={handleStartUpload}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartUpload();
+                    }}
                     variant="glow"
                     size="sm"
                     className="font-bold shadow-glow text-xs px-4"
@@ -469,32 +533,36 @@ export const FinalCTA: React.FC = () => {
               </div>
             )}
 
-            {/* Card Footer Format Guidelines (Stacked on bottom left, matching Reference Image 1) */}
-            <div className="pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-              <div className="space-y-1 text-left">
-                <div className="text-slate-400">
-                  Supported Formats : <span className="font-semibold text-slate-200">PDF, DOC</span>
-                </div>
-                <div className="text-slate-400">
-                  Maximum file size : <span className="font-semibold text-slate-200">2 MB</span>
-                </div>
+            {/* Subtle horizontal separator line */}
+            <div className="mt-6 w-full h-px bg-[rgba(110,125,160,0.18)]" />
+
+            {/* Format guidelines aligned to the left matching Image 2 */}
+            <div className="pt-4 space-y-1 text-left text-[13.5px]">
+              <div className="text-[#7E8B9F]">
+                Supported Formats : <span className="font-bold text-[#F5F6FA]">PDF, DOC</span>
+              </div>
+              <div className="text-[#7E8B9F]">
+                Maximum file size : <span className="font-bold text-[#F5F6FA]">2 MB</span>
               </div>
 
               {/* Quick Link to Dashboard for Authenticated Candidates */}
-              {isAuthenticated && (
-                <button
-                  onClick={() => setCurrentState('dashboard')}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium transition-colors sm:text-right"
-                >
-                  View saved resumes ({resumes.length}) →
-                </button>
+              {isAuthenticated && resumes.length > 0 && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentState('dashboard')}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium transition-colors"
+                  >
+                    View saved resumes ({resumes.length}) →
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>
         )}
 
         {/* ------------------------------------------------------------------
-            STAGE 2: REAL UPLOAD & BACKEND PROCESSING (Images 2 & 5)
+            STAGE 2: REAL UPLOAD & BACKEND PROCESSING
         ------------------------------------------------------------------- */}
         {currentState === 'processing' && (
           <motion.div
@@ -502,10 +570,15 @@ export const FinalCTA: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3 }}
-            className="rounded-[28px] border border-indigo-500/40 bg-[#060a18]/95 backdrop-blur-2xl p-8 sm:p-10 w-full max-w-[620px] mx-auto shadow-2xl space-y-6 relative overflow-hidden"
+            className="mt-12 sm:mt-14 rounded-[20px] p-7 sm:p-8 w-full max-w-[570px] mx-auto shadow-2xl space-y-6 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(180deg, rgba(20, 27, 46, 0.85) 0%, rgba(7, 11, 23, 0.98) 100%)',
+              border: '1px solid rgba(110, 125, 160, 0.28)',
+              boxShadow: '0 0 0 1px rgba(110, 125, 160, 0.05), 0 20px 50px rgba(0, 0, 0, 0.35)',
+            }}
           >
-            {/* Top glowing edge */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+            {/* Top shining edge */}
+            <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-[1.5px] bg-gradient-to-r from-transparent via-white/75 to-transparent" />
 
             {/* Header: Uploading "Resume" */}
             <div className="text-left space-y-1">

@@ -57,10 +57,10 @@ export const PublicNavbar: React.FC = () => {
         isScrolled
           ? 'bg-[#040711]/95 backdrop-blur-2xl border-b border-indigo-500/20 shadow-2xl py-3'
           : 'bg-[#040711]/60 backdrop-blur-xl border-b border-white/[0.06] py-3.5'
-      } px-4 sm:px-6 lg:px-8`}
+      } px-4 sm:px-6 lg:px-8 xl:px-10 box-border`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 lg:gap-5">
-        {/* Brand Logo */}
+      <div className="w-full max-w-[1536px] mx-auto flex items-center justify-between gap-3 lg:gap-4 xl:gap-6 box-border">
+        {/* Brand Logo — Positioned naturally on the left without artificial offsets */}
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group select-none shrink-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] transition-all shrink-0">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" />
@@ -79,54 +79,54 @@ export const PublicNavbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation Links — Strictly One-Line Labels with Responsive Spacing */}
-        <nav className="hidden lg:flex items-center gap-2 xl:gap-5 text-xs xl:text-[13px] font-semibold text-slate-300">
+        {/* Desktop Navigation Links — Centered, flexible width, balanced spacing */}
+        <nav className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-1 lg:gap-1.5 xl:gap-3 2xl:gap-5 text-xs xl:text-[13px] font-semibold text-slate-300 px-1 xl:px-3">
           <button
             type="button"
             onClick={() => scrollToSection('hero')}
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             Home
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('students')}
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             For Students
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('recruiters')}
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             For Recruiters
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('how-it-works')}
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             How It Works
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('pipeline-story')}
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             AI Pipeline
           </button>
           <Link
             to="/candidate/jobs"
             data-cursor-label="Explore"
-            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200"
           >
             Explore Jobs
           </Link>
         </nav>
 
-        {/* Right CTA / Role Switcher Actions */}
-        <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+        {/* Right CTA / Role Switcher Actions — Sits on the right with flex-shrink: 0, completely visible */}
+        <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 2xl:gap-3 shrink-0">
           {/* Persona selector with neutral initial state */}
           <RoleSwitcher defaultNeutral={true} />
 
@@ -147,7 +147,7 @@ export const PublicNavbar: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="whitespace-nowrap text-slate-300 hover:text-white font-medium text-xs px-3"
+                  className="whitespace-nowrap text-slate-300 hover:text-white font-medium text-xs px-2.5 xl:px-3"
                 >
                   Login
                 </Button>
@@ -156,7 +156,7 @@ export const PublicNavbar: React.FC = () => {
                 <Button
                   variant="glow"
                   size="sm"
-                  className="whitespace-nowrap shadow-glow font-bold text-xs px-3.5"
+                  className="whitespace-nowrap shadow-glow font-bold text-xs px-3 xl:px-3.5 shrink-0"
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                 >
                   Get Started
@@ -166,8 +166,20 @@ export const PublicNavbar: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger Button */}
-        <div className="flex items-center gap-2 lg:hidden">
+        {/* Mobile & Tablet Header Controls (< 1024px) */}
+        <div className="flex items-center gap-2.5 lg:hidden">
+          {!isAuthenticated && (
+            <Link to="/register" className="hidden sm:inline-flex shrink-0">
+              <Button
+                variant="glow"
+                size="sm"
+                className="whitespace-nowrap shadow-glow font-bold text-xs px-3"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+              >
+                Get Started
+              </Button>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
