@@ -5257,7 +5257,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 gap-4">
         <RefreshCw className="w-10 h-10 text-indigo-500 animate-spin" />
-        <span className="text-sm font-bold text-slate-300">Loading CareerZenith Resume Builder...</span>
+        <span className="text-sm font-bold text-slate-300">Loading AI ATS Resume Builder...</span>
       </div>
     );
   }

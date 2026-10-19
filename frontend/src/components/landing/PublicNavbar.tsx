@@ -55,79 +55,87 @@ export const PublicNavbar: React.FC = () => {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`sticky top-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-[#040711]/90 backdrop-blur-2xl border-b border-indigo-500/20 shadow-2xl py-3'
-          : 'bg-[#040711]/50 backdrop-blur-xl border-b border-white/[0.06] py-4'
+          ? 'bg-[#040711]/95 backdrop-blur-2xl border-b border-indigo-500/20 shadow-2xl py-3'
+          : 'bg-[#040711]/60 backdrop-blur-xl border-b border-white/[0.06] py-3.5'
       } px-4 sm:px-6 lg:px-8`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 lg:gap-5">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-glow group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group select-none shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] transition-all shrink-0">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-display font-black text-lg tracking-tight text-white flex items-center gap-1.5">
-              AI ATS
-              <span className="text-[9px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                PRO
-              </span>
+          <div className="flex items-center gap-1.5 font-space tracking-tight">
+            <span className="text-xl sm:text-[1.35rem] font-extrabold text-white tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+              AI
+            </span>
+            <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-violet-400/80 inline-block align-middle" />
+            <span className="text-xl sm:text-[1.35rem] font-extrabold bg-gradient-to-r from-violet-300 via-indigo-200 to-fuchsia-300 bg-clip-text text-transparent tracking-wide">
+              ATS
+            </span>
+            <span className="ml-1 text-[8.5px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/35 shadow-sm">
+              PRO
             </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-300">
+        {/* Desktop Navigation Links — Strictly One-Line Labels with Responsive Spacing */}
+        <nav className="hidden lg:flex items-center gap-2 xl:gap-5 text-xs xl:text-[13px] font-semibold text-slate-300">
           <button
             type="button"
             onClick={() => scrollToSection('hero')}
-            className="hover:text-white transition-colors cursor-pointer"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             Home
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('students')}
-            className="hover:text-white transition-colors cursor-pointer text-indigo-300 hover:text-indigo-200"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             For Students
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('recruiters')}
-            className="hover:text-white transition-colors cursor-pointer text-purple-300 hover:text-purple-200"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             For Recruiters
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('how-it-works')}
-            className="hover:text-white transition-colors cursor-pointer"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             How It Works
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('pipeline-story')}
-            className="hover:text-white transition-colors cursor-pointer text-slate-400 hover:text-slate-200"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
           >
             AI Pipeline
           </button>
-          <Link to="/candidate/jobs" data-cursor-label="Explore" className="hover:text-white transition-colors">
+          <Link
+            to="/candidate/jobs"
+            data-cursor-label="Explore"
+            className="whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+          >
             Explore Jobs
           </Link>
         </nav>
 
         {/* Right CTA / Role Switcher Actions */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Always available persona selector */}
-          <RoleSwitcher />
+        <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+          {/* Persona selector with neutral initial state */}
+          <RoleSwitcher defaultNeutral={true} />
 
           {isAuthenticated && user ? (
-            <Link to={getDashboardPath()}>
+            <Link to={getDashboardPath()} className="shrink-0">
               <Button
                 variant="glow"
                 size="sm"
-                className="font-bold shadow-glow"
+                className="whitespace-nowrap font-bold shadow-glow text-xs"
                 rightIcon={<LayoutDashboard className="w-3.5 h-3.5" />}
               >
                 Open Portal ({role})
@@ -135,16 +143,20 @@ export const PublicNavbar: React.FC = () => {
             </Link>
           ) : (
             <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white font-medium">
+              <Link to="/login" className="shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="whitespace-nowrap text-slate-300 hover:text-white font-medium text-xs px-3"
+                >
                   Login
                 </Button>
               </Link>
-              <Link to="/register" data-cursor-label="Start">
+              <Link to="/register" data-cursor-label="Start" className="shrink-0">
                 <Button
                   variant="glow"
                   size="sm"
-                  className="shadow-glow font-bold"
+                  className="whitespace-nowrap shadow-glow font-bold text-xs px-3.5"
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                 >
                   Get Started
@@ -175,48 +187,48 @@ export const PublicNavbar: React.FC = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="lg:hidden overflow-hidden bg-[#0a0f1d]/95 backdrop-blur-2xl border-b border-indigo-500/20 px-4 py-6 mt-3 rounded-2xl space-y-4 shadow-2xl"
+            className="lg:hidden overflow-hidden bg-[#0a0f1d]/95 backdrop-blur-2xl border-b border-indigo-500/20 px-4 py-5 mt-3 rounded-2xl space-y-4 shadow-2xl"
           >
-            <div className="flex flex-col space-y-2 text-xs font-bold text-slate-300">
+            <div className="flex flex-col space-y-1.5 text-xs font-semibold text-slate-300">
               <button
                 type="button"
                 onClick={() => scrollToSection('hero')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white"
+                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
                 Home
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('students')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 text-indigo-300 hover:text-indigo-200"
+                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
-                For Students & Job Seekers
+                For Students
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('recruiters')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 text-purple-300 hover:text-purple-200"
+                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
-                For Recruiters & Hiring Teams
+                For Recruiters
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('how-it-works')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white"
+                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
                 How It Works
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('pipeline-story')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white"
+                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
-                Live AI Transformation Pipeline
+                AI Pipeline
               </button>
               <Link
                 to="/candidate/jobs"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white"
+                className="px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
               >
                 Explore Jobs
               </Link>
@@ -224,7 +236,7 @@ export const PublicNavbar: React.FC = () => {
 
             <div className="pt-4 border-t border-white/10 flex flex-col gap-2.5">
               <div className="flex justify-center pb-2">
-                <RoleSwitcher />
+                <RoleSwitcher defaultNeutral={true} />
               </div>
               {isAuthenticated && user ? (
                 <Link to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)}>
@@ -233,18 +245,18 @@ export const PublicNavbar: React.FC = () => {
                   </Button>
                 </Link>
               ) : (
-                <>
+                <div className="grid grid-cols-2 gap-2">
                   <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="secondary" size="md" className="w-full">
+                    <Button variant="secondary" size="md" className="w-full text-xs">
                       Login
                     </Button>
                   </Link>
                   <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="glow" size="md" className="w-full">
-                      Get Started Free
+                    <Button variant="glow" size="md" className="w-full text-xs">
+                      Get Started
                     </Button>
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </motion.div>

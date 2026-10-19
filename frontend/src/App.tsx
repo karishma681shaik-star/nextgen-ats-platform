@@ -10,10 +10,10 @@ import { ActionSuccessOverlay } from './components/feedback/ActionSuccessOverlay
 export function App() {
   return (
     <BrowserRouter>
-      {/* ── Single Persistent Global NEXUS 3D AI Universe ── */}
-      <BackgroundController />
       <AuthProvider>
         <ToastProvider>
+          {/* ── Single Persistent Global NEXUS 3D AI Universe ── */}
+          <BackgroundController />
           <ActionSuccessOverlay />
           <AppRoutes />
         </ToastProvider>

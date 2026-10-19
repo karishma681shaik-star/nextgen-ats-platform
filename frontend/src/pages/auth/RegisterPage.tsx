@@ -92,9 +92,17 @@ export const RegisterPage: React.FC = () => {
         message: `Welcome to AI ATS Platform, ${newUser.name}.`,
       });
 
-      if (role === 'candidate') navigate('/candidate');
-      else if (role === 'recruiter') navigate('/recruiter');
-      else navigate('/');
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get('redirect');
+      if (redirectParam) {
+        navigate(redirectParam, { replace: true });
+      } else if (role === 'candidate') {
+        navigate('/candidate', { replace: true });
+      } else if (role === 'recruiter') {
+        navigate('/recruiter', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err: any) {
       showToast({
         type: 'error',

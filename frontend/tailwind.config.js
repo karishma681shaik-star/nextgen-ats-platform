@@ -44,6 +44,7 @@ export default {
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['Outfit', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        space: ['"Space Grotesk"', 'Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
         serif: ['Tinos', '"Times New Roman"', 'Times', 'Georgia', 'serif'],
         garamond: ['"EB Garamond"', 'Garamond', 'Georgia', 'serif'],

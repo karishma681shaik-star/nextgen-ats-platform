@@ -158,9 +158,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
       // Trigger cinematic dashboard entrance animation for authenticated session
       sessionStorage.setItem(`ai_ats_play_intro_${loggedUser.role}`, 'true');
 
-      const destination = (location.state as any)?.from?.pathname;
-      if (destination && destination.startsWith(portalConfig.dashboardPath)) {
-        navigate(destination, { replace: true });
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get('redirect');
+      const stateDestination = (location.state as any)?.from?.pathname;
+      const targetDestination = redirectParam || stateDestination;
+
+      if (targetDestination) {
+        navigate(targetDestination, { replace: true });
       } else {
         navigate(portalConfig.dashboardPath, { replace: true });
       }

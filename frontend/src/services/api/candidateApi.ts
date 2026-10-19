@@ -104,12 +104,13 @@ export const candidateApi = {
     return apiClient<Resume[]>('/resumes');
   },
 
-  async uploadResume(file: File): Promise<Resume> {
+  async uploadResume(file: File, options: RequestInit = {}): Promise<Resume> {
     const formData = new FormData();
     formData.append('file', file);
     return apiClient<Resume>('/resumes/upload', {
       method: 'POST',
       body: formData,
+      ...options,
     });
   },
 

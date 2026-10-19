@@ -3,15 +3,14 @@ import { ThreeDHero } from '../../components/landing/ThreeDHero';
 import { ResumeTransformationStory } from '../../components/landing/ResumeTransformationStory';
 import { StudentFeaturesSection } from '../../components/landing/StudentFeaturesSection';
 import { RecruiterFeaturesSection } from '../../components/landing/RecruiterFeaturesSection';
-import { HowItWorksSection } from '../../components/landing/HowItWorksSection';
-import { StatsSection } from '../../components/landing/StatsSection';
+import { MovingCompanyLogoStrip } from '../../components/landing/MovingCompanyLogoStrip';
 import { FAQ } from '../../components/landing/FAQ';
 import { FinalCTA } from '../../components/landing/FinalCTA';
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="overflow-x-hidden space-y-0">
-      {/* 1. Cinematic Hero Section — Headline, Floating Resume & Real-Time AI Scan */}
+    <div className="[overflow-x:clip] space-y-0">
+      {/* 1. Cinematic Hero Section — Headline & Diagonally Rotated Resume */}
       <ThreeDHero />
 
       {/* 2. Interactive Scroll-Driven AI Transformation Pipeline Story */}
@@ -23,16 +22,16 @@ export const LandingPage: React.FC = () => {
       {/* 4. For Recruiters & Talent Teams — 4 Cards with Realistic Mini Dashboards */}
       <RecruiterFeaturesSection />
 
-      {/* 5. How It Works — 01 to 06 Visual Process Journey */}
-      <HowItWorksSection />
+      {/* 5. Continuously moving horizontal company logo marquee & animated roles */}
+      <MovingCompanyLogoStrip />
 
-      {/* 6. Platform Benchmark Stats & FAQ */}
-      <StatsSection />
+      {/* 7. FAQ Section (Note: Four-metric benchmark StatsSection has been cleanly removed) */}
       <FAQ />
 
-      {/* 7. Final High-Impact Conversion CTA */}
+      {/* 8. Final High-Impact Conversion CTA */}
       <FinalCTA />
     </div>
   );
 };
 
+export default LandingPage;

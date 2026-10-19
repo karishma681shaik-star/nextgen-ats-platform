@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   Sparkles,
@@ -8,13 +8,9 @@ import {
   CheckCircle2,
   Cpu,
   Target,
-  Search,
-  Bot
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { FloatingResume } from '../ui/FloatingResume';
-import { ParallaxLayer } from '../ui/ParallaxLayer';
-import { ParticleBackground } from '../ui/ParticleBackground';
+import { DiagonallyRotatedHeroResume } from './DiagonallyRotatedHeroResume';
 import { KineticTelemetryTicker } from './KineticTelemetryTicker';
 
 const ROTATING_WORDS = [
@@ -56,13 +52,7 @@ const WordRotator: React.FC = () => {
 
 export const ThreeDHero: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const { scrollY } = useScroll();
-
-  // Scroll mapping for interactive 3D rotation of the resume on scroll
-  const resumeRotateY = useTransform(scrollY, [0, 500], [0, 20]);
-  const resumeRotateX = useTransform(scrollY, [0, 500], [0, -10]);
-  const resumeTranslateZ = useTransform(scrollY, [0, 500], [0, 50]);
+  const [, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!heroRef.current) return;
@@ -206,22 +196,9 @@ export const ThreeDHero: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Right Column: Floating 3D Resume (5 Columns) */}
-        <div className="lg:col-span-5 relative flex justify-center items-center">
-          {/* Subtle parallax wrapper around the resume container */}
-          <ParallaxLayer speed={0.06} className="w-full">
-            <motion.div
-              style={{
-                rotateY: resumeRotateY,
-                rotateX: resumeRotateX,
-                z: resumeTranslateZ,
-                transformStyle: 'preserve-3d',
-              }}
-              className="w-full"
-            >
-              <FloatingResume activeStep={0} interactive={true} />
-            </motion.div>
-          </ParallaxLayer>
+        {/* Right Column: Diagonally Rotated Resume & Company Marquee (5 Columns) */}
+        <div className="lg:col-span-5 relative flex flex-col justify-center items-center">
+          <DiagonallyRotatedHeroResume />
         </div>
       </div>
 
@@ -236,4 +213,5 @@ export const ThreeDHero: React.FC = () => {
     </section>
   );
 };
+
 export default ThreeDHero;

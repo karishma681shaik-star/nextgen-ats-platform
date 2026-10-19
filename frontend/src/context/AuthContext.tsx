@@ -390,13 +390,23 @@ export const AuthProvider: React.FC<{
  * ---------------------------------------------------------
  */
 export const useAuth = () => {
-
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      'useAuth must be used within an AuthProvider'
-    );
+    return {
+      user: null,
+      role: 'candidate' as Role,
+      isAuthenticated: false,
+      isLoading: false,
+      login: async () => { throw new Error('AuthProvider not mounted'); },
+      adminLogin: async () => { throw new Error('AuthProvider not mounted'); },
+      register: async () => { throw new Error('AuthProvider not mounted'); },
+      logout: async () => {},
+      switchRole: async () => { throw new Error('AuthProvider not mounted'); },
+      refreshUser: async () => {},
+      updateAvatar: async () => {},
+      updateProfile: async () => { throw new Error('AuthProvider not mounted'); },
+    };
   }
 
   return context;
