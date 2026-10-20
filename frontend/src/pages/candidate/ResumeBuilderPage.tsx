@@ -85,6 +85,26 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { ReportIssue } from '../../components/common/ReportIssue';
 import { cn } from '../../utils/cn';
 import { formatSalaryRange } from '../../utils/formatters';
+import {
+  isMeaningfulText,
+  isPlaceholderText,
+  cleanMeaningfulText,
+  hasMeaningfulContent,
+  filterMeaningfulExperience,
+  hasMeaningfulExperience,
+  filterMeaningfulEducation,
+  hasMeaningfulEducation,
+  filterMeaningfulProjects,
+  hasMeaningfulProjects,
+  getMeaningfulSkillCategories,
+  hasMeaningfulSkills,
+  filterMeaningfulCertifications,
+  hasMeaningfulCertifications,
+  filterMeaningfulAwards,
+  hasMeaningfulAwards,
+  hasMeaningfulCustomSection,
+  hasMeaningfulSummary
+} from '../../utils/resumeSectionVisibility';
 
 // Spacing & Typography Configuration
 interface SpacingConfig {
@@ -471,7 +491,7 @@ export const DirectEditableText: React.FC<DirectEditableTextProps> = ({
 
   // In Preview Mode:
   if (viewMode === 'preview') {
-    if (!hasValue) return null;
+    if (!hasValue || !isMeaningfulText(value)) return null;
     const Tag = tag;
     return (
       <Tag className={className} style={style}>
@@ -12569,23 +12589,31 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     'custom'
                   ];
 
-                  const activeOrderedSections = sectionOrder.filter((id) =>
-                    resumeData.activeSections.includes(id)
-                  );
+                  const activeOrderedSections = sectionOrder
+                    .filter((id) => resumeData.activeSections.includes(id))
+                    .filter((id) => !isPreview || hasMeaningfulContent(id, resumeData));
 
                   const estimateSectionHeight = (secId: string): number => {
                     const sectionGap = parseInt(resumeData.spacing?.sectionGap || '12', 10) || 12;
                     const itemGap = parseInt(resumeData.spacing?.itemGap || '6', 10) || 6;
 
+                    if (isPreview && !hasMeaningfulContent(secId, resumeData)) {
+                      return 0;
+                    }
+
                     if (secId === 'summary') {
-                      const text = resumeData.summary?.trim() || '';
+                      const text = isPreview
+                        ? (cleanMeaningfulText(resumeData.summary) || '')
+                        : (resumeData.summary?.trim() || '');
                       if (!text) return 0;
                       const lines = Math.max(1, Math.ceil(text.length / 95));
                       return sectionGap + 22 + lines * 16;
                     }
 
                     if (secId === 'experience') {
-                      const items = (resumeData.experience || []).filter((e) => e.visible !== false);
+                      const items = isPreview
+                        ? filterMeaningfulExperience(resumeData.experience)
+                        : (resumeData.experience || []).filter((e) => e.visible !== false);
                       if (items.length === 0) return 0;
                       return (
                         sectionGap +
@@ -12599,7 +12627,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     }
 
                     if (secId === 'education') {
-                      const items = (resumeData.education || []).filter((edu) => edu.visible !== false);
+                      const items = isPreview
+                        ? filterMeaningfulEducation(resumeData.education)
+                        : (resumeData.education || []).filter((edu) => edu.visible !== false);
                       if (items.length === 0) return 0;
                       if (isBulky) {
                         return sectionGap + 24 + (items.length + 1) * 24;
@@ -12615,7 +12645,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     }
 
                     if (secId === 'projects') {
-                      const items = (resumeData.projects || []).filter((p) => p.visible !== false);
+                      const items = isPreview
+                        ? filterMeaningfulProjects(resumeData.projects)
+                        : (resumeData.projects || []).filter((p) => p.visible !== false);
                       if (items.length === 0) return 0;
                       return (
                         sectionGap +
@@ -12629,6 +12661,12 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     }
 
                     if (secId === 'skills') {
+                      if (isPreview) {
+                        const { standard, custom } = getMeaningfulSkillCategories(resumeData.skills);
+                        const totalRows = standard.length + custom.length;
+                        if (totalRows === 0) return 0;
+                        return sectionGap + 22 + totalRows * 20;
+                      }
                       let filledCount = 0;
                       if (resumeData.skills?.programmingLanguages?.trim()) filledCount++;
                       if (resumeData.skills?.frameworksLibraries?.trim()) filledCount++;
@@ -12644,7 +12682,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     }
 
                     if (secId === 'certifications') {
-                      const items = (resumeData.certifications || []).filter((c: any) => c.visible !== false);
+                      const items = isPreview
+                        ? filterMeaningfulCertifications(resumeData.certifications)
+                        : (resumeData.certifications || []).filter((c: any) => c.visible !== false);
                       if (items.length === 0) return 0;
                       return (
                         sectionGap +
@@ -12657,19 +12697,23 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     }
 
                     if (secId === 'awards') {
-                      const items = (resumeData.awards || []).filter((a: any) => a.visible !== false);
+                      const items = isPreview
+                        ? filterMeaningfulAwards(resumeData.awards)
+                        : (resumeData.awards || []).filter((a: any) => a.visible !== false);
                       if (items.length === 0) return 0;
                       return sectionGap + 22 + items.length * 20;
                     }
 
                     if (secId === 'custom') {
-                      const content = resumeData.customSection?.content?.trim() || '';
+                      const content = isPreview
+                        ? (cleanMeaningfulText(resumeData.customSection?.content) || '')
+                        : (resumeData.customSection?.content?.trim() || '');
                       if (!content && isPreview) return 0;
                       const lines = Math.max(1, Math.ceil(content.length / 90));
                       return sectionGap + 22 + lines * 16;
                     }
 
-                    return sectionGap + 40;
+                    return isPreview ? 0 : sectionGap + 40;
                   };
 
                   const headerHeight = (() => {
@@ -12805,13 +12849,13 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       fullName = '';
                     }
 
-                    const isNameFilled = Boolean(fullName && fullName.trim());
+                    const isNameFilled = Boolean(fullName && fullName.trim() && isMeaningfulText(fullName));
 
                     let headline = resumeData.headline?.trim() || '';
                     if (!isNameFilled && headline.toLowerCase().includes('senior full stack & cloud application engineer')) {
                       headline = '';
                     }
-                    const isHeadlineFilled = Boolean(headline && headline.trim());
+                    const isHeadlineFilled = Boolean(headline && headline.trim() && isMeaningfulText(headline));
 
                     let phone = resumeData.phone?.trim() || '';
                     if (!isNameFilled && (phone === '+1 (555) 234-5678' || phone.includes('234-5678'))) {
@@ -12828,8 +12872,12 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       locationText = '';
                     }
 
+                    const isPhoneFilled = Boolean(phone && isMeaningfulText(phone));
+                    const isEmailFilled = Boolean(email && isMeaningfulText(email));
+                    const isLocationFilled = Boolean(locationText && isMeaningfulText(locationText));
+
                     const validSocialLinks = (resumeData.socialLinks || []).filter(
-                      (l) => l.url && l.url.trim().length > 0
+                      (l) => l.url && isMeaningfulText(l.url)
                     );
 
                     const handleUpdatePersonalInfoField = (field: string, val: string) => {
@@ -12928,7 +12976,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         )}
 
                         {/* Contact Information Row (Images 1, 2, 3 Match) */}
-                        {(phone || email || locationText || validSocialLinks.length > 0 || !isPreview) && (
+                        {((isPreview ? (isPhoneFilled || isEmailFilled || isLocationFilled || validSocialLinks.length > 0) : (phone || email || locationText || validSocialLinks.length > 0)) || !isPreview) && (
                           <div
                             className={cn(
                               "flex flex-wrap items-center justify-center text-[12px] font-medium mt-1.5 font-serif text-black",
@@ -12937,7 +12985,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             style={{ color: '#000000', fontWeight: 500 }}
                           >
                             {/* Phone (No icon for Bulky per Image 3, with icon for Low/Medium per Images 1 & 2) */}
-                            {(phone || !isPreview) && (
+                            {((isPreview ? isPhoneFilled : phone) || !isPreview) && (
                               <span className="inline-flex items-center gap-1.5">
                                 {!isBulky && (
                                   <svg className={cn("w-3.5 h-3.5 shrink-0 inline", phone ? "fill-black text-black" : "fill-[#64748b] text-[#64748b]")} viewBox="0 0 24 24">
@@ -12966,12 +13014,12 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             )}
 
                             {/* Bulky separator after phone */}
-                            {isBulky && (phone || !isPreview) && (email || locationText || validSocialLinks.length > 0 || !isPreview) && (
+                            {isBulky && ((isPreview ? isPhoneFilled : phone) || !isPreview) && ((isPreview ? (isEmailFilled || isLocationFilled || validSocialLinks.length > 0) : (email || locationText || validSocialLinks.length > 0)) || !isPreview) && (
                               <span className="text-black font-normal px-2.5 select-none">|</span>
                             )}
 
                             {/* Email */}
-                            {(email || !isPreview) && (
+                            {((isPreview ? isEmailFilled : email) || !isPreview) && (
                               <span className="inline-flex items-center gap-1.5">
                                 <svg
                                   className={cn("w-3.5 h-3.5 shrink-0 inline", email ? "stroke-black text-black" : "stroke-[#64748b] text-[#64748b]")}
@@ -13074,24 +13122,33 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             })}
 
                             {/* Bulky separator before location */}
-                            {isBulky && (locationText || !isPreview) && (email || phone || validSocialLinks.length > 0 || !isPreview) && (
+                            {isBulky && ((isPreview ? isLocationFilled : locationText) || !isPreview) && ((isPreview ? (isEmailFilled || isPhoneFilled || validSocialLinks.length > 0) : (email || phone || validSocialLinks.length > 0)) || !isPreview) && (
                               <span className="text-black font-normal px-2.5 select-none">|</span>
                             )}
 
                             {/* Location */}
-                            {(locationText || !isPreview) && (
+                            {((isPreview ? isLocationFilled : locationText) || !isPreview) && (
                               <span className="inline-flex items-center gap-1.5">
                                 <svg className={cn("w-3.5 h-3.5 shrink-0 inline", locationText ? "fill-black text-black" : "fill-[#64748b] text-[#64748b]")} viewBox="0 0 24 24">
                                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                                 </svg>
-                                <DirectEditableText
-                                  value={locationText}
-                                  placeholder="[City, State/Country]"
-                                  onChange={(val) => handleUpdatePersonalInfoField('city', val)}
-                                  viewMode={viewMode}
-                                  className={locationText ? "text-black font-medium" : "text-[#64748b] font-medium"}
-                                  style={{ color: locationText ? '#000000' : '#64748b', fontWeight: 500 }}
-                                />
+                                {isPreview && locationText ? (
+                                  <span
+                                    className="text-black font-medium"
+                                    style={{ color: '#000000', fontWeight: 500 }}
+                                  >
+                                    {locationText}
+                                  </span>
+                                ) : (
+                                  <DirectEditableText
+                                    value={locationText}
+                                    placeholder="[City, State/Country]"
+                                    onChange={(val) => handleUpdatePersonalInfoField('city', val)}
+                                    viewMode={viewMode}
+                                    className={locationText ? "text-black font-medium" : "text-[#64748b] font-medium"}
+                                    style={{ color: locationText ? '#000000' : '#64748b', fontWeight: 500 }}
+                                  />
+                                )}
                               </span>
                             )}
                           </div>
@@ -13102,8 +13159,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                   // Helper to render markdown bold (**text** or <b>text</b>), italic (*text* or <i>text</i>), and bullets
                   const renderFormattedContent = (content: string | undefined, defaultText?: string, isParagraphOnly: boolean = false) => {
-                    let raw = content?.trim() ? content : defaultText;
-                    if (!raw) return null;
+                    if (isPreview && (!content || !isMeaningfulText(content))) return null;
+                    let raw = content?.trim() ? content : (isPreview ? '' : defaultText);
+                    if (!raw || (isPreview && !isMeaningfulText(raw))) return null;
 
                     if (isParagraphOnly) {
                       raw = raw.replace(/^[•\-*]\s*/, '').trim();
@@ -13317,8 +13375,16 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                   const renderSection = (sectionId: string) => {
                     const isPreview = viewMode === 'preview';
 
+                    // Reusable global check: if preview mode and section has no genuine user content, omit completely
+                    if (isPreview && !hasMeaningfulContent(sectionId, resumeData)) {
+                      return null;
+                    }
+
                     // 1. PROFESSIONAL SUMMARY (Image 1, 2, 3, 4 Match)
                     if (sectionId === 'summary') {
+                      if (isPreview && !hasMeaningfulSummary(resumeData.summary)) {
+                        return null;
+                      }
                       const hasSummary = Boolean(resumeData.summary?.trim());
 
                       return (
@@ -13337,7 +13403,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             PROFESSIONAL SUMMARY
                           </h2>
                           {isPreview ? (
-                            hasSummary ? renderFormattedContent(resumeData.summary, undefined, true) : null
+                            renderFormattedContent(resumeData.summary, undefined, true)
                           ) : (
                             <DirectEditableText
                               value={resumeData.summary}
@@ -13356,7 +13422,17 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 2. WORK EXPERIENCE (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'experience') {
-                      const visibleExperience = (resumeData.experience || []).filter((exp) => exp.visible !== false);
+                      if (isPreview && !hasMeaningfulExperience(resumeData.experience)) {
+                        return null;
+                      }
+
+                      const visibleExperience = isPreview
+                        ? filterMeaningfulExperience(resumeData.experience)
+                        : (resumeData.experience || []).filter((exp) => exp.visible !== false);
+
+                      if (isPreview && visibleExperience.length === 0) {
+                        return null;
+                      }
 
                       return (
                         <section key="experience" style={{ marginTop: resumeData.spacing.sectionGap }}>
@@ -13390,7 +13466,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           className="font-bold text-black text-[13.5px]"
                                           style={{ color: '#000000', fontWeight: 750 }}
                                         />
-                                        {(exp.employmentType || !isPreview) && (
+                                        {((isPreview ? isMeaningfulText(exp.employmentType) : exp.employmentType) || !isPreview) && (
                                           <span className="text-black font-semibold text-[12.5px]" style={{ color: '#000000', fontWeight: 600 }}>
                                             {' '}| <DirectEditableText
                                               value={exp.employmentType}
@@ -13403,9 +13479,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           </span>
                                         )}
                                       </div>
-                                      {(exp.startDate || !isPreview) && (
+                                      {((isPreview ? (isMeaningfulText(exp.startDate) || isMeaningfulText(exp.endDate)) : exp.startDate) || !isPreview) && (
                                         <DirectEditableText
-                                          value={exp.startDate ? `${exp.startDate} - ${exp.endDate || 'Present'}` : ''}
+                                          value={exp.startDate ? `${exp.startDate} - ${exp.endDate || (exp.current ? 'Present' : '')}` : (exp.endDate || '')}
                                           placeholder="[Mention work tenure]"
                                           onChange={(val) => handleUpdateExpField(exp.id, 'startDate', val)}
                                           viewMode={viewMode}
@@ -13414,7 +13490,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         />
                                       )}
                                     </div>
-                                    {(exp.company || exp.location || exp.locationType || !isPreview) && (
+                                    {((isPreview ? (isMeaningfulText(exp.company) || isMeaningfulText(exp.location) || isMeaningfulText(exp.locationType)) : (exp.company || exp.location || exp.locationType)) || !isPreview) && (
                                       <div className="flex justify-between items-baseline text-[12.5px] italic text-black font-semibold leading-tight mt-0.5" style={{ fontWeight: 600 }}>
                                         <DirectEditableText
                                           value={exp.company}
@@ -13432,7 +13508,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         />
                                       </div>
                                     )}
-                                    {(exp.description || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(exp.description) : exp.description) || !isPreview) && (
                                       <div className="mt-1">
                                         {isPreview ? (
                                           renderFormattedContent(exp.description)
@@ -13449,7 +13525,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         )}
                                       </div>
                                     )}
-                                    {(exp.technologies || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(exp.technologies) : exp.technologies) || !isPreview) && (
                                       <p className="text-[12px] text-black font-medium mt-0.5 font-serif" style={{ color: '#000000', fontWeight: 500 }}>
                                         <strong className="font-bold italic text-black" style={{ color: '#000000', fontWeight: 800 }}>Technologies / Skills Used :</strong>{' '}
                                         <DirectEditableText
@@ -13533,7 +13609,17 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 3. EDUCATION (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'education') {
-                      const visibleEducation = (resumeData.education || []).filter((edu) => edu.visible !== false);
+                      if (isPreview && !hasMeaningfulEducation(resumeData.education)) {
+                        return null;
+                      }
+
+                      const visibleEducation = isPreview
+                        ? filterMeaningfulEducation(resumeData.education)
+                        : (resumeData.education || []).filter((edu) => edu.visible !== false);
+
+                      if (isPreview && visibleEducation.length === 0) {
+                        return null;
+                      }
 
                       if (isBulky) {
                         return (
@@ -13575,9 +13661,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                       <tr key={edu.id} className="border-b border-black last:border-b-0 hover:bg-slate-50/50 transition-colors">
                                         <td className="border-r border-black py-1 px-2 text-center text-[12px] font-medium align-middle" style={{ color: '#000000', fontWeight: 500 }}>
                                           {isPreview ? (
-                                            edu.startDate && edu.endDate
+                                            isMeaningfulText(edu.startDate) && isMeaningfulText(edu.endDate)
                                               ? `${edu.startDate} - ${edu.endDate}`
-                                              : (edu.endDate || edu.startDate || '')
+                                              : (isMeaningfulText(edu.endDate) ? edu.endDate : (isMeaningfulText(edu.startDate) ? edu.startDate : ''))
                                           ) : (
                                             <DirectEditableText
                                               value={
@@ -13595,7 +13681,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         </td>
                                         <td className="border-r border-black py-1 px-2 text-center text-[12px] font-medium align-middle" style={{ color: '#000000', fontWeight: 500 }}>
                                           {isPreview ? (
-                                            edu.degree + (edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : '')
+                                            (isMeaningfulText(edu.degree) ? edu.degree : '') + (isMeaningfulText(edu.fieldOfStudy) ? ` in ${edu.fieldOfStudy}` : '')
                                           ) : (
                                             <DirectEditableText
                                               value={edu.degree}
@@ -13609,7 +13695,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         </td>
                                         <td className="border-r border-black py-1 px-2 text-center text-[12px] font-medium align-middle" style={{ color: '#000000', fontWeight: 500 }}>
                                           {isPreview ? (
-                                            edu.institution + (edu.location ? ` | ${edu.location}` : '')
+                                            (isMeaningfulText(edu.institution) ? edu.institution : '') + (isMeaningfulText(edu.location) ? ` | ${edu.location}` : '')
                                           ) : (
                                             <DirectEditableText
                                               value={edu.institution}
@@ -13623,7 +13709,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         </td>
                                         <td className="py-1 px-2 text-center text-[12px] font-medium align-middle" style={{ color: '#000000', fontWeight: 500 }}>
                                           {isPreview ? (
-                                            edu.cgpa
+                                            isMeaningfulText(edu.cgpa) ? edu.cgpa : ''
                                           ) : (
                                             <DirectEditableText
                                               value={edu.cgpa}
@@ -13745,7 +13831,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           className="font-bold text-black text-[13.5px]"
                                           style={{ color: '#000000', fontWeight: 750 }}
                                         />
-                                        {(edu.location || edu.city || !isPreview) && (
+                                        {((isPreview ? isMeaningfulText(edu.location || edu.city) : (edu.location || edu.city)) || !isPreview) && (
                                           <span className="text-black font-semibold text-[12.5px]" style={{ color: '#000000', fontWeight: 600 }}>
                                             {' '}| <DirectEditableText
                                               value={edu.location || edu.city}
@@ -13761,7 +13847,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           </span>
                                         )}
                                       </div>
-                                      {((edu.startDate || edu.endDate) || !isPreview) && (
+                                      {((isPreview ? (isMeaningfulText(edu.startDate) || isMeaningfulText(edu.endDate)) : (edu.startDate || edu.endDate)) || !isPreview) && (
                                         <DirectEditableText
                                           value={
                                             edu.startDate && edu.endDate
@@ -13786,13 +13872,13 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           className="italic text-black font-semibold text-[12.5px]"
                                           style={{ color: '#000000', fontWeight: 600 }}
                                         />
-                                        {edu.fieldOfStudy && (
+                                        {((isPreview ? isMeaningfulText(edu.fieldOfStudy) : edu.fieldOfStudy)) && (
                                           <span className="italic text-black font-semibold text-[12.5px]" style={{ color: '#000000', fontWeight: 600 }}>
                                             {' '}in {edu.fieldOfStudy}
                                           </span>
                                         )}
                                       </div>
-                                      {(edu.cgpa || !isPreview) && (
+                                      {((isPreview ? isMeaningfulText(edu.cgpa) : edu.cgpa) || !isPreview) && (
                                         <span className="text-black font-serif text-[12px]" style={{ color: '#000000' }}>
                                           <strong className="font-bold text-black" style={{ color: '#000000', fontWeight: 800 }}>{edu.cgpaLabel || 'CGPA'} :</strong>{' '}
                                           <DirectEditableText
@@ -13806,7 +13892,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         </span>
                                       )}
                                     </div>
-                                    {(edu.description || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(edu.description) : edu.description) || !isPreview) && (
                                       <div className="mt-0.5">
                                         {isPreview ? (
                                           renderFormattedContent(edu.description)
@@ -13889,7 +13975,17 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 4. PROJECTS (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'projects') {
-                      const visibleProjects = (resumeData.projects || []).filter((p) => p.visible !== false);
+                      if (isPreview && !hasMeaningfulProjects(resumeData.projects)) {
+                        return null;
+                      }
+
+                      const visibleProjects = isPreview
+                        ? filterMeaningfulProjects(resumeData.projects)
+                        : (resumeData.projects || []).filter((p) => p.visible !== false);
+
+                      if (isPreview && visibleProjects.length === 0) {
+                        return null;
+                      }
 
                       return (
                         <section key="projects" style={{ marginTop: resumeData.spacing.sectionGap }}>
@@ -13964,7 +14060,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           });
                                         })()}
                                       </div>
-                                      {(p.dates || p.startDate || p.endDate || !isPreview) && (
+                                      {((isPreview ? (isMeaningfulText(p.dates) || isMeaningfulText(p.startDate) || isMeaningfulText(p.endDate)) : (p.dates || p.startDate || p.endDate)) || !isPreview) && (
                                         <DirectEditableText
                                           value={p.dates || (p.startDate && p.endDate ? `${p.startDate} - ${p.endDate}` : (p.endDate || p.startDate || ''))}
                                           placeholder="[Mention project tenure]"
@@ -13975,7 +14071,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         />
                                       )}
                                     </div>
-                                    {(p.role || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(p.role) : p.role) || !isPreview) && (
                                       <div className="text-[12.5px] italic text-black font-semibold leading-tight mt-0.5">
                                         <DirectEditableText
                                           value={p.role}
@@ -13987,7 +14083,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         />
                                       </div>
                                     )}
-                                    {(p.description || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(p.description) : p.description) || !isPreview) && (
                                       <div className="mt-1">
                                         {isPreview ? (
                                           renderFormattedContent(p.description)
@@ -14004,7 +14100,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         )}
                                       </div>
                                     )}
-                                    {(p.technologies || !isPreview) && (
+                                    {((isPreview ? isMeaningfulText(p.technologies) : p.technologies) || !isPreview) && (
                                       <p className="text-[12px] text-black font-medium mt-0.5 font-serif" style={{ color: '#000000', fontWeight: 500 }}>
                                         <strong className="font-bold italic text-black" style={{ color: '#000000', fontWeight: 800 }}>Technologies / Tools Used :</strong>{' '}
                                         <DirectEditableText
@@ -14082,6 +14178,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 5. SKILLS (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'skills') {
+                      if (isPreview && !hasMeaningfulSkills(resumeData.skills)) {
+                        return null;
+                      }
                       const skillPlaceholder = (name: string) => isMedium ? `[Add ${name}]` : `[${name}]`;
 
                       const skillCategories = [
@@ -14094,11 +14193,15 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       ];
 
                       const filledSkillCategories = skillCategories.filter(
-                        (cat) => cat.value && cat.value.trim() && !cat.value.trim().startsWith('[')
+                        (cat) => isMeaningfulText(cat.value)
                       );
                       const customCategories = (resumeData.skills?.customCategories || []).filter(
-                        (cc) => cc.skills && cc.skills.trim() && !cc.skills.trim().startsWith('[')
+                        (cc) => isMeaningfulText(cc.skills)
                       );
+
+                      if (isPreview && filledSkillCategories.length === 0 && customCategories.length === 0) {
+                        return null;
+                      }
 
                       return (
                         <section key="skills" style={{ marginTop: resumeData.spacing.sectionGap }}>
@@ -14164,6 +14267,18 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 6. CERTIFICATIONS
                     if (sectionId === 'certifications') {
+                      if (isPreview && !hasMeaningfulCertifications(resumeData.certifications)) {
+                        return null;
+                      }
+
+                      const visibleCerts = isPreview
+                        ? filterMeaningfulCertifications(resumeData.certifications)
+                        : (resumeData.certifications || []).filter((c: any) => c.visible !== false);
+
+                      if (isPreview && visibleCerts.length === 0) {
+                        return null;
+                      }
+
                       return (
                         <section key="certifications" style={{ marginTop: resumeData.spacing.sectionGap }}>
                           <h2
@@ -14180,18 +14295,18 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             CERTIFICATIONS
                           </h2>
                           <div className="text-left text-[12.5px] text-black space-y-2 font-serif font-medium" style={{ color: '#000000' }}>
-                            {resumeData.certifications.filter((c: any) => c.visible !== false).map((c: any) => (
+                            {visibleCerts.map((c: any) => (
                               <div key={c.id} className="space-y-0.5">
                                 <div className="flex justify-between items-baseline leading-tight">
                                   <p className="text-[12.5px] font-serif text-black flex items-start font-medium">
                                     <span className="mr-1.5 font-bold text-black" style={{ fontWeight: 800 }}>•</span>
                                     <span>
                                       <strong className="font-bold text-black" style={{ color: '#000000', fontWeight: 750 }}>{c.title}</strong>
-                                      {c.issuer && !c.title.toUpperCase().includes(c.issuer.toUpperCase()) && ` — ${c.issuer}`}
-                                      {c.issueDate && ` (${c.issueDate})`}
+                                      {((isPreview ? isMeaningfulText(c.issuer) : c.issuer)) && !c.title.toUpperCase().includes(c.issuer.toUpperCase()) && ` — ${c.issuer}`}
+                                      {((isPreview ? isMeaningfulText(c.issueDate) : c.issueDate)) && ` (${c.issueDate})`}
                                     </span>
                                   </p>
-                                  {c.link && (
+                                  {((isPreview ? isMeaningfulText(c.link) : c.link)) && (
                                     <span className="inline-flex items-center gap-1 text-[11.5px] text-blue-600 font-sans font-semibold shrink-0 ml-2">
                                       <svg className="w-3.5 h-3.5 inline text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -14223,7 +14338,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                     </span>
                                   )}
                                 </div>
-                                {c.description && (
+                                {((isPreview ? isMeaningfulText(c.description) : c.description)) && (
                                   <div className="mt-0.5">
                                     {renderFormattedContent(c.description)}
                                   </div>
@@ -14237,7 +14352,15 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 7. AWARDS & ACHIEVEMENTS
                     if (sectionId === 'awards') {
-                      if (isPreview && resumeData.awards.length === 0) {
+                      if (isPreview && !hasMeaningfulAwards(resumeData.awards)) {
+                        return null;
+                      }
+
+                      const visibleAwards = isPreview
+                        ? filterMeaningfulAwards(resumeData.awards)
+                        : (resumeData.awards || []);
+
+                      if (isPreview && visibleAwards.length === 0) {
                         return null;
                       }
                       return (
@@ -14256,9 +14379,9 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             AWARDS & ACHIEVEMENTS
                           </h2>
                           <div className="text-left text-[12.5px] text-black space-y-1 font-serif font-medium" style={{ color: '#000000' }}>
-                            {resumeData.awards.map((a) => (
+                            {visibleAwards.map((a) => (
                               <p key={a.id}>
-                                <strong className="font-bold text-black" style={{ color: '#000000', fontWeight: 750 }}>{a.title}</strong> {a.issuer && `— ${a.issuer}`} {a.year && `(${a.year})`}
+                                <strong className="font-bold text-black" style={{ color: '#000000', fontWeight: 750 }}>{a.title}</strong> {((isPreview ? isMeaningfulText(a.issuer) : a.issuer)) && `— ${a.issuer}`} {((isPreview ? isMeaningfulText(a.year) : a.year)) && `(${a.year})`}
                               </p>
                             ))}
                           </div>
@@ -14268,8 +14391,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 8. CUSTOM SECTION
                     if (sectionId === 'custom') {
-                      const hasCustomContent = Boolean(resumeData.customSection?.content?.trim());
-                      if (isPreview && !hasCustomContent) {
+                      if (isPreview && !hasMeaningfulCustomSection(resumeData.customSection)) {
                         return null;
                       }
                       return (

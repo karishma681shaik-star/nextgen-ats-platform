@@ -14,8 +14,10 @@ import {
   Building,
   ArrowRight,
   ShieldCheck,
-  Check
+  Check,
+  Clock
 } from 'lucide-react';
+import { CardReflectiveShine } from '../../components/common/CardReflectiveShine';
 import { jobService, candidateService } from '../../services';
 import { actionFeedbackService } from '../../services/feedback/actionFeedbackService';
 import { useToast } from '../../context/ToastContext';
@@ -164,24 +166,28 @@ export const JobDiscoveryPage: React.FC = () => {
         </p>
 
         {/* Trust & Safety Platform Notice */}
-        <div className="mt-3 p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-300">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="relative mt-4 p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-[#0a0f26]/60 to-cyan-950/30 border border-white/[0.08] hover:border-indigo-400/30 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300 overflow-hidden group transition-all duration-300">
+          <CardReflectiveShine variant="cyan" rounded="rounded-2xl" />
+          <div className="flex items-center gap-2.5 relative z-10">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
             <span>
               <strong className="text-white">Trusted Job Discovery:</strong> Every job on AI ATS is verified through employer business registration checks, recruiter identity validation, and manual governance moderation.
             </span>
           </div>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Company Verified</span>
-            <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Recruiter Verified</span>
-            <span className="text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">Job Approved</span>
+          <div className="flex items-center gap-2 text-[10px] relative z-10">
+            <span className="text-emerald-300 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25 shadow-sm">Company Verified</span>
+            <span className="text-cyan-300 font-bold bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/25 shadow-sm">Recruiter Verified</span>
+            <span className="text-indigo-200 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/25 shadow-sm">Job Approved</span>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <Card glass className="p-5 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="relative rounded-2xl p-5 sm:p-6 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] space-y-4 overflow-hidden group transition-all duration-300">
+        <CardReflectiveShine variant="indigo" rounded="rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 relative z-10">
           <div className="md:col-span-2">
             <Input
               placeholder="Search by job title, company, or tech stack (e.g. React, Spring Boot, AWS)..."
@@ -195,7 +201,7 @@ export const JobDiscoveryPage: React.FC = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full bg-slate-900 text-slate-100 text-sm rounded-xl border border-slate-700/80 px-3.5 py-2.5"
+              className="w-full bg-slate-900/90 text-slate-100 text-sm rounded-xl border border-white/[0.10] px-3.5 py-2.5 focus:border-indigo-400 focus:outline-none transition-colors"
             >
               <option value="All">All Job Types</option>
               <option value="Full-time">Full-time</option>
@@ -209,7 +215,7 @@ export const JobDiscoveryPage: React.FC = () => {
             <select
               value={selectedExp}
               onChange={(e) => setSelectedExp(e.target.value)}
-              className="w-full bg-slate-900 text-slate-100 text-sm rounded-xl border border-slate-700/80 px-3.5 py-2.5"
+              className="w-full bg-slate-900/90 text-slate-100 text-sm rounded-xl border border-white/[0.10] px-3.5 py-2.5 focus:border-indigo-400 focus:outline-none transition-colors"
             >
               <option value="All">All Experience Levels</option>
               <option value="Entry Level">Entry Level</option>
@@ -221,24 +227,36 @@ export const JobDiscoveryPage: React.FC = () => {
         </div>
 
         {/* Extra Match Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-indigo-500/15 text-xs relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-slate-400 font-semibold">Min AI Match:</span>
             <button
               onClick={() => setMinMatch(0)}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${minMatch === 0 ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'}`}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                minMatch === 0
+                  ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] border border-indigo-400/50'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.08]'
+              }`}
             >
               Any
             </button>
             <button
               onClick={() => setMinMatch(80)}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${minMatch === 80 ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'}`}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                minMatch === 80
+                  ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] border border-indigo-400/50'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.08]'
+              }`}
             >
               80%+
             </button>
             <button
               onClick={() => setMinMatch(90)}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${minMatch === 90 ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'}`}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                minMatch === 90
+                  ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] border border-indigo-400/50'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.08]'
+              }`}
             >
               90%+ (High Match)
             </button>
@@ -248,56 +266,87 @@ export const JobDiscoveryPage: React.FC = () => {
             Showing <span className="text-white font-bold">{filteredJobs.length}</span> positions
           </span>
         </div>
-      </Card>
+      </div>
 
       {/* Jobs Grid */}
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-40" />
-          <Skeleton className="h-40" />
-          <Skeleton className="h-40" />
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-44 rounded-2xl bg-gradient-to-br from-[#0c142c]/70 to-[#070b1a]/80 border border-white/[0.08] animate-pulse p-6" />
+          ))}
         </div>
       ) : filteredJobs.length === 0 ? (
-        <Card glass className="p-12 text-center text-xs text-slate-400 space-y-2">
-          <Briefcase className="w-10 h-10 text-indigo-400 mx-auto" />
-          <p className="text-sm font-bold text-white">No matching jobs found</p>
-          <p>Try broadening your search keywords or adjusting your filters.</p>
-        </Card>
+        <div className="relative rounded-2xl p-12 text-center text-xs text-slate-400 space-y-3 bg-gradient-to-b from-[#0c132c]/85 to-[#070b1a]/95 border border-white/[0.08] overflow-hidden group shadow-lg">
+          <CardReflectiveShine variant="indigo" rounded="rounded-2xl" />
+          <Briefcase className="w-10 h-10 text-indigo-400 mx-auto relative z-10" />
+          <p className="text-sm font-bold text-white relative z-10">No matching jobs found</p>
+          <p className="relative z-10">Try broadening your search keywords or adjusting your filters.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {filteredJobs.map((job) => {
             const isSaved = savedJobIds.includes(job.id);
-            return (
-              <Card key={job.id} glass hoverEffect className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  {/* Job Left Side Details */}
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={job.companyLogo}
-                      alt={job.company}
-                      className="w-14 h-14 rounded-2xl object-cover border border-slate-700 shrink-0 shadow-sm"
-                    />
+            const matchScore = job.matchScore || 0;
+            const shineVariant = matchScore >= 85 ? 'emerald' : matchScore >= 70 ? 'cyan' : 'indigo';
 
-                    <div className="space-y-1.5">
+            return (
+              <div
+                key={job.id}
+                className="group relative rounded-2xl p-6 bg-gradient-to-br from-[#0c142c]/90 via-[#080d22]/95 to-[#060918]/98 border border-white/[0.08] hover:border-indigo-400/40 shadow-[0_12px_32px_-10px_rgba(0,0,0,0.65)] hover:shadow-[0_20px_48px_-12px_rgba(0,0,0,0.85),0_0_20px_-4px_rgba(99,102,241,0.18)] transition-all duration-300 overflow-hidden"
+              >
+                <CardReflectiveShine variant={shineVariant} rounded="rounded-2xl" />
+
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                  {/* Job Left Side Details */}
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="relative shrink-0">
+                      <img
+                        src={job.companyLogo}
+                        alt={job.company}
+                        className="w-14 h-14 rounded-2xl object-cover bg-slate-900/90 border border-white/[0.12] group-hover:border-indigo-400/40 shadow-md transition-all duration-300"
+                      />
+                      {matchScore >= 80 && (
+                        <div
+                          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-[10px] font-black shadow-sm"
+                          title="High ATS Compatibility"
+                        >
+                          ★
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 min-w-0">
                       <div className="flex flex-wrap items-center gap-2.5">
                         <Link
                           to={`/candidate/jobs/${job.id}`}
-                          className="text-base font-bold text-white hover:text-indigo-400 transition-colors"
+                          className="text-base sm:text-lg font-bold text-white hover:text-indigo-300 transition-colors tracking-tight"
                         >
                           {job.title}
                         </Link>
                         {job.matchScore && (
-                          <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          <span
+                            className={`text-xs font-black px-2.5 py-0.5 rounded-lg border shadow-sm flex items-center gap-1 ${
+                              job.matchScore >= 85
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                                : job.matchScore >= 70
+                                ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/35'
+                                : 'bg-indigo-500/15 text-indigo-300 border-indigo-400/35'
+                            }`}
+                          >
+                            <Sparkles className="w-3 h-3" />
                             {job.matchScore}% Match
                           </span>
                         )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-semibold text-white">{job.company}</span>
-                        <span className="text-slate-500">•</span>
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-500" />
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <Building className="w-3.5 h-3.5 text-indigo-400" />
+                          {job.company}
+                        </span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-slate-300 flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
                           {job.location}
                         </span>
                       </div>
@@ -306,35 +355,35 @@ export const JobDiscoveryPage: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                         <span
                           title="Company Verified: Corporate business registration and corporate domain validated"
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/25 shadow-sm"
                         >
-                          <ShieldCheck className="w-3 h-3" />
+                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
                           Company Verified
                         </span>
                         <span
                           title="Recruiter Verified: Recruiter identity and authorization to represent company confirmed"
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 shadow-sm"
                         >
-                          <CheckCircle2 className="w-3 h-3" />
+                          <CheckCircle2 className="w-3 h-3 text-cyan-400" />
                           Recruiter Verified
                         </span>
                         <span
                           title="Job Approved: Manually audited and approved by platform governance moderation"
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-200 bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/25 shadow-sm"
                         >
-                          <Check className="w-3 h-3" />
+                          <Check className="w-3 h-3 text-indigo-400" />
                           Job Approved
                         </span>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                        <span className="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-white/[0.03] text-slate-200 border border-white/[0.08] font-medium">
                           {job.type}
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-white/[0.03] text-slate-200 border border-white/[0.08] font-medium">
                           {job.experienceLevel}
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/40 font-semibold font-mono">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-indigo-950/60 to-purple-950/60 text-indigo-200 border border-indigo-500/30 font-semibold font-mono shadow-sm">
                           {formatSalaryRange(job.salary?.min, job.salary?.max, job.salary?.currency || 'INR', job.salary?.period)}
                         </span>
                       </div>
@@ -344,7 +393,7 @@ export const JobDiscoveryPage: React.FC = () => {
                         {job.skills.map((skill) => (
                           <span
                             key={skill}
-                            className="text-[11px] px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
+                            className="text-[11px] px-2.5 py-0.5 rounded-lg bg-white/[0.025] hover:bg-white/[0.05] text-slate-300 border border-white/[0.08] hover:border-white/[0.14] transition-colors font-medium shadow-xs"
                           >
                             {skill}
                           </span>
@@ -354,14 +403,14 @@ export const JobDiscoveryPage: React.FC = () => {
                   </div>
 
                   {/* Job Right Side Actions */}
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-indigo-500/15">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleSave(job.id)}
-                        className={`p-2 rounded-xl border transition-colors ${
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-sm ${
                           isSaved
-                            ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                            : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                            : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08] hover:border-white/[0.16]'
                         }`}
                         title={isSaved ? 'Remove from saved' : 'Save job'}
                       >
@@ -369,13 +418,13 @@ export const JobDiscoveryPage: React.FC = () => {
                       </button>
 
                       <Link to={`/candidate/jobs/${job.id}`}>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="border-white/[0.12] hover:border-indigo-400/40">
                           Details
                         </Button>
                       </Link>
 
                       {job.applied ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold shadow-sm">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 text-xs font-bold shadow-sm">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                           Applied
                         </span>
@@ -385,18 +434,20 @@ export const JobDiscoveryPage: React.FC = () => {
                           size="sm"
                           leftIcon={<Send className="w-3.5 h-3.5" />}
                           onClick={() => setApplyingJob(job)}
+                          className="shadow-sm hover:shadow-[0_0_16px_rgba(99,102,241,0.35)]"
                         >
                           Easy Apply
                         </Button>
                       )}
                     </div>
 
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
+                      <Clock className="w-3 h-3 text-slate-500" />
                       Posted on {formatFullDate(job.postedDate)}
                     </span>
                   </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
@@ -412,17 +463,20 @@ export const JobDiscoveryPage: React.FC = () => {
       >
         {applyingJob && (
           <form onSubmit={handleApplySubmit} className="space-y-5">
-            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs space-y-1.5">
-              <p className="font-bold text-white">Your Candidate Profile Summary</p>
+            <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 via-[#0a0f26]/60 to-purple-950/30 border border-indigo-500/30 text-xs space-y-1.5 shadow-sm">
+              <p className="font-bold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                Verified Candidate Profile Summary
+              </p>
               <p className="text-slate-300">
                 Candidate: <span className="text-white font-semibold">{user?.name || 'Alex Rivera'}</span> • Role:{' '}
                 <span className="text-white font-semibold">Senior Java Full Stack Engineer</span>
               </p>
               <div className="flex items-center gap-2 pt-1">
                 {applyingJob.matchScore ? (
-                  <span className="font-semibold text-emerald-400">Match Score: {applyingJob.matchScore}%</span>
+                  <span className="font-bold text-emerald-300">Match Score: {applyingJob.matchScore}%</span>
                 ) : (
-                  <span className="font-semibold text-indigo-400">Match: Profile Driven</span>
+                  <span className="font-bold text-indigo-300">Match: Profile Driven</span>
                 )}
                 <span className="text-slate-400">• Verified ATS Compatible</span>
               </div>
@@ -436,7 +490,7 @@ export const JobDiscoveryPage: React.FC = () => {
                 <select
                   value={selectedResumeId}
                   onChange={(e) => setSelectedResumeId(e.target.value)}
-                  className="w-full bg-slate-900 text-slate-100 text-sm rounded-xl border border-slate-700 p-2.5"
+                  className="w-full bg-slate-900/90 text-slate-100 text-sm rounded-xl border border-white/[0.12] p-2.5 focus:border-indigo-400 focus:outline-none"
                 >
                   {resumes.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -446,12 +500,12 @@ export const JobDiscoveryPage: React.FC = () => {
                   <option value="profile">Submit with Verified Candidate Profile</option>
                 </select>
               ) : (
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
+                <div className="p-3.5 rounded-xl bg-emerald-500/[0.05] border border-emerald-500/25 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 text-slate-200">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <span>Verified Profile & Technical Skills Credential</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-400 font-mono">Profile Attached</span>
+                  <span className="text-[10px] font-bold text-emerald-300 font-mono">Profile Attached</span>
                 </div>
               )}
             </div>

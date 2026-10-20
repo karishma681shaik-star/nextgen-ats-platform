@@ -56,6 +56,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { CandidateProfileHero } from '../../components/candidate/CandidateProfileHero';
 import { CandidateProfileStrengthCard } from '../../components/candidate/CandidateProfileStrengthCard';
+import { CardReflectiveShine } from '../../components/common/CardReflectiveShine';
 
 // Preset sample data for 1-click profile booster if user has empty profile
 const SAMPLE_BOOSTER_DATA: Partial<CandidateProfile> = {
@@ -367,15 +368,15 @@ export const CandidateProfilePage: React.FC = () => {
     return [
       {
         id: 'headline',
-        title: 'Basic Info & Headline',
+        title: 'Basic Information & Headline',
         points: 20,
         completed: Boolean(p.name && p.title && p.title.trim().length > 2),
         action: () => setAboutModalOpen(true),
-        actionLabel: 'Edit'
+        actionLabel: 'Edit Details'
       },
       {
         id: 'bio',
-        title: 'Summary / Bio',
+        title: 'Executive Summary & Bio',
         points: 15,
         completed: Boolean(p.bio && p.bio.trim().length > 15),
         action: () => setAboutModalOpen(true),
@@ -383,7 +384,7 @@ export const CandidateProfilePage: React.FC = () => {
       },
       {
         id: 'skills',
-        title: 'Core Skills (Min 3)',
+        title: 'Core Technical Skills',
         points: 20,
         completed: (p.skills?.technical?.length || 0) + (p.skills?.tools?.length || 0) >= 3,
         action: () => setActiveTab('skills'),
@@ -391,7 +392,7 @@ export const CandidateProfilePage: React.FC = () => {
       },
       {
         id: 'experience',
-        title: 'Work Experience',
+        title: 'Industry Work Experience',
         points: 20,
         completed: (p.experience?.length || 0) > 0,
         action: () => {
@@ -402,18 +403,18 @@ export const CandidateProfilePage: React.FC = () => {
       },
       {
         id: 'education',
-        title: 'Education & Degree',
+        title: 'Academic Education & Degree',
         points: 15,
         completed: (p.education?.length || 0) > 0,
         action: () => {
           setEditingEdu(null);
           setEduModalOpen(true);
         },
-        actionLabel: '+ Add Education'
+        actionLabel: '+ Add Degree'
       },
       {
         id: 'projects',
-        title: 'Featured Projects',
+        title: 'Featured Portfolio Projects',
         points: 10,
         completed: (p.projects?.length || 0) > 0,
         action: () => {
@@ -1074,37 +1075,11 @@ export const CandidateProfilePage: React.FC = () => {
   return (
     <div className="relative min-h-screen pb-20 space-y-8 select-none">
 
-      {/* Cyber Grid Horizon Ground with interactive mouse tilt */}
+      {/* Subtle Dimly Lit Studio Ambient Depth */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        <div
-          className="absolute inset-x-0 bottom-[-150px] h-[750px] origin-bottom transition-transform duration-300 ease-out"
-          style={{
-            perspective: '1000px',
-            transform: `perspective(1000px) rotateX(${64 + mousePos.y * 5}deg) rotateY(${mousePos.x * 4}deg) translateY(60px)`
-          }}
-        >
-          <div
-            className="w-full h-full animate-grid-3d opacity-35"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, rgba(99, 102, 241, 0.25) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(99, 102, 241, 0.25) 1px, transparent 1px)
-              `,
-              backgroundSize: '50px 50px',
-              maskImage: 'radial-gradient(ellipse 90% 70% at 50% 10%, #000 30%, transparent 85%)',
-              WebkitMaskImage: 'radial-gradient(ellipse 90% 70% at 50% 10%, #000 30%, transparent 85%)'
-            }}
-          />
-        </div>
-
-        {/* Ambient 3D Volumetric Beacons */}
-        <div
-          className="absolute top-16 left-1/4 w-[650px] h-[650px] rounded-full blur-[140px] pointer-events-none opacity-30 transition-transform duration-700 ease-out"
-          style={{
-            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(168, 85, 247, 0.2) 50%, transparent 80%)',
-            transform: `translate(${mousePos.x * 40}px, ${mousePos.y * 30}px)`
-          }}
-        />
+        <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-950/15 via-blue-950/5 to-transparent pointer-events-none" />
+        <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-indigo-600/[0.04] blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] rounded-full bg-blue-600/[0.03] blur-[130px] pointer-events-none" />
       </div>
 
       {/* ============================================================
@@ -1113,19 +1088,19 @@ export const CandidateProfilePage: React.FC = () => {
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
+            <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 flex items-center gap-1.5 shadow-sm">
+              <Sparkles className="w-3 h-3 text-indigo-400" />
               Verified Job Portal Profile
             </span>
             <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Open to Opportunities
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-2 flex items-center gap-3">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2 flex items-center gap-3">
             Candidate Profile
-            <span className="text-xs font-mono font-medium text-slate-400 px-2 py-0.5 rounded-md bg-slate-900/80 border border-slate-800">
+            <span className="text-xs font-mono font-medium text-slate-400 px-2.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08]">
               {strengthInfo.label}
             </span>
           </h1>
@@ -1143,7 +1118,7 @@ export const CandidateProfilePage: React.FC = () => {
               size="sm"
               isLoading={isSaving}
               leftIcon={<RotateCcw className="w-4 h-4 text-amber-400" />}
-              className="border-amber-500/50 bg-amber-950/40 hover:bg-amber-900/50 text-amber-200 font-bold backdrop-blur-md shadow-lg shadow-amber-950/30 hover:scale-[1.02] transition-transform"
+              className="border-amber-500/30 bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 font-bold backdrop-blur-md shadow-md"
             >
               Undo Boost (Restore Original)
             </Button>
@@ -1155,7 +1130,7 @@ export const CandidateProfilePage: React.FC = () => {
                 size="sm"
                 isLoading={isSaving}
                 leftIcon={<Zap className="w-4 h-4 text-amber-300 animate-bounce" />}
-                className="bg-gradient-to-r from-amber-600 via-indigo-600 to-purple-600 hover:brightness-110 text-white font-bold shadow-lg shadow-indigo-600/20"
+                className="bg-gradient-to-r from-amber-600 via-indigo-600 to-purple-600 hover:brightness-110 text-white font-bold shadow-md shadow-indigo-600/20"
               >
                 Boost Profile to 96%
               </Button>
@@ -1167,7 +1142,7 @@ export const CandidateProfilePage: React.FC = () => {
             variant="secondary"
             size="sm"
             leftIcon={<Eye className="w-4 h-4 text-cyan-400" />}
-            className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-white font-semibold backdrop-blur-md"
+            className="border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold backdrop-blur-md"
           >
             Recruiter Live View
           </Button>
@@ -1177,7 +1152,7 @@ export const CandidateProfilePage: React.FC = () => {
             variant="secondary"
             size="sm"
             leftIcon={<Sparkles className="w-4 h-4 text-purple-400" />}
-            className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-white font-semibold backdrop-blur-md"
+            className="border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold backdrop-blur-md"
           >
             AI Fast Pitch
           </Button>
@@ -1187,7 +1162,7 @@ export const CandidateProfilePage: React.FC = () => {
             variant="secondary"
             size="sm"
             leftIcon={<Share2 className="w-4 h-4 text-indigo-400" />}
-            className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-white font-semibold backdrop-blur-md"
+            className="border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold backdrop-blur-md"
           >
             Share
           </Button>
@@ -1195,302 +1170,30 @@ export const CandidateProfilePage: React.FC = () => {
       </div>
 
       {/* ============================================================
-          3. JOB PORTAL HERO COVER & TALENT SHOWCASE CARD
+          3. REALISTIC 3D CANDIDATE PROFILE HERO (Level 1, Level 2, Level 3)
           ============================================================ */}
-      <div
-        ref={heroCardRef}
-        onMouseEnter={() => setIsHeroTilt(true)}
-        onMouseLeave={() => setIsHeroTilt(false)}
-        className="relative z-10 rounded-3xl overflow-hidden backdrop-blur-2xl border border-white/10 bg-[#090e21]/90 shadow-[0_25px_60px_rgba(0,0,0,0.6)] transition-all duration-300"
-        style={{
-          perspective: '1200px',
-          transform: isHeroTilt
-            ? `rotateY(${mousePos.x * 3}deg) rotateX(${-mousePos.y * 2.5}deg)`
-            : 'rotateY(0deg) rotateX(0deg)'
+      <CandidateProfileHero
+        profile={profile}
+        strengthLabel={strengthInfo.label}
+        totalSkillsCount={totalSkillsCount}
+        mousePos={mousePos}
+        onAvatarClick={() => {
+          setUploadedPreview(null);
+          setAvatarModalOpen(true);
         }}
-      >
-        {/* Cover Graphic Banner */}
-        <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950">
-          <div
-            className="absolute inset-0 opacity-40 animate-grid-3d"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, rgba(99, 102, 241, 0.4) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(99, 102, 241, 0.4) 1px, transparent 1px)
-              `,
-              backgroundSize: '40px 40px'
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#090e21] via-transparent to-transparent" />
-
-          {/* Top Right Live Stats Pill */}
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-950/70 border border-slate-700/80 text-indigo-300 backdrop-blur-md flex items-center gap-1.5 shadow-lg">
-              <Eye className="w-3.5 h-3.5 text-cyan-400" />
-              184 Recruiter Views this week
-            </span>
-          </div>
-        </div>
-
-        {/* Profile Details Container (Overlapping Cover) */}
-        <div className="relative px-6 sm:px-10 pb-8 -mt-16 sm:-mt-20">
-          <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6">
-            {/* Left: Avatar & Names */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
-              {/* Avatar Frame with Camera Edit */}
-              <div
-                className="relative group cursor-pointer shrink-0"
-                onClick={() => {
-                  setUploadedPreview(null);
-                  setAvatarModalOpen(true);
-                }}
-              >
-                <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 opacity-70 blur-md group-hover:opacity-100 transition-opacity animate-holo-spin" />
-
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-[#090e21] bg-slate-950 shadow-2xl">
-                  <img
-                    src={profile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
-                    alt={profile.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-indigo-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] text-white font-bold gap-1">
-                    <Camera className="w-5 h-5 text-indigo-300" />
-                    <span>Change Photo</span>
-                  </div>
-                </div>
-
-                {/* Permanent Camera Button Badge */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setUploadedPreview(null);
-                    setAvatarModalOpen(true);
-                  }}
-                  className="absolute bottom-1 right-1 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white border-2 border-[#090e21] shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center z-10"
-                  title="Change Profile Photo"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Identity & Presence */}
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    {profile.name}
-                  </h2>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                    Verified Candidate
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Open to Work
-                  </span>
-                </div>
-
-                <p className="text-sm sm:text-base font-bold text-indigo-200">
-                  {profile.title || 'Software Engineer'}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-0.5">
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                    {profile.location || 'San Francisco, CA'}
-                  </span>
-                  <button
-                    onClick={() => setIsContactModalOpen(true)}
-                    className="text-indigo-400 hover:text-indigo-300 font-semibold underline flex items-center gap-1 cursor-pointer"
-                  >
-                    Contact Info
-                  </button>
-                  <span className="inline-flex items-center gap-1.5 text-slate-400">
-                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                    Immediate Start
-                  </span>
-                </div>
-
-                {/* Social Links */}
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  {profile.githubUrl && (
-                    <a
-                      href={profile.githubUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1.5 text-xs font-semibold"
-                    >
-                      <Github className="w-3.5 h-3.5" />
-                      GitHub
-                      <ArrowUpRight className="w-3 h-3 text-slate-400" />
-                    </a>
-                  )}
-                  {profile.linkedinUrl && (
-                    <a
-                      href={profile.linkedinUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-blue-950/60 text-blue-300 hover:text-white border border-blue-800/60 flex items-center gap-1.5 text-xs font-semibold"
-                    >
-                      <Linkedin className="w-3.5 h-3.5" />
-                      LinkedIn
-                      <ArrowUpRight className="w-3 h-3 text-blue-400" />
-                    </a>
-                  )}
-                  {profile.websiteUrl && (
-                    <a
-                      href={profile.websiteUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-indigo-950/60 text-indigo-300 hover:text-white border border-indigo-800/60 flex items-center gap-1.5 text-xs font-semibold"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      Portfolio
-                      <ArrowUpRight className="w-3 h-3 text-indigo-400" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Quick KPI Badges - ONLY SHOW IF CONTAINS DATA */}
-            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
-
-              {/* EXPERIENCE: Only show if candidate has 1 or more experience records! */}
-              {profile.experience && profile.experience.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex-1 lg:flex-initial text-center shadow-lg min-w-[90px]">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Experience</span>
-                  <p className="text-xl font-black text-purple-300 mt-0.5">
-                    {profile.experience.length} {profile.experience.length === 1 ? 'Role' : 'Roles'}
-                  </p>
-                  <span className="text-[9px] text-slate-400">Industry Logged</span>
-                </div>
-              )}
-
-              {/* SKILLS: Only show if candidate has 1 or more skills! */}
-              {totalSkillsCount > 0 && (
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-cyan-500/30 flex-1 lg:flex-initial text-center shadow-lg min-w-[90px]">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Skills</span>
-                  <p className="text-xl font-black text-cyan-300 mt-0.5">{totalSkillsCount}</p>
-                  <span className="text-[9px] text-cyan-400/80 font-medium">Validated</span>
-                </div>
-              )}
-
-              {/* EDUCATION: Only show if candidate has education records! */}
-              {profile.education && profile.education.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-amber-500/30 flex-1 lg:flex-initial text-center shadow-lg min-w-[90px]">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Education</span>
-                  <p className="text-xl font-black text-amber-300 mt-0.5">{profile.education.length}</p>
-                  <span className="text-[9px] text-slate-400">{profile.education.length === 1 ? 'Degree' : 'Degrees'}</span>
-                </div>
-              )}
-
-              {/* PROJECTS: Only show if candidate has project records! */}
-              {profile.projects && profile.projects.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-indigo-500/30 flex-1 lg:flex-initial text-center shadow-lg min-w-[90px]">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Projects</span>
-                  <p className="text-xl font-black text-indigo-300 mt-0.5">{profile.projects.length}</p>
-                  <span className="text-[9px] text-slate-400">Verified</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        onContactClick={() => setIsContactModalOpen(true)}
+        onEditAbout={() => setAboutModalOpen(true)}
+        onAIEnhance={handleOpenAIPitchModal}
+      />
 
       {/* ============================================================
-          4. JOB PORTAL PROFILE STRENGTH & COMPLETION METER
+          4. PROFILE STRENGTH & CAREER READINESS (With 3D Growth Object)
           ============================================================ */}
-      <div className="relative z-10 rounded-3xl p-6 sm:p-7 bg-[#0b1026]/90 border border-indigo-500/25 backdrop-blur-2xl shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
-              <Star className="w-6 h-6 fill-amber-300 text-amber-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-lg font-black text-white">Profile Strength</h3>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-extrabold border ${strengthInfo.badgeColor}`}>
-                  {strengthInfo.label} ({profileCompletionRate}%)
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">{strengthInfo.message}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-indigo-300 bg-indigo-950/80 px-3 py-1.5 rounded-xl border border-indigo-800/60">
-              ⚡ 4x More Recruiter Inquiries
-            </span>
-          </div>
-        </div>
-
-        {/* Dynamic Multi-Step Progress Bar */}
-        <div className="mt-5 space-y-2">
-          <div className="w-full bg-slate-900 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 via-indigo-500 to-emerald-400 transition-all duration-700 ease-out shadow-glow"
-              style={{ width: `${profileCompletionRate}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between text-[10px] font-bold text-slate-400 px-1">
-            <span className={profileCompletionRate >= 20 ? 'text-amber-400' : ''}>Beginner (20%)</span>
-            <span className={profileCompletionRate >= 45 ? 'text-indigo-400' : ''}>Intermediate (45%)</span>
-            <span className={profileCompletionRate >= 75 ? 'text-purple-400' : ''}>Advanced (75%)</span>
-            <span className={profileCompletionRate >= 90 ? 'text-emerald-400' : ''}>All-Star (100%)</span>
-          </div>
-        </div>
-
-        {/* Actionable Recommendations Checklist */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            Complete profile checklist to reach 100% All-Star ranking:
-          </h4>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {checklist.map((item) => (
-              <div
-                key={item.id}
-                className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
-                  item.completed
-                    ? 'bg-emerald-950/20 border-emerald-500/30'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-indigo-500/40'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                      item.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'
-                    }`}
-                  >
-                    {item.completed ? <Check className="w-3.5 h-3.5" /> : <span className="text-[10px]">•</span>}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">{item.title}</p>
-                    <span className="text-[10px] text-slate-400">+{item.points}% completion value</span>
-                  </div>
-                </div>
-
-                {item.completed ? (
-                  <span className="text-[10px] font-extrabold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    Done
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={item.action}
-                    className="text-[11px] font-bold text-indigo-400 hover:text-white px-2.5 py-1 rounded-xl bg-indigo-500/10 hover:bg-indigo-600 border border-indigo-500/30 transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    {item.actionLabel}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <CandidateProfileStrengthCard
+        profileCompletionRate={profileCompletionRate}
+        strengthInfo={strengthInfo}
+        checklist={checklist}
+      />
 
       {/* ============================================================
           5. STICKY QUICK-NAV SECTION PILLS
@@ -1532,8 +1235,9 @@ export const CandidateProfilePage: React.FC = () => {
       <div className="relative z-10 space-y-8">
         {/* SECTION: ABOUT / PROFESSIONAL SUMMARY */}
         {(activeTab === 'all' || activeTab === 'personal') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-indigo-500/20 relative z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
                   <User className="w-5 h-5" />
@@ -1581,7 +1285,7 @@ export const CandidateProfilePage: React.FC = () => {
 
             {/* If in Inline Edit Mode (available on About & Details tab) */}
             {activeTab === 'personal' && isEditingAboutInline ? (
-              <form onSubmit={handleSaveAboutDetails} className="space-y-5 pt-2">
+              <form onSubmit={handleSaveAboutDetails} className="space-y-5 pt-2 relative z-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     name="name"
@@ -1752,8 +1456,8 @@ export const CandidateProfilePage: React.FC = () => {
             ) : (
               /* View Mode */
               <>
-                <div className="p-5 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-                  <p className="text-sm sm:text-base text-slate-200 leading-relaxed whitespace-pre-line font-normal">
+                <div className="relative p-5 sm:p-6 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm">
+                  <p className="text-sm sm:text-base text-slate-200 leading-relaxed whitespace-pre-line font-normal relative z-10">
                     {profile.bio ||
                       `${profile.name} is a focused ${profile.title || 'Software Engineer'} based in ${profile.location || 'Remote'}. Click "Edit Details" or "AI Enhance" to personalize your professional executive bio.`}
                   </p>
@@ -1761,36 +1465,36 @@ export const CandidateProfilePage: React.FC = () => {
 
                 {/* Information Highlight Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/90">
-                    <span className="text-[11px] text-indigo-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="relative p-4 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm">
+                    <span className="text-[11px] text-indigo-400 font-bold uppercase tracking-wider flex items-center gap-1.5 relative z-10">
                       <Briefcase className="w-3.5 h-3.5" />
                       Target Role
                     </span>
-                    <p className="text-sm font-bold text-white mt-1.5">{profile.title || 'Software Engineer'}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Open to Full-Time & Hybrid</p>
+                    <p className="text-sm font-bold text-white mt-1.5 relative z-10">{profile.title || 'Software Engineer'}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 relative z-10">Open to Full-Time & Hybrid</p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/90">
-                    <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="relative p-4 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm">
+                    <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5 relative z-10">
                       <MapPin className="w-3.5 h-3.5" />
                       Location & Work
                     </span>
-                    <p className="text-sm font-bold text-white mt-1.5">{profile.location || 'San Francisco, CA'}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Authorized to Work</p>
+                    <p className="text-sm font-bold text-white mt-1.5 relative z-10">{profile.location || 'San Francisco, CA'}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 relative z-10">Authorized to Work</p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/90">
-                    <span className="text-[11px] text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="relative p-4 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm">
+                    <span className="text-[11px] text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1.5 relative z-10">
                       <Globe className="w-3.5 h-3.5" />
                       Web Footprint
                     </span>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 relative z-10">
                       {profile.githubUrl && (
                         <a
                           href={profile.githubUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-[10px] font-bold border border-slate-700/80 flex items-center gap-1 shadow-sm"
                         >
                           <Github className="w-3 h-3" /> GitHub
                         </a>
@@ -1800,7 +1504,7 @@ export const CandidateProfilePage: React.FC = () => {
                           href={profile.linkedinUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2 py-0.5 rounded-lg bg-blue-950/70 hover:bg-blue-900 text-blue-300 text-[10px] font-bold flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-blue-300 text-[10px] font-bold border border-blue-800/60 flex items-center gap-1 shadow-sm"
                         >
                           <Linkedin className="w-3 h-3" /> LinkedIn
                         </a>
@@ -1810,7 +1514,7 @@ export const CandidateProfilePage: React.FC = () => {
                           href={profile.websiteUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2 py-0.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 text-indigo-300 text-[10px] font-bold flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 text-[10px] font-bold border border-indigo-800/60 flex items-center gap-1 shadow-sm"
                         >
                           <Globe className="w-3 h-3" /> Portfolio
                         </a>
@@ -1827,17 +1531,17 @@ export const CandidateProfilePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/90">
-                    <span className="text-[11px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="relative p-4 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm">
+                    <span className="text-[11px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5 relative z-10">
                       <Code2 className="w-3.5 h-3.5" />
                       Technical Focus
                     </span>
-                    <p className="text-sm font-bold text-white mt-1.5">
+                    <p className="text-sm font-bold text-white mt-1.5 relative z-10">
                       {profile.skills?.technical && profile.skills.technical.length > 0
                         ? profile.skills.technical.slice(0, 3).join(', ')
                         : 'Core Software Development'}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-400 mt-0.5 relative z-10">
                       {profile.skills?.technical && profile.skills.technical.length > 0
                         ? `${profile.skills.technical.length} verified technical skills`
                         : 'Add skills in Skills tab'}
@@ -1851,14 +1555,16 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: SKILLS & COMPETENCIES */}
         {(activeTab === 'all' || activeTab === 'skills') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-indigo-500/20 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
                   <Code2 className="w-5 h-5 text-indigo-400" />
                   Skills & Technical Competencies ({totalSkillsCount})
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Industry validated engineering skills for AI search ranking.</p>
+                <p className="text-xs text-slate-300 mt-0.5">Industry validated engineering skills for AI search and recruiter ranking.</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1878,19 +1584,19 @@ export const CandidateProfilePage: React.FC = () => {
             </div>
 
             {/* Quick-Add Skill Bar */}
-            <form onSubmit={(e) => handleAddSkill(e)} className="flex flex-col sm:flex-row items-end gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-              <div className="flex-1 w-full">
+            <form onSubmit={(e) => handleAddSkill(e)} className="flex flex-col sm:flex-row items-end gap-3 p-4 rounded-2xl bg-white/[0.025] border border-white/[0.08] hover:border-white/[0.12] transition-all duration-200 group relative overflow-hidden shadow-inner z-10">
+              <div className="flex-1 w-full relative z-10">
                 <Input
                   placeholder="Type a skill (e.g. Next.js, Docker, Kafka, Microservices, Python)"
                   value={newSkillInput}
                   onChange={(e) => setNewSkillInput(e.target.value)}
                 />
               </div>
-              <div className="w-full sm:w-52">
+              <div className="w-full sm:w-52 relative z-10">
                 <select
                   value={newSkillCategory}
                   onChange={(e) => setNewSkillCategory(e.target.value as any)}
-                  className="w-full bg-slate-950 text-slate-100 text-sm rounded-xl border border-slate-700/80 px-3.5 py-2.5 focus:border-indigo-500 focus:outline-none"
+                  className="w-full bg-slate-950 text-slate-100 text-sm rounded-xl border border-indigo-500/30 px-3.5 py-2.5 focus:border-indigo-400 focus:outline-none"
                 >
                   <option value="technical">Technical Stack</option>
                   <option value="tools">Tools & DevOps</option>
@@ -1898,14 +1604,16 @@ export const CandidateProfilePage: React.FC = () => {
                   <option value="languages">Languages</option>
                 </select>
               </div>
-              <Button type="submit" variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
-                Add Skill
-              </Button>
+              <div className="relative z-10">
+                <Button type="submit" variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
+                  Add Skill
+                </Button>
+              </div>
             </form>
 
             {/* Suggested Skills */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-semibold text-slate-400">Quick add:</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs relative z-10">
+              <span className="font-bold text-slate-300">Quick suggestions:</span>
               {SUGGESTED_TECH_SKILLS.filter((s) => !profile.skills?.technical?.includes(s) && !profile.skills?.tools?.includes(s))
                 .slice(0, 8)
                 .map((s) => (
@@ -1913,57 +1621,119 @@ export const CandidateProfilePage: React.FC = () => {
                     key={s}
                     type="button"
                     onClick={() => handleAddSkill(undefined, s)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600 hover:text-white text-slate-300 border border-slate-700 transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/35 transition-all shadow-sm cursor-pointer"
                   >
                     + {s}
                   </button>
                 ))}
             </div>
 
-            {/* Skill Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="p-5 rounded-2xl bg-slate-900/50 border border-indigo-500/20">
-                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
-                  <span>Core Engineering Stack ({profile.skills.technical.length})</span>
-                  <span className="text-[10px] text-indigo-400 font-extrabold uppercase">Primary</span>
+            {/* Skill Cards Grid (All 4 Categories) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 relative z-10">
+              {/* Category 1: Technical Stack */}
+              <div className="group relative p-5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] overflow-hidden shadow-sm transition-all duration-200">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
+                  <span className="flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-indigo-400" />
+                    Core Engineering Stack ({profile.skills.technical.length})
+                  </span>
+                  <span className="text-[10px] text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-md border border-indigo-500/30 font-extrabold uppercase">Primary</span>
                 </h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 relative z-10">
                   {profile.skills.technical.map((s) => (
                     <span
                       key={s}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-200 border border-indigo-400/35 hover:border-indigo-300/70 text-xs font-semibold shadow-sm transition-all"
                     >
                       {s}
-                      <button onClick={() => handleRemoveSkill('technical', s)} className="text-indigo-400 hover:text-rose-400 font-bold">
+                      <button onClick={() => handleRemoveSkill('technical', s)} className="text-indigo-400 hover:text-rose-400 font-bold ml-1">
                         ×
                       </button>
                     </span>
                   ))}
                   {profile.skills.technical.length === 0 && (
-                    <p className="text-xs text-slate-500 py-2">No technical skills added yet.</p>
+                    <p className="text-xs text-slate-400 py-2">No technical stack skills added yet.</p>
                   )}
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/50 border border-purple-500/20">
-                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
-                  <span>Cloud, DevOps & Tools ({profile.skills.tools.length})</span>
-                  <span className="text-[10px] text-purple-400 font-extrabold uppercase">Infra</span>
+              {/* Category 2: Tools & DevOps */}
+              <div className="group relative p-5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] overflow-hidden shadow-sm transition-all duration-200">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
+                  <span className="flex items-center gap-2">
+                    <FolderGit2 className="w-4 h-4 text-purple-400" />
+                    Cloud, DevOps & Tools ({profile.skills.tools.length})
+                  </span>
+                  <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md border border-purple-500/30 font-extrabold uppercase">Infra</span>
                 </h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 relative z-10">
                   {profile.skills.tools.map((s) => (
                     <span
                       key={s}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 text-purple-300 border border-purple-500/25 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 text-purple-200 border border-purple-400/35 hover:border-purple-300/70 text-xs font-semibold shadow-sm transition-all"
                     >
                       {s}
-                      <button onClick={() => handleRemoveSkill('tools', s)} className="text-purple-400 hover:text-rose-400 font-bold">
+                      <button onClick={() => handleRemoveSkill('tools', s)} className="text-purple-400 hover:text-rose-400 font-bold ml-1">
                         ×
                       </button>
                     </span>
                   ))}
                   {profile.skills.tools.length === 0 && (
-                    <p className="text-xs text-slate-500 py-2">No tools added yet.</p>
+                    <p className="text-xs text-slate-400 py-2">No tools or DevOps tools added yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Category 3: Soft & Leadership */}
+              <div className="group relative p-5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] overflow-hidden shadow-sm transition-all duration-200">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-emerald-400" />
+                    Leadership & Core Strengths ({profile.skills.soft?.length || 0})
+                  </span>
+                  <span className="text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/30 font-extrabold uppercase">Culture</span>
+                </h4>
+                <div className="flex flex-wrap gap-2 relative z-10">
+                  {(profile.skills.soft || []).map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-200 border border-emerald-400/35 hover:border-emerald-300/70 text-xs font-semibold shadow-sm transition-all"
+                    >
+                      {s}
+                      <button onClick={() => handleRemoveSkill('soft', s)} className="text-emerald-400 hover:text-rose-400 font-bold ml-1">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {(!profile.skills.soft || profile.skills.soft.length === 0) && (
+                    <p className="text-xs text-slate-400 py-2">Add leadership, mentoring, or communication competencies.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Category 4: Languages & Frameworks */}
+              <div className="group relative p-5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] overflow-hidden shadow-sm transition-all duration-200">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-cyan-400" />
+                    Languages & Spoken ({profile.skills.languages?.length || 0})
+                  </span>
+                  <span className="text-[10px] text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-md border border-cyan-500/30 font-extrabold uppercase">Global</span>
+                </h4>
+                <div className="flex flex-wrap gap-2 relative z-10">
+                  {(profile.skills.languages || []).map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 text-cyan-200 border border-cyan-400/35 hover:border-cyan-300/70 text-xs font-semibold shadow-sm transition-all"
+                    >
+                      {s}
+                      <button onClick={() => handleRemoveSkill('languages', s)} className="text-cyan-400 hover:text-rose-400 font-bold ml-1">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {(!profile.skills.languages || profile.skills.languages.length === 0) && (
+                    <p className="text-xs text-slate-400 py-2">Add languages (e.g. English - Professional, Spanish).</p>
                   )}
                 </div>
               </div>
@@ -1973,14 +1743,16 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: WORK EXPERIENCE */}
         {(activeTab === 'all' || activeTab === 'experience') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="purple" rounded="rounded-3xl" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-purple-500/20 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-purple-400" />
-                  Work Experience & Track Record
+                  Work Experience & Track Record ({profile.experience?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Positions, engineering delivery, and business achievements.</p>
+                <p className="text-xs text-slate-300 mt-0.5">Positions, engineering delivery, and business achievements.</p>
               </div>
               <div className="flex items-center gap-2">
                 {profile.experience?.length > 0 && (
@@ -2008,27 +1780,27 @@ export const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 relative z-10">
               {profile.experience.map((exp) => (
                 <div
                   key={exp.id}
-                  className="rounded-2xl p-5 sm:p-6 bg-slate-900/70 border border-slate-800/80 hover:border-indigo-500/40 transition-all"
+                  className="group relative rounded-2xl p-5 sm:p-6 bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-indigo-500/20 relative z-10">
                     <div className="flex items-start gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-400/35 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.2)] flex items-center justify-center font-bold text-sm shrink-0">
                         <Building className="w-5 h-5" />
                       </div>
                       <div>
                         <h4 className="text-base font-bold text-white">{exp.role}</h4>
-                        <p className="text-xs text-indigo-400 font-semibold mt-0.5">
+                        <p className="text-xs text-indigo-300 font-semibold mt-0.5">
                           {exp.company} • <span className="text-slate-400 font-normal">{exp.location}</span>
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-slate-400 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800">
+                      <span className="text-xs font-mono font-medium text-slate-300 bg-slate-950/80 px-3 py-1 rounded-xl border border-indigo-500/30 shadow-sm">
                         {exp.startDate} — {exp.current ? 'Present' : exp.endDate}
                       </span>
                       <button
@@ -2036,7 +1808,7 @@ export const CandidateProfilePage: React.FC = () => {
                           setEditingExp(exp);
                           setExpModalOpen(true);
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -2048,19 +1820,19 @@ export const CandidateProfilePage: React.FC = () => {
                             title: `${exp.role} at ${exp.company}`
                           })
                         }
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed whitespace-pre-line">{exp.description}</p>
+                  <p className="text-xs sm:text-sm text-slate-200 mt-3 leading-relaxed whitespace-pre-line relative z-10">{exp.description}</p>
 
                   {exp.technologies && exp.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-800/60">
+                    <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-indigo-500/15 relative z-10">
                       {exp.technologies.map((t) => (
-                        <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800/40 font-semibold">
+                        <span key={t} className="text-[10px] px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-200 border border-indigo-400/35 font-semibold shadow-sm">
                           {t}
                         </span>
                       ))}
@@ -2070,21 +1842,22 @@ export const CandidateProfilePage: React.FC = () => {
               ))}
 
               {profile.experience.length === 0 && (
-                <div className="py-10 text-center rounded-2xl bg-slate-900/30 border border-slate-800">
-                  <Briefcase className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">No work positions listed yet.</p>
-                  <Button
-                    onClick={() => {
-                      setEditingExp(null);
-                      setExpModalOpen(true);
-                    }}
-                    variant="primary"
-                    size="sm"
-                    className="mt-3"
-                    leftIcon={<Plus className="w-3.5 h-3.5" />}
-                  >
-                    Add Position
-                  </Button>
+                <div className="relative py-10 text-center rounded-2xl bg-white/[0.015] border border-dashed border-white/[0.08] overflow-hidden">
+                  <Briefcase className="w-8 h-8 text-indigo-400/60 mx-auto mb-2 relative z-10" />
+                  <p className="text-xs text-slate-300 relative z-10">No work positions listed yet.</p>
+                  <div className="pt-3 relative z-10">
+                    <Button
+                      onClick={() => {
+                        setEditingExp(null);
+                        setExpModalOpen(true);
+                      }}
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Plus className="w-3.5 h-3.5" />}
+                    >
+                      Add Position
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2093,14 +1866,16 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: EDUCATION */}
         {(activeTab === 'all' || activeTab === 'education') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="blue" rounded="rounded-3xl" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-blue-500/20 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-indigo-400" />
-                  Education & Academic Qualifications
+                  Education & Academic Qualifications ({profile.education?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Degrees, institutions, and graduation records.</p>
+                <p className="text-xs text-slate-300 mt-0.5">Degrees, institutions, and graduation records.</p>
               </div>
               <div className="flex items-center gap-2">
                 {profile.education?.length > 0 && (
@@ -2128,33 +1903,33 @@ export const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 relative z-10">
               {profile.education.map((edu) => (
                 <div
                   key={edu.id}
-                  className="rounded-2xl p-5 bg-slate-900/70 border border-slate-800 flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                  className="group relative rounded-2xl p-5 sm:p-6 bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4"
                 >
-                  <div>
+                  <div className="relative z-10">
                     <h4 className="text-base font-black text-white">{edu.degree}</h4>
-                    <p className="text-xs text-indigo-400 font-bold mt-0.5">{edu.institution}</p>
+                    <p className="text-xs text-indigo-300 font-bold mt-0.5">{edu.institution}</p>
                     <p className="text-xs text-slate-300 mt-0.5">{edu.fieldOfStudy}</p>
                     {edu.grade && (
-                      <span className="inline-block mt-2 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      <span className="inline-block mt-2 text-[11px] font-bold px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
                         {edu.grade}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-400 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-3 relative z-10">
+                    <span className="text-xs font-mono font-medium text-slate-300 bg-slate-950/80 px-3 py-1 rounded-xl border border-indigo-500/30 shadow-sm">
                       {edu.startYear} — {edu.endYear}
                     </span>
-                    <button onClick={() => { setEditingEdu(edu); setEduModalOpen(true); }} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
+                    <button onClick={() => { setEditingEdu(edu); setEduModalOpen(true); }} className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm({ type: 'edu', id: edu.id, title: edu.degree })}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -2163,18 +1938,19 @@ export const CandidateProfilePage: React.FC = () => {
               ))}
 
               {profile.education.length === 0 && (
-                <div className="py-10 text-center rounded-2xl bg-slate-900/30 border border-slate-800">
-                  <GraduationCap className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">No educational credentials added.</p>
-                  <Button
-                    onClick={() => { setEditingEdu(null); setEduModalOpen(true); }}
-                    variant="primary"
-                    size="sm"
-                    className="mt-3"
-                    leftIcon={<Plus className="w-3.5 h-3.5" />}
-                  >
-                    Add Education
-                  </Button>
+                <div className="relative py-10 text-center rounded-2xl bg-white/[0.015] border border-dashed border-white/[0.08] overflow-hidden">
+                  <GraduationCap className="w-8 h-8 text-indigo-400/60 mx-auto mb-2 relative z-10" />
+                  <p className="text-xs text-slate-300 relative z-10">No educational credentials added.</p>
+                  <div className="pt-3 relative z-10">
+                    <Button
+                      onClick={() => { setEditingEdu(null); setEduModalOpen(true); }}
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Plus className="w-3.5 h-3.5" />}
+                    >
+                      Add Education
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2183,14 +1959,16 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: FEATURED PROJECTS */}
         {(activeTab === 'all' || activeTab === 'projects') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="cyan" rounded="rounded-3xl" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
-                  <FolderGit2 className="w-5 h-5 text-indigo-400" />
+                  <FolderGit2 className="w-5 h-5 text-cyan-400" />
                   Featured Technical Projects ({profile.projects?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Production deployments and engineering repositories.</p>
+                <p className="text-xs text-slate-300 mt-0.5">Production deployments and engineering repositories.</p>
               </div>
               <div className="flex items-center gap-2">
                 {profile.projects?.length > 0 && (
@@ -2215,61 +1993,80 @@ export const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
               {profile.projects.map((proj) => (
-                <div key={proj.id} className="rounded-2xl p-6 bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-800">
+                <div key={proj.id} className="group relative rounded-2xl p-6 bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm flex flex-col justify-between">
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-indigo-500/20">
                       <h4 className="text-base font-black text-white">{proj.title}</h4>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => { setEditingProj(proj); setProjModalOpen(true); }} className="p-1 rounded text-slate-400 hover:text-white">
+                        <button onClick={() => { setEditingProj(proj); setProjModalOpen(true); }} className="p-1 rounded text-slate-400 hover:text-white transition-colors">
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDeleteConfirm({ type: 'proj', id: proj.id, title: proj.title })} className="p-1 rounded text-slate-400 hover:text-rose-400">
+                        <button onClick={() => setDeleteConfirm({ type: 'proj', id: proj.id, title: proj.title })} className="p-1 rounded text-slate-400 hover:text-rose-400 transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-300 mt-3 leading-relaxed">{proj.description}</p>
+                    <p className="text-xs sm:text-sm text-slate-200 mt-3 leading-relaxed">{proj.description}</p>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-800 space-y-3">
+                  <div className="mt-5 pt-3 border-t border-indigo-500/15 space-y-3 relative z-10">
                     <div className="flex flex-wrap gap-1.5">
                       {proj.technologies.map((t) => (
-                        <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800/40">
+                        <span key={t} className="text-[10px] px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-200 border border-cyan-400/35 font-semibold shadow-sm">
                           {t}
                         </span>
                       ))}
                     </div>
                     <div className="flex items-center gap-3 text-xs pt-1">
                       {proj.link && (
-                        <a href={proj.link} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold">
-                          <Globe className="w-3 h-3" /> Live App <ArrowUpRight className="w-3 h-3" />
+                        <a href={proj.link} target="_blank" rel="noreferrer" className="text-cyan-300 hover:text-white inline-flex items-center gap-1 font-bold transition-colors">
+                          <Globe className="w-3.5 h-3.5" /> Live App <ArrowUpRight className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {proj.githubUrl && (
-                        <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-white inline-flex items-center gap-1 font-semibold">
-                          <Github className="w-3 h-3" /> Repo <ArrowUpRight className="w-3 h-3" />
+                        <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-white inline-flex items-center gap-1 font-bold transition-colors">
+                          <Github className="w-3.5 h-3.5" /> Repo <ArrowUpRight className="w-3.5 h-3.5" />
                         </a>
                       )}
                     </div>
                   </div>
                 </div>
               ))}
+
+              {profile.projects.length === 0 && (
+                <div className="col-span-full relative py-10 text-center rounded-2xl bg-white/[0.015] border border-dashed border-white/[0.08] overflow-hidden">
+                  <FolderGit2 className="w-8 h-8 text-cyan-400/60 mx-auto mb-2 relative z-10" />
+                  <p className="text-xs text-slate-300 relative z-10">No featured technical projects added yet.</p>
+                  <div className="pt-3 relative z-10">
+                    <Button
+                      onClick={() => { setEditingProj(null); setProjModalOpen(true); }}
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Plus className="w-3.5 h-3.5" />}
+                    >
+                      Add Project
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* SECTION: CERTIFICATIONS */}
+        {/* SECTION: CERTIFICATIONS (NO 3D IMAGES • PURE NATURAL SHINE) */}
         {(activeTab === 'all' || activeTab === 'certifications') && (
-          <div className="rounded-3xl p-6 sm:p-8 bg-[#0b1026]/90 border border-slate-800/90 backdrop-blur-2xl shadow-xl space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="emerald" rounded="rounded-3xl" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-emerald-500/20 relative z-10">
               <div>
-                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Award className="w-5 h-5 text-amber-400" />
                   Licenses & Professional Certifications ({profile.certifications?.length || 0})
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Verified third-party credential badges (AWS, GCP, Meta, etc.).</p>
+                <p className="text-xs text-slate-300 mt-0.5">Verified third-party credential badges (AWS, GCP, Meta, Spring, etc.).</p>
               </div>
               <div className="flex items-center gap-2">
                 {profile.certifications?.length > 0 && (
@@ -2294,34 +2091,82 @@ export const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {profile.certifications.map((cert) => (
-                <div key={cert.id} className="rounded-2xl p-5 bg-slate-900/70 border border-slate-800 flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3.5">
-                    <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/25 shrink-0">
-                      <Award className="w-6 h-6" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch relative z-10">
+              {/* Credentials List (8 cols if compliance card shown, or full 8 cols) */}
+              <div className={profile.certifications?.length > 0 ? "lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4" : "lg:col-span-8 relative p-6 rounded-2xl bg-white/[0.015] border border-dashed border-white/[0.08] text-center space-y-2 overflow-hidden flex flex-col justify-center"}>
+                {profile.certifications?.length > 0 ? (
+                  profile.certifications.map((cert) => (
+                    <div key={cert.id} className="group relative rounded-2xl p-5 bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-200 overflow-hidden shadow-sm flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3.5 relative z-10">
+                        <div className="p-3 rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.2)] shrink-0">
+                          <Award className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">{cert.title}</h4>
+                          <p className="text-xs text-slate-300 mt-0.5">{cert.issuer}</p>
+                          <p className="text-[11px] font-semibold text-indigo-300 mt-1">Issued: {cert.issueDate}</p>
+                          {cert.credentialUrl && (
+                            <a href={cert.credentialUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-cyan-300 hover:underline mt-2 font-bold">
+                              Verify Credential <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 relative z-10">
+                        <button onClick={() => { setEditingCert(cert); setCertModalOpen(true); }} className="p-1 rounded text-slate-400 hover:text-white transition-colors" title="Edit">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setDeleteConfirm({ type: 'cert', id: cert.id, title: cert.title })} className="p-1 rounded text-slate-400 hover:text-rose-400 transition-colors" title="Delete">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{cert.title}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{cert.issuer}</p>
-                      <p className="text-[11px] text-indigo-400 mt-1">Issued: {cert.issueDate}</p>
-                      {cert.credentialUrl && (
-                        <a href={cert.credentialUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:underline mt-2 font-semibold">
-                          Verify Credential <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
+                  ))
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-white relative z-10">No Certifications Recorded Yet</p>
+                    <p className="text-xs text-slate-300 max-w-md mx-auto relative z-10 leading-relaxed">
+                      Add cloud, backend, systems, or architecture certifications to showcase verified domain expertise to hiring managers.
+                    </p>
+                    <div className="pt-2 relative z-10">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Plus className="w-4 h-4" />}
+                        onClick={() => { setEditingCert(null); setCertModalOpen(true); }}
+                      >
+                        Add First Certification
+                      </Button>
                     </div>
+                  </>
+                )}
+              </div>
+
+              {/* Verified Technical Security & Compliance Card (Replaces 3D Trophy Image!) */}
+              <div className="lg:col-span-4 group relative flex flex-col items-center justify-center p-6 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] text-center overflow-hidden shadow-sm transition-all duration-200">
+                {/* Animated Verified Security Badge */}
+                <div className="relative mb-3 z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+                    <ShieldCheck className="w-7 h-7 text-amber-300" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => { setEditingCert(cert); setCertModalOpen(true); }} className="p-1 rounded text-slate-400 hover:text-white">
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => setDeleteConfirm({ type: 'cert', id: cert.id, title: cert.title })} className="p-1 rounded text-slate-400 hover:text-rose-400">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-300" />
+                  </span>
                 </div>
-              ))}
+
+                <h5 className="text-xs font-bold text-white tracking-wide uppercase relative z-10">
+                  Verified Technical Credentials
+                </h5>
+                <p className="text-[11px] text-slate-300 max-w-[220px] mt-1 leading-relaxed relative z-10">
+                  Third-party verified credentials are cryptographically highlighted on your executive recruiter dossier.
+                </p>
+
+                <div className="mt-4 pt-3 border-t border-emerald-500/20 w-full flex items-center justify-center gap-1.5 text-[10px] font-mono font-bold text-emerald-300 relative z-10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  ATS CRYPTOGRAPHIC ASSURANCE
+                </div>
+              </div>
             </div>
           </div>
         )}
