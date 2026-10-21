@@ -313,10 +313,26 @@ export const ResumeManagementPage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-16" />
-            <Skeleton className="h-16" />
-            <Skeleton className="h-16" />
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0f1d] p-4 divide-y divide-white/[0.05]">
+            {[1, 2, 3].map((k) => (
+              <div key={k} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-1">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className={`h-4 rounded-md ${k === 1 ? 'w-48' : 'w-36'}`} />
+                    <Skeleton className="h-3 w-28 rounded" />
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-6">
+                  <Skeleton className="h-4 w-24 rounded" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="w-8 h-8 rounded-lg" />
+                  <Skeleton className="w-8 h-8 rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredResumes.length === 0 ? (
           <Card glass className="p-8 text-center text-xs text-slate-400">

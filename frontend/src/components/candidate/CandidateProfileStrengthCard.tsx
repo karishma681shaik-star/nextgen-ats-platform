@@ -36,10 +36,10 @@ export const CandidateProfileStrengthCard: React.FC<CandidateProfileStrengthCard
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative z-10 rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] transition-all duration-300 overflow-hidden group"
+      className="relative z-10 rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-indigo-500/15 hover:border-indigo-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] transition-all duration-300 overflow-hidden group"
     >
       {/* Specular hairline, corner reflection & natural light sheen */}
-      <CardReflectiveShine variant="indigo" rounded="rounded-3xl" />
+      <CardReflectiveShine variant="indigo" rounded="rounded-3xl" topIllumination={true} />
 
       {/* Ambient depth lighting */}
       <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />

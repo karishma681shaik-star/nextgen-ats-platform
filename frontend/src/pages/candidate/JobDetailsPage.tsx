@@ -28,7 +28,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { EasyApplyModal } from '../../components/candidate/EasyApplyModal';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { JobDetailsSkeleton, LoadingErrorState } from '../../components/loading';
 import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
 
 export const JobDetailsPage: React.FC = () => {
@@ -39,6 +41,7 @@ export const JobDetailsPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Apply Modal
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -61,13 +64,20 @@ export const JobDetailsPage: React.FC = () => {
   const loadJobDetails = async (jobId: string) => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const [jobData, profData, resumesData, savedJobs, applications] = await Promise.all([
         jobService.getJobById(jobId),
-        candidateService.getProfile(),
-        candidateService.getResumes(),
-        candidateService.getSavedJobs(),
-        candidateService.getApplications()
+        candidateService.getProfile().catch(() => null),
+        candidateService.getResumes().catch(() => []),
+        candidateService.getSavedJobs().catch(() => []),
+        candidateService.getApplications().catch(() => [])
       ]);
+
+      if (!jobData) {
+        setLoadError('The requested job opportunity could not be found or has been concluded.');
+        setJob(null);
+        return;
+      }
 
       setJob(jobData);
       setProfile(profData);
@@ -79,8 +89,9 @@ export const JobDetailsPage: React.FC = () => {
         const primary = resumesData.find((r) => r.isPrimary) || resumesData[0];
         setSelectedResumeId(primary.id);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load job details', err);
+      setLoadError(err?.message || 'Unable to load job requisition details. Please check connection and retry.');
     } finally {
       setIsLoading(false);
     }
@@ -168,11 +179,29 @@ export const JobDetailsPage: React.FC = () => {
     }
   };
 
-  if (isLoading || !job) {
+  if (isLoading) {
+    return <JobDetailsSkeleton />;
+  }
+
+  if (loadError || !job) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-96" />
+        <div>
+          <Link
+            to="/candidate/jobs"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Job Recommendations</span>
+          </Link>
+        </div>
+        <LoadingErrorState
+          title="Job Requisition Not Found"
+          message={loadError || 'This job requisition may have been closed or removed by the hiring organization.'}
+          onRetry={id ? () => loadJobDetails(id) : undefined}
+          backUrl="/candidate/jobs"
+          backLabel="Explore Active Opportunities"
+        />
       </div>
     );
   }
@@ -437,46 +466,14 @@ export const JobDetailsPage: React.FC = () => {
       </div>
 
       {/* APPLICATION MODAL */}
-      <Modal
+      <EasyApplyModal
+        job={job}
         isOpen={applyModalOpen}
         onClose={() => setApplyModalOpen(false)}
-        title={`Apply for ${job.title}`}
-        description={`Submit application to ${job.company}`}
-      >
-        <form onSubmit={handleApply} className="space-y-4">
-          <div className="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-xs space-y-1.5">
-            <p className="font-bold text-white">{profile?.name} • {profile?.title}</p>
-            <p className="text-slate-300">{profile?.email} • {profile?.phone}</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-              Select Resume Document
-            </label>
-            <select
-              value={selectedResumeId}
-              onChange={(e) => setSelectedResumeId(e.target.value)}
-              className="w-full bg-slate-900 text-slate-100 text-sm rounded-xl border border-slate-700 p-2.5"
-              required
-            >
-              {resumes.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.fileName} {r.isPrimary ? '(Primary Active)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-            <Button type="button" variant="secondary" onClick={() => setApplyModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="glow" isLoading={isSubmitting} leftIcon={<Send className="w-4 h-4" />}>
-              Submit Application
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSuccess={() => {
+          setIsApplied(true);
+        }}
+      />
 
       {/* CANDIDATE SAFETY REPORT MODAL */}
       <Modal

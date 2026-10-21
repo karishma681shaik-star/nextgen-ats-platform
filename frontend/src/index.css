@@ -163,6 +163,195 @@
     transform: translateY(-1.5px);
   }
 
+  /* ── Ultra-Sharp Luminous Single Border Shine ── */
+  .card-single-border-luminous {
+    position: relative;
+    border: 1px solid rgba(56, 217, 248, 0.65) !important;
+    box-shadow: 
+      0 0 18px 0 rgba(6, 182, 212, 0.45),
+      0 0 36px 0 rgba(14, 165, 233, 0.22),
+      inset 0 0 20px 0 rgba(6, 182, 212, 0.16),
+      0 20px 50px -10px rgba(0, 0, 0, 0.85) !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-single-border-luminous:hover {
+    border-color: rgba(103, 232, 249, 0.95) !important;
+    box-shadow: 
+      0 0 28px 2px rgba(6, 182, 212, 0.65),
+      0 0 54px 4px rgba(14, 165, 233, 0.38),
+      inset 0 0 28px 0 rgba(6, 182, 212, 0.28),
+      0 24px 60px -10px rgba(0, 0, 0, 0.9) !important;
+  }
+
+  .card-single-border-subtle {
+    border: 1px solid rgba(56, 189, 248, 0.42);
+    box-shadow: 
+      0 0 16px 0 rgba(6, 182, 212, 0.28),
+      inset 0 0 12px 0 rgba(6, 182, 212, 0.12);
+    transition: all 0.25s ease;
+  }
+
+  .card-single-border-subtle:hover {
+    border-color: rgba(34, 211, 238, 0.85);
+    box-shadow: 
+      0 0 24px 1px rgba(6, 182, 212, 0.50),
+      inset 0 0 16px 0 rgba(6, 182, 212, 0.22);
+  }
+
+  /* ============================================================
+     ONE-SIDED LUMINOUS UPPER-EDGE CARD BORDER
+     Refined, enterprise-grade illumination along the top edge
+     fading softly into dark midnight surroundings.
+     ============================================================ */
+  .card-upper-edge-luminous {
+    position: relative;
+    background: linear-gradient(180deg, rgba(12, 18, 38, 0.96) 0%, rgba(7, 11, 24, 0.98) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.38);
+    box-shadow: 
+      inset 0 0 0 1px rgba(56, 189, 248, 0.16),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+      0 14px 36px -10px rgba(0, 0, 0, 0.80),
+      0 0 24px -4px rgba(99, 102, 241, 0.28);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.28s ease;
+  }
+
+  @keyframes luminousSweep {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .card-upper-edge-luminous::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0) 0%,
+      rgba(99, 102, 241, 0.50) 8%,
+      rgba(56, 189, 248, 1) 28%,
+      rgba(192, 132, 252, 0.95) 50%,
+      rgba(56, 189, 248, 1) 72%,
+      rgba(99, 102, 241, 0.50) 92%,
+      rgba(99, 102, 241, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: luminousSweep 7s ease-in-out infinite;
+    box-shadow: 0 0 12px 1px rgba(56, 189, 248, 0.45),
+                0 0 16px 1px rgba(168, 85, 247, 0.35);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.28s ease, filter 0.28s ease, box-shadow 0.28s ease;
+  }
+
+  .card-upper-edge-luminous::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 6%;
+    width: 50%;
+    height: 52px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.12) 0%, rgba(129, 140, 248, 0.04) 60%, transparent 85%);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 0.28s ease;
+  }
+
+  .card-upper-edge-luminous:hover {
+    transform: translateY(-3px);
+    border-color: rgba(168, 85, 247, 0.65);
+    box-shadow: 
+      inset 0 0 0 1px rgba(56, 189, 248, 0.32),
+      inset 0 1px 3px 0 rgba(255, 255, 255, 0.38),
+      0 20px 48px -12px rgba(0, 0, 0, 0.90),
+      0 0 32px -2px rgba(129, 140, 248, 0.42);
+  }
+
+  .card-upper-edge-luminous:hover::before {
+    background: linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0) 0%,
+      rgba(99, 102, 241, 0.90) 6%,
+      rgba(56, 189, 248, 1) 26%,
+      rgba(192, 132, 252, 1) 50%,
+      rgba(56, 189, 248, 1) 74%,
+      rgba(99, 102, 241, 0.90) 94%,
+      rgba(99, 102, 241, 0) 100%
+    );
+    box-shadow: 0 0 16px 2px rgba(56, 189, 248, 0.60),
+                0 0 20px 2px rgba(168, 85, 247, 0.45);
+  }
+
+  .card-upper-edge-luminous:hover::after {
+    opacity: 1.5;
+    background: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.16) 0%, rgba(129, 140, 248, 0.08) 60%, transparent 85%);
+  }
+
+  /* Luminous 4-side bright border for search & filter container */
+  .filter-panel-luminous {
+    position: relative;
+    background: linear-gradient(180deg, rgba(12, 18, 38, 0.96) 0%, rgba(7, 11, 24, 0.98) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    box-shadow: 
+      inset 0 0 0 1px rgba(56, 189, 248, 0.15),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.22),
+      0 16px 40px -12px rgba(0, 0, 0, 0.78),
+      0 0 20px -4px rgba(99, 102, 241, 0.24);
+  }
+
+  .filter-panel-luminous::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0) 0%,
+      rgba(99, 102, 241, 0.60) 10%,
+      rgba(56, 189, 248, 0.95) 35%,
+      rgba(168, 85, 247, 0.80) 65%,
+      rgba(99, 102, 241, 0.40) 90%,
+      rgba(99, 102, 241, 0) 100%
+    );
+    box-shadow: 0 0 10px 1px rgba(56, 189, 248, 0.35),
+                0 0 12px 0 rgba(99, 102, 241, 0.25);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-upper-edge-luminous {
+      transition: none !important;
+      transform: none !important;
+    }
+    .card-upper-edge-luminous::before {
+      animation: none !important;
+    }
+    .card-upper-edge-luminous:hover {
+      transform: none !important;
+    }
+  }
+
   .card-shine-bright {
     position: relative;
     background: linear-gradient(180deg, rgba(12, 17, 34, 0.85) 0%, rgba(7, 10, 22, 0.94) 100%);
@@ -740,5 +929,1085 @@
     display: none !important;
   }
 }
+
+/* ============================================================
+   CANDIDATE PROFILE — ULTRA-PREMIUM TOP-EDGE CARD ILLUMINATION
+   Inspired by studio rim light reflecting off refined glass surface
+   ============================================================ */
+
+.candidate-profile-card {
+  position: relative;
+  border: 1px solid rgba(125, 140, 255, 0.16) !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.candidate-profile-card:hover {
+  border-color: rgba(147, 160, 255, 0.28) !important;
+}
+
+/* 1. Curved Gradient Border via Mask (Illuminated Top Edge & Fading Sides) */
+.candidate-card-border-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 15;
+  border: 1px solid transparent;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.group:hover .candidate-card-border-glow {
+  opacity: 1.25;
+  filter: brightness(1.15);
+}
+
+/* 2. Slow-Moving Elegant Top Rim Specular Glint (6-10s subtle reflection) */
+@keyframes candidateTopRimSheen {
+  0% {
+    transform: translateX(-110%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  44% {
+    transform: translateX(360%);
+    opacity: 0.55;
+  }
+  54%, 100% {
+    transform: translateX(360%);
+    opacity: 0;
+  }
+}
+
+.candidate-card-specular-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24%;
+  height: 1px;
+  pointer-events: none;
+  z-index: 22;
+  animation: candidateTopRimSheen 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candidate-card-specular-beam {
+    display: none !important;
+  }
+}
+
+/* 3. Refined Top-Edge Outer Illumination Glow Classes */
+.card-top-illumination-hero {
+  box-shadow: 0 -4px 20px -2px rgba(168, 85, 247, 0.16), 0 20px 50px -15px rgba(0, 0, 0, 0.7);
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.card-top-illumination-hero:hover {
+  box-shadow: 0 -6px 28px -1px rgba(168, 85, 247, 0.26), 0 24px 60px -15px rgba(0, 0, 0, 0.8);
+}
+
+.card-top-illumination-standard {
+  box-shadow: 0 -3px 14px -2px rgba(147, 112, 250, 0.12), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-top-illumination-standard:hover {
+  box-shadow: 0 -4px 20px -1px rgba(168, 85, 247, 0.22), 0 20px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+.card-top-illumination-compact {
+  box-shadow: 0 -2px 10px -2px rgba(147, 112, 250, 0.10), 0 8px 24px -6px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.card-top-illumination-compact:hover {
+  box-shadow: 0 -3px 14px -1px rgba(168, 85, 247, 0.18), 0 10px 28px -6px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================================
+   PREMIUM INTELLIGENT SKELETON & CINEMATIC LOADING SHIMMER
+   ============================================================ */
+.skeleton-bone {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.skeleton-bone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(99, 102, 241, 0.07) 50%,
+    rgba(56, 189, 248, 0.05) 70%,
+    transparent 100%
+  );
+  animation: skeletonShimmerSweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes skeletonShimmerSweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bone::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .skeleton-bone {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* ============================================================
+   SAVED JOBS & CAREER CARDS — ULTRA-PREMIUM EXTERNAL RIM ILLUMINATION
+   Thin blue-violet outer edge, subtle cyan highlight, and soft external aura
+   ============================================================ */
+.card-aura-outer-luminous {
+  position: relative;
+  background: linear-gradient(180deg, rgba(10, 16, 35, 0.94) 0%, rgba(6, 10, 24, 0.97) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.30);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.10),
+    0 0 26px -4px rgba(99, 102, 241, 0.20),
+    0 0 14px -2px rgba(56, 189, 248, 0.12),
+    0 20px 48px -12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.16);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease;
+}
+
+.card-aura-outer-luminous-interactive {
+  position: relative;
+  background: linear-gradient(180deg, rgba(10, 16, 35, 0.94) 0%, rgba(6, 10, 24, 0.97) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.08),
+    0 0 22px -4px rgba(99, 102, 241, 0.18),
+    0 0 12px -2px rgba(56, 189, 248, 0.10),
+    0 16px 40px -12px rgba(0, 0, 0, 0.80),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.15);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
+}
+
+.card-aura-outer-luminous-interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(165, 180, 252, 0.50);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.20),
+    0 0 34px -2px rgba(129, 140, 248, 0.32),
+    0 0 18px 0 rgba(56, 189, 248, 0.18),
+    0 24px 56px -12px rgba(0, 0, 0, 0.92),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-aura-outer-luminous,
+  .card-aura-outer-luminous-interactive {
+    transition: none !important;
+  }
+  .card-aura-outer-luminous-interactive:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   SAVED JOBS & CAREER CARDS — ULTRA-LUMINOUS BORDER SHINE & SPECULAR GLINT
+   Brilliant electric cyan/violet specular beam, crystal rim glow & outer illumination
+   ============================================================ */
+@keyframes cardRimSpecularSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.card-ultra-shine {
+  position: relative;
+  background: linear-gradient(180deg, rgba(11, 18, 40, 0.96) 0%, rgba(6, 10, 24, 0.98) 100%);
+  border: 1px solid rgba(125, 211, 252, 0.48);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.25),
+    0 0 28px -2px rgba(56, 189, 248, 0.38),
+    0 0 52px -4px rgba(99, 102, 241, 0.30),
+    0 20px 48px -12px rgba(0, 0, 0, 0.88),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 20px 0 rgba(56, 189, 248, 0.08);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease;
+}
+
+.card-ultra-shine::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0) 0%,
+    rgba(56, 189, 248, 0.8) 15%,
+    rgba(255, 255, 255, 1) 45%,
+    rgba(168, 85, 247, 0.9) 65%,
+    rgba(56, 189, 248, 0.8) 85%,
+    rgba(99, 102, 241, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: cardRimSpecularSweep 5.5s linear infinite;
+  box-shadow: 
+    0 0 14px 2px rgba(56, 189, 248, 0.70),
+    0 0 22px 2px rgba(168, 85, 247, 0.50);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.card-ultra-shine:hover {
+  transform: translateY(-3px);
+  border-color: rgba(186, 230, 253, 0.90);
+  box-shadow: 
+    0 0 0 1.5px rgba(125, 211, 252, 0.65),
+    0 0 40px 3px rgba(56, 189, 248, 0.65),
+    0 0 70px 6px rgba(139, 92, 246, 0.48),
+    0 24px 60px -10px rgba(0, 0, 0, 0.94),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 30px 0 rgba(56, 189, 248, 0.18);
+}
+
+.card-ultra-shine:hover::before {
+  box-shadow: 
+    0 0 20px 3px rgba(56, 189, 248, 0.95),
+    0 0 30px 4px rgba(168, 85, 247, 0.75);
+}
+
+/* 3D Realistic Object Sheen & Specular Flares */
+.realistic-object-shine {
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.75))
+          drop-shadow(0 0 18px rgba(56, 189, 248, 0.28));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.realistic-object-shine:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.85))
+          drop-shadow(0 0 28px rgba(56, 189, 248, 0.55))
+          drop-shadow(0 0 18px rgba(168, 85, 247, 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-ultra-shine::before {
+    animation: none !important;
+  }
+  .card-ultra-shine:hover {
+    transform: none !important;
+  }
+  .realistic-object-shine:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   ULTRA-PREMIUM SIDEBAR — SPECULAR ACTIVE CAPSULE & HOLOGRAPHIC SHINE
+   Continuous specular laser border, multi-spectral inner glow,
+   and 3D kinetic object reaction when selected
+   ============================================================ */
+@keyframes sidebarItemGlint {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes holographicBeaconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(56, 189, 248, 1)) drop-shadow(0 0 20px rgba(168, 85, 247, 0.8));
+  }
+}
+
+.sidebar-nav-active-shine {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.65) 0%,
+    rgba(139, 92, 246, 0.80) 50%,
+    rgba(6, 182, 212, 0.50) 100%
+  ) !important;
+  border: 1px solid rgba(165, 180, 252, 0.80) !important;
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.40),
+    0 0 24px 0 rgba(99, 102, 241, 0.60),
+    0 0 42px 2px rgba(147, 51, 234, 0.40),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.60),
+    inset 0 0 18px 0 rgba(56, 189, 248, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.sidebar-nav-active-shine::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(192, 132, 252, 0.9) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sidebarItemGlint 3.8s linear infinite;
+  box-shadow: 0 0 12px 1.5px rgba(56, 189, 248, 0.85),
+              0 0 20px 2px rgba(168, 85, 247, 0.70);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sidebar-nav-active-shine:hover {
+  transform: translateX(3px);
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 
+    0 0 0 1.5px rgba(56, 189, 248, 0.55),
+    0 0 30px 2px rgba(99, 102, 241, 0.80),
+    0 0 50px 4px rgba(147, 51, 234, 0.55),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.80),
+    inset 0 0 24px 0 rgba(56, 189, 248, 0.35) !important;
+}
+
+.sidebar-icon-glow {
+  animation: holographicBeaconPulse 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav-active-shine::before {
+    animation: none !important;
+  }
+  .sidebar-icon-glow {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   ULTRA-PREMIUM TOP NAVIGATION — SPECULAR GLINT & HOLOGRAPHIC ROLE SWITCHER
+   ============================================================ */
+.header-specular-bar {
+  position: relative;
+  background: rgba(6, 11, 24, 0.90) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid rgba(129, 140, 248, 0.22) !important;
+  box-shadow: 0 4px 28px -4px rgba(0, 0, 0, 0.65), 0 0 20px -2px rgba(99, 102, 241, 0.15) !important;
+}
+
+.header-specular-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.4) 15%,
+    rgba(56, 189, 248, 0.85) 50%,
+    rgba(168, 85, 247, 0.6) 85%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  pointer-events: none;
+}
+
+.header-search-capsule {
+  position: relative;
+  background: rgba(10, 16, 36, 0.88);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.14), 0 0 16px -2px rgba(99, 102, 241, 0.18);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header-search-capsule:focus-within {
+  border-color: rgba(125, 211, 252, 0.80);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.40),
+    0 0 24px 0 rgba(56, 189, 248, 0.40),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 14px 0 rgba(56, 189, 248, 0.15);
+  transform: translateY(-1px);
+}
+
+.role-switcher-pod {
+  background: linear-gradient(180deg, rgba(10, 16, 36, 0.95) 0%, rgba(6, 10, 24, 0.98) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.32);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.14),
+    0 0 20px -2px rgba(99, 102, 241, 0.25),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.18);
+}
+
+.role-active-capsule {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.role-active-capsule::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 50%, transparent 100%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ============================================================
+   ULTRA-PREMIUM PUBLIC LANDING NAVBAR & LUMINOUS SPECULAR CTA
+   ============================================================ */
+@keyframes navbarBeamSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes ctaButtonSpecularSweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  25%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.public-navbar-specular {
+  position: relative;
+  background: rgba(4, 7, 17, 0.78);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-bottom: 1px solid rgba(129, 140, 248, 0.22);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8), 0 0 20px -5px rgba(99, 102, 241, 0.15);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.public-navbar-specular.is-scrolled {
+  background: rgba(4, 7, 17, 0.94);
+  border-bottom-color: rgba(147, 197, 253, 0.35);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.9), 0 0 35px -5px rgba(56, 189, 248, 0.22);
+}
+
+.public-navbar-specular::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.3) 15%,
+    rgba(56, 189, 248, 0.9) 45%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(168, 85, 247, 0.9) 55%,
+    rgba(99, 102, 241, 0.3) 85%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: navbarBeamSweep 6s linear infinite;
+  box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.65), 0 0 24px 2px rgba(168, 85, 247, 0.45);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Nav Item Specular Hover Pill */
+.nav-link-specular {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+}
+
+.nav-link-specular:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(125, 211, 252, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 18px -2px rgba(56, 189, 248, 0.30), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Primary Luminous Specular CTA Button */
+.btn-luminous-cta {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%);
+  border: 1px solid rgba(224, 231, 255, 0.75);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.30),
+    0 0 24px 0 rgba(99, 102, 241, 0.65),
+    0 0 45px 2px rgba(6, 182, 212, 0.35),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-luminous-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: ctaButtonSpecularSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.btn-luminous-cta:hover {
+  transform: translateY(-1.5px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 0 0 1.5px rgba(125, 211, 252, 0.70),
+    0 0 35px 4px rgba(99, 102, 241, 0.85),
+    0 0 60px 8px rgba(6, 182, 212, 0.55),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.90),
+    inset 0 0 20px 0 rgba(56, 189, 248, 0.35);
+}
+
+.btn-luminous-cta:active {
+  transform: translateY(0px) scale(0.99);
+}
+
+/* Secondary Glass Login Button */
+.btn-glass-pill {
+  position: relative;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 20px -2px rgba(56, 189, 248, 0.35), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-navbar-specular::after {
+    animation: none !important;
+  }
+  .btn-luminous-cta::before {
+    animation: none !important;
+  }
+  .btn-luminous-cta:hover {
+    transform: none !important;
+  }
+  .nav-link-specular:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   ULTRA-PREMIUM PORTAL SELECTION PAGE — SPECULAR CARDS & BUTTONS
+   ============================================================ */
+.portal-card-base {
+  position: relative;
+  border-radius: 1.25rem;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.portal-card-base::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background-size: 200% 100%;
+  animation: cardRimSpecularSweep 5s linear infinite;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 1. Candidate Portal Card (Electric Cyan / Royal Blue) */
+.portal-card-cyan {
+  background: linear-gradient(180deg, rgba(8, 18, 38, 0.94) 0%, rgba(4, 9, 22, 0.98) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.12),
+    0 0 32px -4px rgba(6, 182, 212, 0.22),
+    0 24px 52px -12px rgba(0, 0, 0, 0.9),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 20px 0 rgba(6, 182, 212, 0.06);
+}
+
+.portal-card-cyan::before {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(99, 102, 241, 0.9) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.7);
+}
+
+.portal-card-cyan:hover {
+  transform: translateY(-5px);
+  border-color: rgba(125, 211, 252, 0.85);
+  box-shadow: 
+    0 0 0 1.5px rgba(56, 189, 248, 0.5),
+    0 0 45px 0 rgba(6, 182, 212, 0.45),
+    0 28px 60px -10px rgba(0, 0, 0, 0.95),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 30px 0 rgba(6, 182, 212, 0.15);
+}
+
+/* 2. Recruiter Portal Card (Neon Purple / Fuchsia) */
+.portal-card-purple {
+  background: linear-gradient(180deg, rgba(20, 10, 38, 0.94) 0%, rgba(8, 4, 22, 0.98) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.32);
+  box-shadow: 
+    0 0 0 1px rgba(168, 85, 247, 0.12),
+    0 0 32px -4px rgba(168, 85, 247, 0.22),
+    0 24px 52px -12px rgba(0, 0, 0, 0.9),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 20px 0 rgba(168, 85, 247, 0.06);
+}
+
+.portal-card-purple::before {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(236, 72, 153, 0.9) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 14px 2px rgba(168, 85, 247, 0.7);
+}
+
+.portal-card-purple:hover {
+  transform: translateY(-5px);
+  border-color: rgba(216, 180, 254, 0.85);
+  box-shadow: 
+    0 0 0 1.5px rgba(168, 85, 247, 0.5),
+    0 0 45px 0 rgba(168, 85, 247, 0.45),
+    0 28px 60px -10px rgba(0, 0, 0, 0.95),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 30px 0 rgba(168, 85, 247, 0.15);
+}
+
+/* 3. Administrator Portal Card (Cyber Emerald / Teal) */
+.portal-card-emerald {
+  background: linear-gradient(180deg, rgba(6, 26, 24, 0.94) 0%, rgba(3, 14, 13, 0.98) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  box-shadow: 
+    0 0 0 1px rgba(52, 211, 153, 0.12),
+    0 0 32px -4px rgba(16, 185, 129, 0.22),
+    0 24px 52px -12px rgba(0, 0, 0, 0.9),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 20px 0 rgba(16, 185, 129, 0.06);
+}
+
+.portal-card-emerald::before {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 211, 153, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(20, 184, 166, 0.9) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 14px 2px rgba(52, 211, 153, 0.7);
+}
+
+.portal-card-emerald:hover {
+  transform: translateY(-5px);
+  border-color: rgba(167, 243, 208, 0.85);
+  box-shadow: 
+    0 0 0 1.5px rgba(52, 211, 153, 0.5),
+    0 0 45px 0 rgba(16, 185, 129, 0.45),
+    0 28px 60px -10px rgba(0, 0, 0, 0.95),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 30px 0 rgba(16, 185, 129, 0.15);
+}
+
+/* Luminous Role Buttons */
+.btn-luminous-cyan {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #4f46e5 100%);
+  border: 1px solid rgba(224, 242, 254, 0.8);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.35),
+    0 0 24px 0 rgba(6, 182, 212, 0.65),
+    0 0 45px 2px rgba(99, 102, 241, 0.35),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-luminous-cyan::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: ctaButtonSpecularSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.btn-luminous-cyan:hover {
+  transform: translateY(-1.5px) scale(1.02);
+  border-color: #ffffff;
+  box-shadow: 
+    0 0 0 1.5px rgba(125, 211, 252, 0.8),
+    0 0 35px 4px rgba(6, 182, 212, 0.9),
+    0 0 60px 8px rgba(99, 102, 241, 0.6),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.95);
+}
+
+.btn-luminous-purple {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+  border: 1px solid rgba(243, 232, 255, 0.8);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 0 0 1px rgba(168, 85, 247, 0.35),
+    0 0 24px 0 rgba(168, 85, 247, 0.65),
+    0 0 45px 2px rgba(236, 72, 153, 0.35),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-luminous-purple::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: ctaButtonSpecularSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.btn-luminous-purple:hover {
+  transform: translateY(-1.5px) scale(1.02);
+  border-color: #ffffff;
+  box-shadow: 
+    0 0 0 1.5px rgba(216, 180, 254, 0.8),
+    0 0 35px 4px rgba(168, 85, 247, 0.9),
+    0 0 60px 8px rgba(236, 72, 153, 0.6),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.95);
+}
+
+.btn-luminous-emerald {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #0d9488 100%);
+  border: 1px solid rgba(209, 250, 229, 0.8);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 0 0 1px rgba(52, 211, 153, 0.35),
+    0 0 24px 0 rgba(16, 185, 129, 0.65),
+    0 0 45px 2px rgba(13, 148, 136, 0.35),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-luminous-emerald::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: ctaButtonSpecularSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.btn-luminous-emerald:hover {
+  transform: translateY(-1.5px) scale(1.02);
+  border-color: #ffffff;
+  box-shadow: 
+    0 0 0 1.5px rgba(167, 243, 208, 0.8),
+    0 0 35px 4px rgba(16, 185, 129, 0.9),
+    0 0 60px 8px rgba(13, 148, 136, 0.6),
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-card-base::before {
+    animation: none !important;
+  }
+  .btn-luminous-cyan::before,
+  .btn-luminous-purple::before,
+  .btn-luminous-emerald::before {
+    animation: none !important;
+  }
+  .portal-card-base:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   ULTRA-PREMIUM AUTHENTICATION FORM CARDS & INPUT GLOWS
+   ============================================================ */
+.auth-form-card-cyan {
+  position: relative;
+  background: linear-gradient(180deg, rgba(8, 16, 36, 0.95) 0%, rgba(4, 8, 20, 0.98) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.12),
+    0 0 35px -5px rgba(6, 182, 212, 0.25),
+    0 24px 55px -12px rgba(0, 0, 0, 0.95),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 24px 0 rgba(6, 182, 212, 0.08) !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden;
+}
+
+.auth-form-card-cyan::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(99, 102, 241, 0.9) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: cardRimSpecularSweep 5s linear infinite;
+  box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.7);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.auth-form-card-cyan input:focus {
+  border-color: rgba(56, 189, 248, 0.8) !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+.auth-form-card-purple {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 10, 38, 0.95) 0%, rgba(8, 4, 22, 0.98) 100%) !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+  box-shadow: 
+    0 0 0 1px rgba(168, 85, 247, 0.12),
+    0 0 35px -5px rgba(168, 85, 247, 0.25),
+    0 24px 55px -12px rgba(0, 0, 0, 0.95),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 24px 0 rgba(168, 85, 247, 0.08) !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden;
+}
+
+.auth-form-card-purple::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(236, 72, 153, 0.9) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: cardRimSpecularSweep 5s linear infinite;
+  box-shadow: 0 0 14px 2px rgba(168, 85, 247, 0.7);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.auth-form-card-purple input:focus {
+  border-color: rgba(168, 85, 247, 0.8) !important;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+.auth-form-card-emerald {
+  position: relative;
+  background: linear-gradient(180deg, rgba(6, 26, 24, 0.95) 0%, rgba(3, 14, 13, 0.98) 100%) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  box-shadow: 
+    0 0 0 1px rgba(52, 211, 153, 0.12),
+    0 0 35px -5px rgba(16, 185, 129, 0.25),
+    0 24px 55px -12px rgba(0, 0, 0, 0.95),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 24px 0 rgba(16, 185, 129, 0.08) !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden;
+}
+
+.auth-form-card-emerald::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 211, 153, 0.8) 20%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(20, 184, 166, 0.9) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: cardRimSpecularSweep 5s linear infinite;
+  box-shadow: 0 0 14px 2px rgba(52, 211, 153, 0.7);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.auth-form-card-emerald input:focus {
+  border-color: rgba(52, 211, 153, 0.8) !important;
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form-card-cyan::before,
+  .auth-form-card-purple::before,
+  .auth-form-card-emerald::before {
+    animation: none !important;
+  }
+}
+
+
+
 
 

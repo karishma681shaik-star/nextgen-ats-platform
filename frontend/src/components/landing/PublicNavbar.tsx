@@ -53,114 +53,114 @@ export const PublicNavbar: React.FC = () => {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-[#040711]/95 backdrop-blur-2xl border-b border-indigo-500/20 shadow-2xl py-3'
-          : 'bg-[#040711]/60 backdrop-blur-xl border-b border-white/[0.06] py-3.5'
+      className={`sticky top-0 z-50 public-navbar-specular ${
+        isScrolled ? 'is-scrolled py-2.5' : 'py-3'
       } px-4 sm:px-6 lg:px-8 xl:px-10 box-border`}
     >
       <div className="w-full max-w-[1536px] mx-auto flex items-center justify-between gap-3 lg:gap-4 xl:gap-6 box-border">
-        {/* Brand Logo — Positioned naturally on the left without artificial offsets */}
+        {/* Brand Logo — Ultra-Premium Holographic 3D Prism Emblem */}
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group select-none shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] transition-all shrink-0">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" />
+          <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 p-[1.5px] shadow-[0_0_24px_rgba(99,102,241,0.45)] group-hover:shadow-[0_0_32px_rgba(56,189,248,0.7)] group-hover:scale-105 transition-all duration-300 shrink-0">
+            <div className="w-full h-full rounded-[10px] bg-[#070c1e] flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/25 via-transparent to-cyan-400/25" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 drop-shadow-[0_0_8px_rgba(56,189,248,0.85)] group-hover:rotate-12 transition-transform duration-300" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping opacity-75" />
+            </div>
           </div>
           <div className="flex items-center gap-1.5 font-space tracking-tight">
-            <span className="text-xl sm:text-[1.35rem] font-extrabold text-white tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+            <span className="text-xl sm:text-[1.35rem] font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               AI
             </span>
-            <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-violet-400/80 inline-block align-middle" />
-            <span className="text-xl sm:text-[1.35rem] font-extrabold bg-gradient-to-r from-violet-300 via-indigo-200 to-fuchsia-300 bg-clip-text text-transparent tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/90 shadow-[0_0_8px_#38bdf8] inline-block align-middle" />
+            <span className="text-xl sm:text-[1.35rem] font-black bg-gradient-to-r from-violet-200 via-indigo-100 to-cyan-200 bg-clip-text text-transparent tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               ATS
             </span>
-            <span className="ml-1 text-[8.5px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/35 shadow-sm">
+            <span className="ml-1 text-[9px] uppercase font-mono font-extrabold tracking-widest px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.25)]">
               PRO
             </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation Links — Centered, flexible width, balanced spacing */}
-        <nav className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-1 lg:gap-1.5 xl:gap-3 2xl:gap-5 text-xs xl:text-[13px] font-semibold text-slate-300 px-1 xl:px-3">
+        {/* Desktop Navigation Links — Specular Hover Pills */}
+        <nav className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-1 lg:gap-1.5 xl:gap-2.5 text-xs xl:text-[13px] font-medium text-slate-300 px-1 xl:px-3">
           <button
             type="button"
             onClick={() => scrollToSection('hero')}
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl cursor-pointer"
           >
             Home
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('students')}
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl cursor-pointer"
           >
             For Students
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('recruiters')}
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl cursor-pointer"
           >
             For Recruiters
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('how-it-works')}
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl cursor-pointer"
           >
             How It Works
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('pipeline-story')}
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl cursor-pointer"
           >
             AI Pipeline
           </button>
           <Link
             to="/candidate/jobs"
             data-cursor-label="Explore"
-            className="whitespace-nowrap px-2 xl:px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+            className="nav-link-specular whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
           >
-            Explore Jobs
+            <span>Explore Jobs</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8] animate-pulse" />
           </Link>
         </nav>
 
-        {/* Right CTA / Role Switcher Actions — Sits on the right with flex-shrink: 0, completely visible */}
+        {/* Right CTA / Role Switcher Actions */}
         <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 2xl:gap-3 shrink-0">
           {/* Persona selector with neutral initial state */}
           <RoleSwitcher defaultNeutral={true} />
 
           {isAuthenticated && user ? (
             <Link to={getDashboardPath()} className="shrink-0">
-              <Button
-                variant="glow"
-                size="sm"
-                className="whitespace-nowrap font-bold shadow-glow text-xs"
-                rightIcon={<LayoutDashboard className="w-3.5 h-3.5" />}
+              <button
+                type="button"
+                className="btn-luminous-cta whitespace-nowrap text-xs px-3.5 xl:px-4 py-2 rounded-xl group/cta font-bold"
               >
-                Open Portal ({role})
-              </Button>
+                <span>Open Portal ({role})</span>
+                <LayoutDashboard className="w-3.5 h-3.5 text-cyan-200 group-hover/cta:rotate-12 transition-transform duration-200" />
+              </button>
             </Link>
           ) : (
             <>
               <Link to="/login" className="shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="whitespace-nowrap text-slate-300 hover:text-white font-medium text-xs px-2.5 xl:px-3"
+                <button
+                  type="button"
+                  className="btn-glass-pill whitespace-nowrap text-slate-200 hover:text-white font-semibold text-xs px-3.5 py-2 rounded-xl cursor-pointer"
                 >
                   Login
-                </Button>
+                </button>
               </Link>
               <Link to="/register" data-cursor-label="Start" className="shrink-0">
-                <Button
-                  variant="glow"
-                  size="sm"
-                  className="whitespace-nowrap shadow-glow font-bold text-xs px-3 xl:px-3.5 shrink-0"
-                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                <button
+                  type="button"
+                  className="btn-luminous-cta whitespace-nowrap text-xs px-4 py-2 rounded-xl group/cta font-bold"
                 >
-                  Get Started
-                </Button>
+                  <span>Get Started</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-cyan-200 group-hover/cta:translate-x-1 transition-transform duration-200" />
+                </button>
               </Link>
             </>
           )}
@@ -170,20 +170,19 @@ export const PublicNavbar: React.FC = () => {
         <div className="flex items-center gap-2.5 lg:hidden">
           {!isAuthenticated && (
             <Link to="/register" className="hidden sm:inline-flex shrink-0">
-              <Button
-                variant="glow"
-                size="sm"
-                className="whitespace-nowrap shadow-glow font-bold text-xs px-3"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+              <button
+                type="button"
+                className="btn-luminous-cta whitespace-nowrap text-xs px-3.5 py-1.5 rounded-xl group/cta font-bold"
               >
-                Get Started
-              </Button>
+                <span>Get Started</span>
+                <ArrowRight className="w-3.5 h-3.5 text-cyan-200 group-hover/cta:translate-x-1 transition-transform duration-200" />
+              </button>
             </Link>
           )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl bg-[#0a0f1d] border border-white/10 text-slate-300 hover:text-white cursor-pointer"
+            className="p-2 rounded-xl bg-[#0a0f1d] border border-cyan-400/30 text-slate-300 hover:text-white hover:border-cyan-400/60 shadow-[0_0_12px_rgba(56,189,248,0.2)] cursor-pointer transition-all"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -199,50 +198,51 @@ export const PublicNavbar: React.FC = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="lg:hidden overflow-hidden bg-[#0a0f1d]/95 backdrop-blur-2xl border-b border-indigo-500/20 px-4 py-5 mt-3 rounded-2xl space-y-4 shadow-2xl"
+            className="lg:hidden overflow-hidden bg-[#070c1e]/98 backdrop-blur-2xl border border-cyan-400/30 px-4 py-5 mt-3 rounded-2xl space-y-4 shadow-[0_16px_40px_rgba(0,0,0,0.85),0_0_30px_rgba(56,189,248,0.2)]"
           >
             <div className="flex flex-col space-y-1.5 text-xs font-semibold text-slate-300">
               <button
                 type="button"
                 onClick={() => scrollToSection('hero')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl"
               >
                 Home
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('students')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl"
               >
                 For Students
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('recruiters')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl"
               >
                 For Recruiters
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('how-it-works')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl"
               >
                 How It Works
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('pipeline-story')}
-                className="text-left px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl"
               >
                 AI Pipeline
               </button>
               <Link
                 to="/candidate/jobs"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+                className="nav-link-specular text-left px-3 py-2 rounded-xl flex items-center justify-between"
               >
-                Explore Jobs
+                <span>Explore Jobs</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8]" />
               </Link>
             </div>
 
@@ -252,21 +252,22 @@ export const PublicNavbar: React.FC = () => {
               </div>
               {isAuthenticated && user ? (
                 <Link to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="glow" size="md" className="w-full">
-                    Go to Dashboard ({role})
-                  </Button>
+                  <button type="button" className="btn-luminous-cta w-full py-2.5 rounded-xl font-bold">
+                    <span>Go to Dashboard ({role})</span>
+                  </button>
                 </Link>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="secondary" size="md" className="w-full text-xs">
+                    <button type="button" className="btn-glass-pill w-full py-2.5 rounded-xl font-semibold text-xs">
                       Login
-                    </Button>
+                    </button>
                   </Link>
                   <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="glow" size="md" className="w-full text-xs">
-                      Get Started
-                    </Button>
+                    <button type="button" className="btn-luminous-cta w-full py-2.5 rounded-xl font-bold text-xs">
+                      <span>Get Started</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-cyan-200" />
+                    </button>
                   </Link>
                 </div>
               )}

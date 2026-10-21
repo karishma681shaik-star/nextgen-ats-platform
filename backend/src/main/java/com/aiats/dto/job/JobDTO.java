@@ -35,6 +35,7 @@ public class JobDTO {
     private String recruiterEmail;
     private String recruiterVerificationStatus;
     private boolean verifiedRecruiter;
+    private boolean companyVerified;
     private String rejectionReason;
     private String approvedBy;
     private String approvedAt;
@@ -71,6 +72,9 @@ public class JobDTO {
 
     public boolean isVerifiedRecruiter() { return verifiedRecruiter; }
     public void setVerifiedRecruiter(boolean verifiedRecruiter) { this.verifiedRecruiter = verifiedRecruiter; }
+
+    public boolean isCompanyVerified() { return companyVerified; }
+    public void setCompanyVerified(boolean companyVerified) { this.companyVerified = companyVerified; }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

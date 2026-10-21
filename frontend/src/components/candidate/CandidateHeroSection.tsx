@@ -49,10 +49,10 @@ export const CandidateHeroSection: React.FC<CandidateHeroSectionProps> = ({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-indigo-500/20 bg-gradient-to-br from-[#0c1329] via-[#090e21] to-[#060917] p-6 sm:p-8 lg:p-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] backdrop-blur-xl card-shine-all-sides group"
+      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-indigo-500/25 bg-gradient-to-br from-[#0c1329] via-[#090e21] to-[#060917] p-6 sm:p-8 lg:p-10 card-top-illumination-hero backdrop-blur-xl card-shine-all-sides group"
     >
-      {/* ── Soft Ambient Light Rim ────────────────────────────────────────────── */}
-      <CardReflectiveShine variant="indigo" rounded="rounded-3xl" hasHoverSweep={false} />
+      {/* ── Soft Ambient Top-Edge Illumination Rim ────────────────────────────── */}
+      <CardReflectiveShine variant="indigo" intensity="hero" rounded="rounded-3xl" topIllumination={true} hasHoverSweep={false} />
 
       {/* Subtle, restrained ambient background glow (calm & non-distracting) */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-indigo-500/[0.06] blur-2xl" />
@@ -81,7 +81,8 @@ export const CandidateHeroSection: React.FC<CandidateHeroSectionProps> = ({
           </div>
 
           {/* Profile Completion Bar Card */}
-          <div className="relative overflow-hidden max-w-md p-4 rounded-2xl bg-[#090e23]/80 border border-white/[0.08] hover:border-indigo-500/25 backdrop-blur-md shadow-lg transition-all duration-300 group/readiness">
+          <div className="relative overflow-hidden max-w-md p-4 rounded-2xl bg-[#090e23]/80 border border-white/[0.08] hover:border-indigo-500/30 backdrop-blur-md card-top-illumination-compact transition-all duration-300 group/readiness">
+            <CardReflectiveShine variant="indigo" intensity="compact" rounded="rounded-2xl" topIllumination={true} />
             <div className="relative z-10">
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="font-semibold text-slate-200 flex items-center gap-1.5">
@@ -136,10 +137,11 @@ export const CandidateHeroSection: React.FC<CandidateHeroSectionProps> = ({
                   : 'Listen to personalized Nexus AI welcome'
               }
               aria-label={isAiSpeaking ? 'Stop voice assistant' : 'Listen to personalized greeting'}
-              className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 hover:border-indigo-400/40 hover:bg-indigo-900/40 shadow-md backdrop-blur-md transition-all duration-200 active:scale-[0.98] cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+              className="group relative overflow-hidden flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 hover:border-indigo-400/40 hover:bg-indigo-900/40 card-top-illumination-compact backdrop-blur-md transition-all duration-200 active:scale-[0.98] cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             >
+              <CardReflectiveShine variant="cyan" intensity="compact" rounded="rounded-2xl" topIllumination={true} />
               <AIAssistantEmblem size="sm" isSpeaking={isAiSpeaking} />
-              <div className="flex flex-col text-left select-none">
+              <div className="flex flex-col text-left select-none relative z-10">
                 <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-300 group-hover:text-indigo-200 transition-colors">
                   Nexus AI
                 </span>
@@ -154,9 +156,11 @@ export const CandidateHeroSection: React.FC<CandidateHeroSectionProps> = ({
                   {isAiSpeaking ? 'Speaking...' : 'Voice Assistant'}
                 </span>
               </div>
-              <AIAudioWaveform isSpeaking={isAiSpeaking} />
-              <div className="ml-1 p-1.5 rounded-lg text-slate-400 group-hover:text-indigo-200 group-hover:bg-white/10 transition-colors">
-                <Volume2 className={`w-3.5 h-3.5 ${isAiSpeaking ? 'text-cyan-400 animate-pulse' : ''}`} />
+              <div className="relative z-10 flex items-center gap-1">
+                <AIAudioWaveform isSpeaking={isAiSpeaking} />
+                <div className="ml-1 p-1.5 rounded-lg text-slate-400 group-hover:text-indigo-200 group-hover:bg-white/10 transition-colors">
+                  <Volume2 className={`w-3.5 h-3.5 ${isAiSpeaking ? 'text-cyan-400 animate-pulse' : ''}`} />
+                </div>
               </div>
             </button>
 

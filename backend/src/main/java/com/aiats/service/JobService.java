@@ -478,7 +478,7 @@ public class JobService {
             dto.setCompany(job.getCompany().getName());
             dto.setCompanyId(job.getCompany().getId().toString());
             dto.setCompanyLogo(job.getCompany().getLogo());
-            dto.setVerifiedRecruiter(job.getCompany().isVerified());
+            dto.setCompanyVerified(job.getCompany().isVerified());
         }
         if (job.getRecruiter() != null) {
             dto.setRecruiterId(job.getRecruiter().getId().toString());

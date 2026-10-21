@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
   const roleTheme = getRoleTheme();
 
   return (
-    <header className="sticky top-0 z-40 bg-[#060b18]/85 backdrop-blur-2xl border-b border-white/[0.08] px-4 lg:px-8 py-3 transition-all shadow-md">
+    <header className="sticky top-0 z-40 header-specular-bar px-4 lg:px-8 py-2.5 transition-all shadow-xl">
       <div className="flex items-center justify-between gap-4">
         {/* Left Side: Mobile Menu Button & Search Bar */}
         <div className="flex items-center gap-3 flex-1 max-w-md">
@@ -123,8 +123,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
           )}
 
           {/* Quick Command / Search Bar */}
-          <div className="hidden sm:flex items-center gap-2.5 w-full bg-[#0a1024]/90 border border-white/10 rounded-xl px-3.5 py-1.5 text-slate-400 text-xs focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
-            <Search className="w-3.5 h-3.5 text-slate-400" />
+          <div className="hidden sm:flex items-center gap-2.5 w-full header-search-capsule rounded-xl px-3.5 py-2 text-slate-400 text-xs">
+            <Search className="w-4 h-4 text-cyan-400 shrink-0 drop-shadow-[0_0_6px_rgba(34,211,238,0.7)]" />
             <input
               type="text"
               placeholder={
@@ -134,16 +134,16 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
                   ? 'Search users, logs, or moderate listings...'
                   : 'Search open tech roles, skills, or companies...'
               }
-              className="bg-transparent text-slate-200 placeholder:text-slate-500 text-xs w-full focus:outline-none"
+              className="bg-transparent text-slate-200 placeholder:text-slate-400 text-xs w-full focus:outline-none"
             />
-            <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/[0.08] border border-white/10 text-[9px] font-mono text-slate-400">
+            <kbd className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-900/90 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 shadow-xs">
               <Command className="w-2.5 h-2.5" /> K
             </kbd>
           </div>
         </div>
 
-        {/* Right Side: Role Persona Badge, Role Switcher, Notifications, User Menu */}
-        <div className="flex items-center gap-2.5">
+        {/* Right Side: Role Switcher, Notifications, User Menu */}
+        <div className="flex items-center gap-3">
           <RoleSwitcher />
           <NotificationsDropdown />
 
@@ -154,16 +154,16 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               type="button"
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
               className={cn(
-                'flex items-center gap-2.5 p-1.5 pr-2.5 rounded-xl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50',
+                'flex items-center gap-2.5 p-1.5 pr-3 rounded-xl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50',
                 isProfileMenuOpen
-                  ? 'bg-white/[0.08] border border-white/15'
-                  : 'hover:bg-slate-800/60 border border-transparent hover:border-slate-700/60'
+                  ? 'bg-slate-900/95 border border-cyan-400/50 shadow-[0_0_18px_rgba(6,182,212,0.3)]'
+                  : 'bg-slate-900/70 border border-white/10 hover:border-cyan-400/40 hover:bg-slate-900/90 shadow-sm'
               )}
               aria-label="User account menu"
               aria-haspopup="true"
               aria-expanded={isProfileMenuOpen}
             >
-              <div className="relative shrink-0">
+              <div className="relative shrink-0 ring-1 ring-cyan-500/40 rounded-full">
                 <Avatar src={user?.avatar} name={user?.name || 'User'} size="md" status="online" />
               </div>
 

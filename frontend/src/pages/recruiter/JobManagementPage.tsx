@@ -236,8 +236,30 @@ export const JobManagementPage: React.FC = () => {
       {/* Jobs Listing */}
       {isLoading ? (
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+          {[1, 2, 3].map((idx) => (
+            <div
+              key={idx}
+              className="card-upper-edge-luminous rounded-2xl p-5 sm:p-6 bg-slate-900/80 border border-white/[0.08] shadow-lg"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className={`h-6 rounded-lg ${idx === 1 ? 'w-56' : idx === 2 ? 'w-48' : 'w-64'}`} />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Skeleton className="h-4 w-28 rounded" />
+                    <Skeleton className="h-4 w-24 rounded" />
+                    <Skeleton className="h-4 w-32 rounded" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t border-white/[0.06] lg:border-t-0">
+                  <Skeleton className="h-9 w-24 rounded-xl" />
+                  <Skeleton className="h-9 w-20 rounded-xl" />
+                  <Skeleton className="w-9 h-9 rounded-xl" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : filteredJobs.length === 0 ? (

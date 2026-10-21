@@ -60,14 +60,14 @@ export const CandidateProfileHero: React.FC<CandidateProfileHeroProps> = ({
     >
       {/* ── LAYER 1 & 2: Main Surface Bezel (Layered Midnight Navy) ────────── */}
       <div
-        className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0d1426]/98 via-[#090f22]/98 to-[#060a18]/99 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl transition-all duration-300"
+        className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0d1426]/98 via-[#090f22]/98 to-[#060a18]/99 border border-indigo-500/15 hover:border-indigo-400/25 backdrop-blur-2xl transition-all duration-300"
         style={{
           boxShadow:
             '0 25px 60px -15px rgba(0, 0, 0, 0.75), inset 0 1px 0 0 rgba(255, 255, 255, 0.10)'
         }}
       >
-        {/* Top Specular Hairline Rim */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/14 group-hover:via-white/28 to-transparent pointer-events-none z-30 transition-all duration-300" />
+        {/* Studio-Grade Top-Edge Illumination with Corner Curvature & Fading Sides */}
+        <CardReflectiveShine variant="indigo" rounded="rounded-3xl" topIllumination={true} />
 
         {/* Ambient Studio Lighting (Soft violet and cyan depths) */}
         <div className="absolute -top-32 -left-24 w-96 h-96 rounded-full bg-violet-600/[0.08] blur-[120px] pointer-events-none" />
@@ -257,8 +257,8 @@ export const CandidateProfileHero: React.FC<CandidateProfileHeroProps> = ({
               RIGHT COLUMN: VERIFIED TALENT DOSSIER & ANIMATED IDENTITY RADAR
               (NATURAL REFINED SHINE CARD SYSTEM • NO 3D IMAGES)
               ═════════════════════════════════════════════════════════════════ */}
-          <div className="relative lg:col-span-5 flex flex-col justify-between p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-[#0d142b]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] overflow-hidden group shadow-xl transition-all duration-300">
-            <CardReflectiveShine variant="cyan" rounded="rounded-2xl" />
+          <div className="relative lg:col-span-5 flex flex-col justify-between p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-[#0d142b]/85 via-[#080d20]/90 to-[#060918]/95 border border-cyan-500/15 hover:border-cyan-400/25 overflow-hidden group shadow-xl transition-all duration-300">
+            <CardReflectiveShine variant="cyan" rounded="rounded-2xl" topIllumination={true} />
 
             {/* Ambient background glows */}
             <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />

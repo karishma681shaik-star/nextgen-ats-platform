@@ -39,6 +39,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { formatFullDate } from '../../utils/formatters';
 
 export const UserManagementPage: React.FC = () => {
@@ -661,21 +662,21 @@ export const UserManagementPage: React.FC = () => {
               {isLoading ? (
                 // Skeleton loading state
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
+                  <tr key={i}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-800" />
+                        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
                         <div className="space-y-1.5">
-                          <div className="w-32 h-3.5 bg-slate-800 rounded" />
-                          <div className="w-44 h-3 bg-slate-800/60 rounded" />
+                          <Skeleton className={`h-3.5 rounded ${i % 2 === 0 ? 'w-32' : 'w-24'}`} />
+                          <Skeleton className="h-3 w-40 rounded" />
                         </div>
                       </div>
                     </td>
-                    <td className="p-4"><div className="w-20 h-4 bg-slate-800 rounded" /></td>
-                    <td className="p-4"><div className="w-16 h-4 bg-slate-800 rounded" /></td>
-                    <td className="p-4"><div className="w-14 h-4 bg-slate-800 rounded" /></td>
-                    <td className="p-4"><div className="w-20 h-3 bg-slate-800 rounded" /></td>
-                    <td className="p-4 text-right"><div className="w-32 h-6 bg-slate-800 rounded ml-auto" /></td>
+                    <td className="p-4"><Skeleton className="w-20 h-5 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="w-16 h-5 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="w-14 h-5 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="w-20 h-3.5 rounded" /></td>
+                    <td className="p-4 text-right"><Skeleton className="w-28 h-7 rounded-lg ml-auto" /></td>
                   </tr>
                 ))
               ) : filteredUsers.length === 0 ? (

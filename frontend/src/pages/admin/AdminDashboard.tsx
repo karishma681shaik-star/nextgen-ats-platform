@@ -29,6 +29,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Modal } from '../../components/ui/Modal';
+import { AdminDashboardSkeleton } from '../../components/loading';
 
 function formatTimestamp(ts?: string): string {
   if (!ts) return '—';
@@ -266,29 +267,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Loading Skeleton State
   if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-slate-800/80 pb-5">
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-48 rounded-lg" />
-            <Skeleton className="h-4 w-96 max-w-full rounded-lg" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-28 rounded-xl" />
-            <Skeleton className="h-8 w-20 rounded-xl" />
-          </div>
-        </div>
-        <Skeleton className="h-11 w-full rounded-xl" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Skeleton className="h-40 rounded-2xl" />
-          <Skeleton className="h-40 rounded-2xl" />
-          <Skeleton className="h-40 rounded-2xl" />
-          <Skeleton className="h-40 rounded-2xl" />
-        </div>
-        <Skeleton className="h-36 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   // Error State with Retry

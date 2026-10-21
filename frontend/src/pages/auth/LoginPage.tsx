@@ -7,18 +7,17 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Bot,
   User,
   Briefcase,
   ArrowLeft,
   AlertCircle,
-  CheckCircle2
+  ShieldCheck,
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { BackgroundEffects } from '../../components/ui/BackgroundEffects';
 import { voiceAssistantService } from '../../services/audio/voiceAssistantService';
 
@@ -60,34 +59,40 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
     if (isCandidate) {
       return {
         badge: 'CANDIDATE PORTAL',
-        badgeColor: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+        badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.25)]',
         heading: 'Candidate Sign In',
-        subtitle: 'Access your resume, ATS insights, job matches, and applications.',
+        subtitle: 'Access your resume analysis, live ATS insights, and recruitment tracking.',
+        channelTag: '🔒 256-Bit Encrypted Talent Channel',
         icon: <User className="w-6 h-6 text-cyan-300" />,
-        iconBg: 'from-cyan-600 via-indigo-600 to-blue-700 shadow-glow',
-        buttonVariant: 'glow' as const,
+        iconGradient: 'from-cyan-500/25 via-blue-600/20 to-indigo-700/20 border-cyan-400/40 shadow-[0_0_24px_rgba(56,189,248,0.35)]',
+        cardClass: 'auth-form-card-cyan',
+        buttonClass: 'btn-luminous-cyan',
         buttonText: 'Sign In as Candidate',
         createAccountText: 'Create Candidate Account',
         createAccountPath: '/register?role=candidate',
         forgotPasswordPath: '/forgot-password?portal=candidate',
         dashboardPath: '/candidate',
-        accentBorder: 'border-cyan-500/30',
+        accentColor: 'text-cyan-400 hover:text-cyan-300',
+        activeFocusBorder: 'focus:border-cyan-400',
       };
     } else {
       return {
         badge: 'RECRUITER PORTAL',
-        badgeColor: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+        badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-400/40 shadow-[0_0_12px_rgba(168,85,247,0.25)]',
         heading: 'Recruiter Sign In',
-        subtitle: 'Access your hiring workspace and manage your recruitment pipeline.',
+        subtitle: 'Access your hiring workspace, evaluate applicants, and manage candidate pipelines.',
+        channelTag: '🔒 256-Bit Encrypted Hiring Channel',
         icon: <Briefcase className="w-6 h-6 text-purple-300" />,
-        iconBg: 'from-purple-600 via-fuchsia-600 to-indigo-700 shadow-glow-purple',
-        buttonVariant: 'glow-purple' as const,
+        iconGradient: 'from-purple-500/25 via-fuchsia-600/20 to-indigo-700/20 border-purple-400/40 shadow-[0_0_24px_rgba(168,85,247,0.35)]',
+        cardClass: 'auth-form-card-purple',
+        buttonClass: 'btn-luminous-purple',
         buttonText: 'Sign In as Recruiter',
         createAccountText: 'Create Recruiter Account',
         createAccountPath: '/register?role=recruiter',
         forgotPasswordPath: '/forgot-password?portal=recruiter',
         dashboardPath: '/recruiter',
-        accentBorder: 'border-purple-500/30',
+        accentColor: 'text-purple-400 hover:text-purple-300',
+        activeFocusBorder: 'focus:border-purple-400',
       };
     }
   }, [isCandidate]);
@@ -121,7 +126,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
 
       // 2. Strict Role Verification against selected portal
       if (portal === 'candidate' && loggedUser.role !== 'candidate') {
-        // Mismatch! Immediately terminate active session
         await logout();
         const mismatchMessage =
           loggedUser.role === 'recruiter'
@@ -137,7 +141,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
       }
 
       if (portal === 'recruiter' && loggedUser.role !== 'recruiter') {
-        // Mismatch! Immediately terminate active session
         await logout();
         const mismatchMessage =
           loggedUser.role === 'candidate'
@@ -193,60 +196,73 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#040711] text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-cyan-500 selection:text-white overflow-x-hidden">
       {/* Route-Aware 3D Background */}
       <BackgroundEffects mode="auth" role={portal} />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 space-y-6">
         {/* Navigation link back to portal selection */}
-        <div className="text-center">
+        <div className="text-center pt-2">
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-1.5 rounded-full border border-white/[0.08]"
+            className="inline-flex items-center gap-2 text-xs font-mono font-medium text-slate-300 hover:text-white transition-all bg-[#080e22]/80 hover:bg-[#0e1738] px-4 py-1.5 rounded-full border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_16px_rgba(56,189,248,0.18)] group"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to portal selection
+            <ArrowLeft className="w-3.5 h-3.5 text-cyan-400 group-hover:-translate-x-1 transition-transform duration-200" />
+            <span>Back to portal selection</span>
           </Link>
         </div>
 
         {/* Brand Logo & Role Headline */}
-        <div className="text-center space-y-3">
-          <Link to="/" className="inline-flex items-center gap-3 group">
-            <div
-              className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${portalConfig.iconBg} flex items-center justify-center text-white group-hover:scale-105 transition-transform`}
-            >
-              {portalConfig.icon}
-            </div>
-            <div className="text-left">
-              <span className="font-display font-black text-2xl tracking-tight text-white flex items-center gap-2">
-                AI ATS <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PRO</span>
-              </span>
-              <p className="text-[11px] text-slate-400 font-mono tracking-wider">INTELLIGENT RECRUITMENT SUITE</p>
-            </div>
-          </Link>
+        <div className="text-center space-y-3.5">
+          <div className="flex justify-center">
+            <Link to="/" className="inline-flex items-center gap-3.5 group select-none">
+              <div
+                className={`relative w-12 h-12 rounded-2xl bg-gradient-to-tr border p-[1.5px] flex items-center justify-center transition-all duration-300 group-hover:scale-105 shrink-0 ${portalConfig.iconGradient}`}
+              >
+                <div className="w-full h-full rounded-[14px] bg-[#070c1e] flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.08] via-transparent to-white/[0.02]" />
+                  {portalConfig.icon}
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping opacity-75" />
+                </div>
+              </div>
+              <div className="text-left font-space tracking-tight">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    AI • ATS
+                  </span>
+                  <span className="text-[10px] uppercase font-mono font-extrabold tracking-widest px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.25)]">
+                    PRO
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 font-mono tracking-widest uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8] inline-block" />
+                  Intelligent Recruitment Suite
+                </p>
+              </div>
+            </Link>
+          </div>
 
-          {/* Role-Specific Badge */}
-          <div className="pt-2">
+          {/* Role-Specific Badge & Headline */}
+          <div className="space-y-1.5 pt-1">
             <span
               className={`inline-block text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full border ${portalConfig.badgeColor}`}
             >
               {portalConfig.badge}
             </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+              {portalConfig.heading}
+            </h1>
+            <p className="text-xs text-slate-300/80 max-w-sm mx-auto leading-relaxed">
+              {portalConfig.subtitle}
+            </p>
           </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-            {portalConfig.heading}
-          </h1>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-            {portalConfig.subtitle}
-          </p>
         </div>
 
         {/* Role Mismatch / Auth Error Alert */}
         {authError && (
-          <div className="rounded-xl bg-rose-950/70 border border-rose-500/40 p-4 flex items-start gap-3 text-rose-200 text-xs shadow-lg animate-in fade-in">
+          <div className="rounded-xl bg-rose-950/80 border border-rose-500/50 p-4 flex items-start gap-3 text-rose-200 text-xs shadow-xl animate-in fade-in">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <p className="font-semibold text-rose-300">{authError}</p>
               {authError.includes('Candidate Sign In') && (
                 <Link
@@ -276,8 +292,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
           </div>
         )}
 
-        {/* Login Form Card */}
-        <Card glass className={`p-6 sm:p-8 border border-white/10 shadow-2xl relative`}>
+        {/* Ultra-Premium Form Card */}
+        <div className={`${portalConfig.cardClass} p-7 sm:p-8 space-y-5 shadow-2xl relative`}>
           <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <Input
               label="Email Address"
@@ -301,14 +317,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
               required
             />
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor={`${portal}-password`} className="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
                   Password
                 </label>
                 <Link
                   to={portalConfig.forgotPasswordPath}
-                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                  className={`text-xs font-semibold ${portalConfig.accentColor} transition-colors`}
                 >
                   Forgot password?
                 </Link>
@@ -346,48 +362,54 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
             </div>
 
             <div className="pt-2">
-              <Button
+              <button
                 type="submit"
-                variant={portalConfig.buttonVariant}
-                size="lg"
-                className="w-full font-bold shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                isLoading={isLoading}
                 disabled={isLoading}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
+                className={`${portalConfig.buttonClass} w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg disabled:opacity-60 disabled:cursor-not-allowed group/btn`}
               >
-                {portalConfig.buttonText}
-              </Button>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Authenticating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{portalConfig.buttonText}</span>
+                    <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
+                  </>
+                )}
+              </button>
             </div>
           </form>
 
-          {/* Account Creation Link */}
-          <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Bot className="w-3.5 h-3.5 text-indigo-400" />
-              Verified Portal
+          {/* Account Creation & Verified Status Link */}
+          <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
+            <span className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
+              <ShieldCheck className={`w-3.5 h-3.5 ${isCandidate ? 'text-cyan-400' : 'text-purple-400'}`} />
+              Verified Gateway
             </span>
             <Link
               to={portalConfig.createAccountPath}
-              className={`font-bold transition-colors ${
-                isCandidate ? 'text-cyan-400 hover:text-cyan-300' : 'text-purple-400 hover:text-purple-300'
-              }`}
+              className={`font-bold transition-all px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 ${portalConfig.accentColor}`}
             >
               {portalConfig.createAccountText} →
             </Link>
           </div>
-        </Card>
+        </div>
 
-        {/* Portal Switching Hint */}
-        <div className="text-center">
-          <p className="text-xs text-slate-500">
-            Wrong portal?{' '}
+        {/* Portal Switching Capsule */}
+        <div className="text-center pt-1 pb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#070c1e]/85 backdrop-blur-md border border-white/[0.08] text-xs text-slate-400 shadow-lg">
+            <span>Wrong portal?</span>
             <Link
               to={isCandidate ? '/login/recruiter' : '/login/candidate'}
-              className="text-slate-400 hover:text-white underline transition-colors"
+              className={`font-bold underline transition-colors ${
+                isCandidate ? 'text-purple-300 hover:text-purple-200' : 'text-cyan-300 hover:text-cyan-200'
+              }`}
             >
-              Switch to {isCandidate ? 'Recruiter' : 'Candidate'} Sign In
+              Switch to {isCandidate ? 'Recruiter' : 'Candidate'} Sign In →
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

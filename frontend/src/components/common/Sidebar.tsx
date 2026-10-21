@@ -82,21 +82,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       ? 'from-purple-600 to-indigo-600'
       : role === 'admin'
       ? 'from-emerald-600 to-teal-600'
-      : 'from-indigo-600 to-cyan-600';
+      : 'from-indigo-600 via-purple-600 to-cyan-500';
 
   const roleBadgeColor =
     role === 'recruiter'
       ? 'text-purple-300 bg-purple-500/15 border-purple-500/30'
       : role === 'admin'
       ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
-      : 'text-indigo-300 bg-indigo-500/15 border-indigo-500/30';
-
-  const activeNavBg =
-    role === 'recruiter'
-      ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 shadow-glow-purple text-white font-bold'
-      : role === 'admin'
-      ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600 shadow-glow-emerald text-white font-bold'
-      : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 shadow-glow text-white font-bold';
+      : 'text-cyan-300 bg-cyan-500/15 border-cyan-500/30';
 
   const highlightIconColor =
     role === 'recruiter'
@@ -134,13 +127,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className={cn('h-1 w-full bg-gradient-to-r opacity-90', roleAccent)} />
 
         {/* Top Branding Section */}
-        <div className="p-5 border-b border-white/[0.08] flex items-center gap-3">
-          <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-tr flex items-center justify-center text-white shadow-glow shrink-0', roleAccent)}>
-            <Sparkles className="w-5 h-5 animate-pulse" />
+        <div className="p-5 border-b border-white/[0.08] flex items-center gap-3 relative overflow-hidden">
+          {/* Subtle ambient light */}
+          <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
+
+          <div className={cn('w-11 h-11 rounded-2xl bg-gradient-to-tr flex items-center justify-center text-white shadow-[0_0_22px_rgba(99,102,241,0.5),inset_0_1px_1.5px_rgba(255,255,255,0.4)] border border-white/25 shrink-0 relative group', roleAccent)}>
+            <Sparkles className="w-5 h-5 animate-pulse text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/20 to-transparent pointer-events-none" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-extrabold text-white font-display tracking-tight truncate">AI ATS Platform</h2>
-            <span className={cn('text-[9px] uppercase font-mono font-bold tracking-widest px-1.5 py-0.5 rounded border inline-block mt-0.5', roleBadgeColor)}>
+            <h2 className="text-sm font-black text-white font-display tracking-tight truncate flex items-center gap-1.5">
+              <span>AI ATS Platform</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            </h2>
+            <span className={cn('text-[9px] uppercase font-mono font-bold tracking-widest px-2 py-0.5 rounded-md border inline-block mt-0.5 shadow-xs', roleBadgeColor)}>
               {role} Portal
             </span>
           </div>
@@ -161,9 +161,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         )}
 
         {/* Navigation Links */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-          <div className="px-3 pb-2 text-[9px] uppercase font-mono font-bold tracking-widest text-slate-500">
-            WORKSPACE NAVIGATION
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+          <div className="flex items-center gap-2 px-3 pb-2 text-[9px] uppercase font-mono font-bold tracking-widest text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
+            <span>WORKSPACE NAVIGATION</span>
           </div>
 
           {currentNavItems.map((item) => {
@@ -178,25 +179,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   cn(
                     'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 relative',
                     isActive
-                      ? activeNavBg
+                      ? 'sidebar-nav-active-shine text-white font-bold'
                       : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.05]'
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon
+                    {/* Animated 3D Holographic Icon Object when Selected */}
+                    {isActive ? (
+                      <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-white/35 via-white/15 to-transparent border border-white/50 flex items-center justify-center shrink-0 shadow-[0_0_16px_rgba(255,255,255,0.45),inset_0_1px_1.5px_rgba(255,255,255,0.7)] sidebar-icon-glow">
+                        <Icon className="w-4 h-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.95)]" />
+                        <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-300 opacity-80" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-300 shadow-[0_0_6px_rgba(34,211,238,1)]" />
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-400 group-hover:text-slate-200 group-hover:bg-white/[0.04] transition-all">
+                        <Icon
+                          className={cn(
+                            'w-4 h-4 transition-transform group-hover:scale-115',
+                            item.highlight ? highlightIconColor : ''
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    <span
                       className={cn(
-                        'w-4 h-4 shrink-0 transition-transform duration-200',
+                        'flex-1 truncate tracking-tight transition-all',
                         isActive
-                          ? 'text-white'
-                          : item.highlight
-                          ? highlightIconColor
-                          : 'text-slate-400 group-hover:text-slate-200',
-                        !isActive && 'group-hover:scale-110'
+                          ? 'font-extrabold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.45)]'
+                          : 'font-medium'
                       )}
-                    />
-                    <span className="flex-1 truncate">{item.label}</span>
+                    >
+                      {item.label}
+                    </span>
 
                     {/* Badge */}
                     {item.badge && !isActive && (
@@ -205,9 +224,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       </span>
                     )}
 
-                    {/* Active Arrow Indicator */}
+                    {/* Active Animated Arrow / Beacon Indicator */}
                     {isActive && (
-                      <ChevronRight className="w-3.5 h-3.5 text-white/80 shrink-0" />
+                      <div className="flex items-center gap-1 shrink-0">
+                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,1)] animate-pulse" />
+                        <ChevronRight className="w-4 h-4 text-cyan-200 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]" />
+                      </div>
                     )}
 
                     {/* Pulsing dot for highlight items */}
@@ -226,13 +248,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Bottom System Status Pill */}
         <div className="px-3 pb-3">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10">
-            <Bot className={cn('w-4 h-4 shrink-0', highlightIconColor)} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold text-white">AI ATS Recruitment</p>
-              <p className="text-[9px] text-emerald-400 font-medium truncate">System Operational</p>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-slate-900/90 to-[#0c142b]/95 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15),inset_0_1px_1px_rgba(255,255,255,0.1)]">
+            <div className="w-6 h-6 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-xs">
+              <Bot className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
             </div>
-            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold text-white leading-tight">AI ATS Recruitment</p>
+              <p className="text-[9px] text-emerald-400 font-mono font-medium truncate flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-ping" />
+                System Operational
+              </p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,1)]" />
           </div>
         </div>
 
@@ -240,32 +267,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="p-3 border-t border-white/[0.08]">
           <div
             onClick={() => setIsAvatarModalOpen(true)}
-            className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-purple-500/30 transition-all cursor-pointer group"
+            className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/80 border border-white/[0.10] hover:border-cyan-400/40 hover:bg-slate-900/95 shadow-sm hover:shadow-[0_0_16px_rgba(6,182,212,0.2)] transition-all cursor-pointer group"
             title="Click to edit profile & photo"
           >
             {user?.avatar ? (
-              <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-white/10">
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-cyan-500/40 shadow-xs">
                 <img
                   src={user.avatar}
                   alt={user.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                  <Camera className="w-3 h-3 text-purple-300" />
+                  <Camera className="w-3.5 h-3.5 text-cyan-300" />
                 </div>
               </div>
             ) : (
-              <div className={cn('w-8 h-8 rounded-lg bg-gradient-to-tr flex items-center justify-center font-bold text-xs text-white shrink-0 group-hover:scale-105 transition-transform', roleAccent)}>
+              <div className={cn('w-9 h-9 rounded-xl bg-gradient-to-tr flex items-center justify-center font-bold text-xs text-white shrink-0 group-hover:scale-105 transition-transform shadow-xs', roleAccent)}>
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white truncate group-hover:text-purple-300 transition-colors">
+              <p className="text-xs font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
                 {user?.name || 'Authorized User'}
               </p>
               <p className="text-[10px] text-slate-400 truncate">{user?.title || user?.email}</p>
             </div>
-            <Camera className="w-3.5 h-3.5 text-slate-500 group-hover:text-purple-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0" />
+            <Camera className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0" />
           </div>
         </div>
       </aside>

@@ -151,44 +151,59 @@ export function getStatusBadgeStyle(status: string): {
 } {
   switch (status) {
     case 'Selected':
+    case 'Offered':
+    case 'OFFERED':
+    case 'SELECTED':
     case 'active':
     case 'ready':
     case 'parsed':
       return {
-        badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+        badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35 shadow-xs',
         dotClass: 'bg-emerald-400'
       };
     case 'Shortlisted':
+    case 'SHORTLISTED':
     case 'Interview':
+    case 'INTERVIEW':
     case 'Ready for Interview':
       return {
-        badgeClass: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+        badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/35 shadow-xs',
         dotClass: 'bg-indigo-400'
       };
     case 'Under Review':
+    case 'UNDER_REVIEW':
     case 'processing':
     case 'pending':
     case 'pending_approval':
       return {
-        badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+        badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/35 shadow-xs',
         dotClass: 'bg-amber-400'
+      };
+    case 'Applied':
+    case 'APPLIED':
+      return {
+        badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-400/35 shadow-xs',
+        dotClass: 'bg-cyan-400'
       };
     case 'closed':
     case 'draft':
+    case 'Withdrawn':
+    case 'WITHDRAWN':
       return {
-        badgeClass: 'bg-slate-800/90 text-slate-300 border-slate-700',
+        badgeClass: 'bg-slate-800/90 text-slate-300 border-slate-700 shadow-xs',
         dotClass: 'bg-slate-400'
       };
     case 'Rejected':
+    case 'REJECTED':
     case 'rejected':
     case 'suspended':
       return {
-        badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+        badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/35 shadow-xs',
         dotClass: 'bg-rose-400'
       };
     default:
       return {
-        badgeClass: 'bg-slate-700/50 text-slate-300 border-slate-600/50',
+        badgeClass: 'bg-slate-800/80 text-slate-300 border-white/[0.10] shadow-xs',
         dotClass: 'bg-slate-400'
       };
   }

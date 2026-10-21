@@ -56,6 +56,7 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { DepthCard } from '../../components/ui/DepthCard';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { cn } from '../../utils/cn';
 import { getStatusBadgeStyle, formatFullDate } from '../../utils/formatters';
 import { INITIAL_JOBS } from '../../data/mockData';

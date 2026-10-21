@@ -89,10 +89,10 @@ export const CandidateApplicationJourneySection: React.FC<CandidateApplicationJo
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-blue-500/25 bg-gradient-to-br from-[#0b1227]/95 via-[#070b18]/95 to-[#050814]/98 p-6 sm:p-8 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] card-shine-all-sides transition-all duration-300 space-y-6 group"
+      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-blue-500/25 bg-gradient-to-br from-[#0b1227]/95 via-[#070b18]/95 to-[#050814]/98 p-6 sm:p-8 card-top-illumination-hero card-shine-all-sides transition-all duration-300 space-y-6 group"
     >
       {/* ── 4-Side Perimeter Light Rims & Inward Reflection ───────────────────── */}
-      <CardReflectiveShine variant="blue" rounded="rounded-3xl" hasHoverSweep={true} />
+      <CardReflectiveShine variant="blue" intensity="hero" rounded="rounded-3xl" topIllumination={true} hasHoverSweep={true} />
 
       {/* Header and Narrative */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06] relative z-10">

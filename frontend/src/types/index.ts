@@ -203,6 +203,7 @@ export interface Job {
   applied?: boolean;
   saved?: boolean;
   verifiedRecruiter?: boolean;
+  companyVerified?: boolean;
   rejectionReason?: string;
   approvedBy?: string;
   approvedAt?: string;

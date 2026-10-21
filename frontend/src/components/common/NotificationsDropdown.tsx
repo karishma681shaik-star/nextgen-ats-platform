@@ -84,12 +84,17 @@ export const NotificationsDropdown: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+        className={cn(
+          "relative p-2.5 rounded-xl transition-all cursor-pointer border",
+          isOpen
+            ? "bg-slate-900 border-cyan-400/50 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+            : "bg-slate-900/70 border-white/10 text-slate-400 hover:text-white hover:border-cyan-400/30 hover:bg-slate-900/90 shadow-sm"
+        )}
         aria-label="Notifications"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4 text-slate-300" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-[10px] font-bold text-white rounded-full flex items-center justify-center ring-2 ring-slate-900 animate-pulse">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-[10px] font-black text-white rounded-full flex items-center justify-center ring-2 ring-slate-950 shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}

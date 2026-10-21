@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Role } from '../../types';
-import { UserCheck, Building2, ShieldAlert } from 'lucide-react';
+import { UserCheck, Building2, ShieldAlert, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface RoleSwitcherProps {
@@ -16,8 +16,7 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className, defaultNe
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  // Neutral initial state when unauthenticated or requested:
-  // Neither Candidate, Recruiter, nor Admin is highlighted until explicitly chosen by visitor.
+  // Neutral initial state when unauthenticated or requested
   const [selectedRole, setSelectedRole] = useState<Role | null>(
     isAuthenticated && user ? role : defaultNeutral ? null : role
   );
@@ -61,51 +60,61 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className, defaultNe
   };
 
   return (
-    <div className={cn("flex items-center bg-[#070c1a] p-1 rounded-xl border border-white/10 shadow-inner shrink-0", className)}>
-      <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-2 tracking-wider whitespace-nowrap hidden xl:inline">
+    <div className={cn("role-switcher-pod flex items-center p-1 rounded-xl shrink-0 transition-all", className)}>
+      <span className="text-[9px] uppercase font-mono font-black text-cyan-400 px-2.5 tracking-widest whitespace-nowrap hidden xl:flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,1)] animate-ping" />
         ROLE VIEW
       </span>
-      <div className="flex items-center gap-0.5 sm:gap-1">
+      <div className="flex items-center gap-1">
+        {/* Candidate Option */}
         <button
           onClick={() => handleRoleChange('candidate')}
           className={cn(
-            'flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap relative',
             selectedRole === 'candidate'
-              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-glow'
+              ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white shadow-[0_0_18px_rgba(99,102,241,0.65),inset_0_1px_1.5px_rgba(255,255,255,0.4)] border border-indigo-300/40 role-active-capsule'
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           )}
           title="Candidate View"
         >
-          <UserCheck className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Candidate</span>
+          <div className={cn('flex items-center justify-center', selectedRole === 'candidate' && 'drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]')}>
+            <UserCheck className="w-3.5 h-3.5" />
+          </div>
+          <span className="hidden sm:inline tracking-tight">Candidate</span>
         </button>
 
+        {/* Recruiter Option */}
         <button
           onClick={() => handleRoleChange('recruiter')}
           className={cn(
-            'flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap relative',
             selectedRole === 'recruiter'
-              ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-glow-purple'
+              ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 text-white shadow-[0_0_18px_rgba(168,85,247,0.65),inset_0_1px_1.5px_rgba(255,255,255,0.4)] border border-purple-300/40 role-active-capsule'
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           )}
           title="Recruiter View"
         >
-          <Building2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Recruiter</span>
+          <div className={cn('flex items-center justify-center', selectedRole === 'recruiter' && 'drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]')}>
+            <Building2 className="w-3.5 h-3.5" />
+          </div>
+          <span className="hidden sm:inline tracking-tight">Recruiter</span>
         </button>
 
+        {/* Admin Option */}
         <button
           onClick={() => handleRoleChange('admin')}
           className={cn(
-            'flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap relative',
             selectedRole === 'admin'
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-glow-emerald'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600 text-white shadow-[0_0_18px_rgba(16,185,129,0.65),inset_0_1px_1.5px_rgba(255,255,255,0.4)] border border-emerald-300/40 role-active-capsule'
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           )}
           title="Admin View"
         >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Admin</span>
+          <div className={cn('flex items-center justify-center', selectedRole === 'admin' && 'drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]')}>
+            <ShieldAlert className="w-3.5 h-3.5" />
+          </div>
+          <span className="hidden sm:inline tracking-tight">Admin</span>
         </button>
       </div>
     </div>

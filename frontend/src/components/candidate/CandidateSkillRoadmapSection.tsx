@@ -28,10 +28,10 @@ export const CandidateSkillRoadmapSection: React.FC<CandidateSkillRoadmapSection
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-emerald-500/25 bg-gradient-to-br from-[#0b1329]/95 via-[#070c1c]/95 to-[#050814]/98 p-6 sm:p-8 lg:p-10 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] card-shine-all-sides transition-all duration-300 group"
+      className="relative overflow-hidden rounded-3xl border border-white/[0.08] hover:border-emerald-500/25 bg-gradient-to-br from-[#0b1329]/95 via-[#070c1c]/95 to-[#050814]/98 p-6 sm:p-8 lg:p-10 card-top-illumination-hero card-shine-all-sides transition-all duration-300 group"
     >
       {/* ── 4-Side Perimeter Light Rims & Inward Reflection ───────────────────── */}
-      <CardReflectiveShine variant="emerald" rounded="rounded-3xl" hasHoverSweep={true} />
+      <CardReflectiveShine variant="emerald" intensity="hero" rounded="rounded-3xl" topIllumination={true} hasHoverSweep={true} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
         {/* Left Side: Editorial 3D Interview Readiness Visual */}

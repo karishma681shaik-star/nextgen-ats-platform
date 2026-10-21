@@ -176,23 +176,94 @@ const SAMPLE_BOOSTER_DATA: Partial<CandidateProfile> = {
   ]
 };
 
-const SUGGESTED_TECH_SKILLS = [
-  'React',
-  'TypeScript',
-  'Node.js',
-  'Next.js',
-  'Java',
-  'Spring Boot',
-  'Python',
-  'PostgreSQL',
-  'Redis',
-  'Docker',
-  'Kubernetes',
-  'AWS',
-  'Kafka',
-  'GraphQL',
-  'Tailwind CSS'
-];
+const SUGGESTED_SKILLS_BY_CATEGORY: Record<'technical' | 'tools' | 'soft' | 'languages', string[]> = {
+  technical: [
+    'Java',
+    'JavaScript',
+    'TypeScript',
+    'Python',
+    'C',
+    'C++',
+    'React',
+    'React.js',
+    'Node.js',
+    'Next.js',
+    'Spring Boot',
+    'Hibernate',
+    'REST APIs',
+    'PostgreSQL',
+    'MySQL',
+    'MongoDB',
+    'Redis',
+    'SQL',
+    'Microservices',
+    'Data Structures & Algorithms'
+  ],
+  tools: [
+    'Git',
+    'GitHub',
+    'Docker',
+    'Kubernetes',
+    'AWS',
+    'Microsoft Azure',
+    'Google Cloud',
+    'Jenkins',
+    'GitHub Actions',
+    'Linux',
+    'Terraform',
+    'CI/CD',
+    'Postman',
+    'Maven',
+    'Gradle',
+    'VS Code',
+    'Jira',
+    'Prometheus',
+    'Grafana'
+  ],
+  soft: [
+    'Communication',
+    'Teamwork',
+    'Problem Solving',
+    'Leadership',
+    'Critical Thinking',
+    'Adaptability',
+    'Time Management',
+    'Collaboration',
+    'Decision Making',
+    'Conflict Resolution',
+    'Mentoring',
+    'Presentation Skills',
+    'Creativity',
+    'Analytical Thinking',
+    'Attention to Detail',
+    'Accountability',
+    'Emotional Intelligence',
+    'Negotiation'
+  ],
+  languages: [
+    'English',
+    'Telugu',
+    'Hindi',
+    'Urdu',
+    'Tamil',
+    'Kannada',
+    'Malayalam',
+    'Bengali',
+    'Marathi',
+    'Spanish',
+    'French',
+    'German',
+    'Japanese',
+    'Arabic'
+  ]
+};
+
+const SKILL_CATEGORY_PLACEHOLDERS: Record<'technical' | 'tools' | 'soft' | 'languages', string> = {
+  technical: 'Type a skill (e.g. Next.js, Microservices, Python, React)',
+  tools: 'Type a tool or platform (e.g. Docker, Kubernetes, AWS, Terraform)',
+  soft: 'Type a competency (e.g. Problem Solving, Leadership, Mentoring)',
+  languages: 'Type a language (e.g. English, Telugu, Hindi, Spanish)'
+};
 
 const AVATAR_PRESETS = [
   { id: 'p1', label: 'Tech Lead Female', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80' },
@@ -211,7 +282,7 @@ export const CandidateProfilePage: React.FC = () => {
   const { updateProfile: updateAuthProfile } = useAuth();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'overview' | 'personal' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'personal' | 'skills' | 'experience' | 'education' | 'projects' | 'certifications'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { showToast } = useToast();
@@ -763,12 +834,12 @@ export const CandidateProfilePage: React.FC = () => {
     }
   };
 
-  const handleAddSkill = (e?: React.FormEvent, customSkill?: string) => {
+  const handleAddSkill = async (e?: React.FormEvent, customSkill?: string) => {
     if (e) e.preventDefault();
     const skillToAdd = (customSkill || newSkillInput).trim();
     if (!skillToAdd || !profile) return;
 
-    const currentList = profile.skills[newSkillCategory] || [];
+    const currentList = profile.skills?.[newSkillCategory] || [];
     if (currentList.some((s) => s.toLowerCase() === skillToAdd.toLowerCase())) {
       showToast({ type: 'info', title: 'Skill Exists', message: `"${skillToAdd}" is already in your stack.` });
       return;
@@ -777,27 +848,42 @@ export const CandidateProfilePage: React.FC = () => {
     const updatedProfile: CandidateProfile = {
       ...profile,
       skills: {
-        ...profile.skills,
+        technical: profile.skills?.technical || [],
+        tools: profile.skills?.tools || [],
+        soft: profile.skills?.soft || [],
+        languages: profile.skills?.languages || [],
         [newSkillCategory]: [...currentList, skillToAdd]
       }
     };
     setProfile(updatedProfile);
-    candidateService.updateProfile(updatedProfile);
-    if (!customSkill) setNewSkillInput('');
-    showToast({ type: 'success', title: 'Skill Added', message: `Added "${skillToAdd}" to verified stack.` });
+    setNewSkillInput('');
+    try {
+      await candidateService.updateProfile(updatedProfile);
+      showToast({ type: 'success', title: 'Skill Added', message: `Added "${skillToAdd}" to verified stack.` });
+    } catch (err) {
+      console.error('Failed to persist skill addition', err);
+    }
   };
 
-  const handleRemoveSkill = (category: keyof typeof profile.skills, skillName: string) => {
+  const handleRemoveSkill = async (category: keyof typeof profile.skills, skillName: string) => {
     if (!profile) return;
+    const currentCategoryList = profile.skills?.[category] || [];
     const updatedProfile: CandidateProfile = {
       ...profile,
       skills: {
-        ...profile.skills,
-        [category]: profile.skills[category].filter((s) => s !== skillName)
+        technical: profile.skills?.technical || [],
+        tools: profile.skills?.tools || [],
+        soft: profile.skills?.soft || [],
+        languages: profile.skills?.languages || [],
+        [category]: currentCategoryList.filter((s) => s !== skillName)
       }
     };
     setProfile(updatedProfile);
-    candidateService.updateProfile(updatedProfile);
+    try {
+      await candidateService.updateProfile(updatedProfile);
+    } catch (err) {
+      console.error('Failed to persist skill removal', err);
+    }
   };
 
   // Education Handlers
@@ -1041,14 +1127,33 @@ export const CandidateProfilePage: React.FC = () => {
 
   if (isLoading || !profile) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-12 w-80 rounded-2xl bg-slate-800/60" />
-        <Skeleton className="h-72 w-full rounded-3xl bg-slate-800/40" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Skeleton className="h-28 rounded-2xl bg-slate-800/40" />
-          <Skeleton className="h-28 rounded-2xl bg-slate-800/40" />
-          <Skeleton className="h-28 rounded-2xl bg-slate-800/40" />
-          <Skeleton className="h-28 rounded-2xl bg-slate-800/40" />
+      <div className="space-y-6 select-none" aria-busy="true" aria-live="polite">
+        {/* Profile Header Card */}
+        <div className="card-upper-edge-luminous rounded-3xl p-6 sm:p-8 bg-slate-900/80 border border-white/[0.08]">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <Skeleton className="w-24 h-24 rounded-full shrink-0" />
+            <div className="space-y-2 flex-1 text-center sm:text-left">
+              <Skeleton className="h-7 w-56 rounded-xl mx-auto sm:mx-0" />
+              <Skeleton className="h-4 w-72 rounded-md mx-auto sm:mx-0" />
+              <div className="flex flex-wrap justify-center sm:justify-start gap-3 pt-2">
+                <Skeleton className="h-5 w-28 rounded-lg" />
+                <Skeleton className="h-5 w-36 rounded-lg" />
+                <Skeleton className="h-5 w-24 rounded-lg" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-32 rounded-xl shrink-0" />
+          </div>
+        </div>
+
+        {/* 4 Metric Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card-upper-edge-luminous rounded-2xl p-5 bg-slate-900/70 border border-white/[0.06] space-y-2">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <Skeleton className="h-6 w-16 rounded" />
+              <Skeleton className="h-3.5 w-24 rounded" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -1063,7 +1168,6 @@ export const CandidateProfilePage: React.FC = () => {
 
   const tabsConfig = [
     { id: 'all', label: '📄 All Sections (Full View)', icon: <Layers className="w-4 h-4" /> },
-    { id: 'overview', label: '🌟 Executive Dossier', icon: <Star className="w-4 h-4 text-amber-400" /> },
     { id: 'personal', label: 'About & Details', icon: <User className="w-4 h-4" /> },
     { id: 'skills', label: 'Skills & Stack', icon: <Code2 className="w-4 h-4" />, count: totalSkillsCount },
     { id: 'experience', label: 'Experience', icon: <Briefcase className="w-4 h-4" />, count: profile.experience?.length || 0 },
@@ -1235,8 +1339,8 @@ export const CandidateProfilePage: React.FC = () => {
       <div className="relative z-10 space-y-8">
         {/* SECTION: ABOUT / PROFESSIONAL SUMMARY */}
         {(activeTab === 'all' || activeTab === 'personal') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-indigo-500/15 hover:border-indigo-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" topIllumination={true} />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-indigo-500/20 relative z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
@@ -1555,8 +1659,8 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: SKILLS & COMPETENCIES */}
         {(activeTab === 'all' || activeTab === 'skills') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-indigo-500/15 hover:border-indigo-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="indigo" rounded="rounded-3xl" topIllumination={true} />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-indigo-500/20 relative z-10">
               <div>
@@ -1587,16 +1691,18 @@ export const CandidateProfilePage: React.FC = () => {
             <form onSubmit={(e) => handleAddSkill(e)} className="flex flex-col sm:flex-row items-end gap-3 p-4 rounded-2xl bg-white/[0.025] border border-white/[0.08] hover:border-white/[0.12] transition-all duration-200 group relative overflow-hidden shadow-inner z-10">
               <div className="flex-1 w-full relative z-10">
                 <Input
-                  placeholder="Type a skill (e.g. Next.js, Docker, Kafka, Microservices, Python)"
+                  id="skill-input-field"
+                  placeholder={SKILL_CATEGORY_PLACEHOLDERS[newSkillCategory] || 'Type a skill...'}
                   value={newSkillInput}
                   onChange={(e) => setNewSkillInput(e.target.value)}
                 />
               </div>
               <div className="w-full sm:w-52 relative z-10">
                 <select
+                  id="skill-category-select"
                   value={newSkillCategory}
                   onChange={(e) => setNewSkillCategory(e.target.value as any)}
-                  className="w-full bg-slate-950 text-slate-100 text-sm rounded-xl border border-indigo-500/30 px-3.5 py-2.5 focus:border-indigo-400 focus:outline-none"
+                  className="w-full bg-slate-950 text-slate-100 text-sm rounded-xl border border-indigo-500/30 px-3.5 py-2.5 focus:border-indigo-400 focus:outline-none cursor-pointer"
                 >
                   <option value="technical">Technical Stack</option>
                   <option value="tools">Tools & DevOps</option>
@@ -1605,28 +1711,56 @@ export const CandidateProfilePage: React.FC = () => {
                 </select>
               </div>
               <div className="relative z-10">
-                <Button type="submit" variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
+                <Button id="add-skill-button" type="submit" variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
                   Add Skill
                 </Button>
               </div>
             </form>
 
-            {/* Suggested Skills */}
-            <div className="flex flex-wrap items-center gap-2 text-xs relative z-10">
-              <span className="font-bold text-slate-300">Quick suggestions:</span>
-              {SUGGESTED_TECH_SKILLS.filter((s) => !profile.skills?.technical?.includes(s) && !profile.skills?.tools?.includes(s))
-                .slice(0, 8)
-                .map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleAddSkill(undefined, s)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/35 transition-all shadow-sm cursor-pointer"
-                  >
-                    + {s}
-                  </button>
-                ))}
-            </div>
+            {/* Category-Aware Dynamic Quick Suggestions */}
+            {(() => {
+              const currentCategorySkills = profile.skills?.[newSkillCategory] || [];
+              const normalizedInput = newSkillInput.trim().toLowerCase();
+              const categorySuggestions = SUGGESTED_SKILLS_BY_CATEGORY[newSkillCategory] || [];
+
+              const availableSuggestions = categorySuggestions.filter((s) => {
+                // 1. Exclude skills already added in this category (case-insensitive)
+                const alreadyAdded = currentCategorySkills.some(
+                  (existing) => existing.toLowerCase() === s.toLowerCase()
+                );
+                if (alreadyAdded) return false;
+
+                // 2. Filter by search input (case-insensitive substring)
+                if (normalizedInput) {
+                  return s.toLowerCase().includes(normalizedInput);
+                }
+                return true;
+              });
+
+              const displayedSuggestions = availableSuggestions.slice(0, 10);
+
+              return (
+                <div className="flex flex-wrap items-center gap-2 text-xs relative z-10 min-h-[32px]">
+                  <span className="font-bold text-slate-300">Quick suggestions:</span>
+                  {displayedSuggestions.length > 0 ? (
+                    displayedSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleAddSkill(undefined, s)}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/35 transition-all shadow-sm cursor-pointer"
+                      >
+                        + {s}
+                      </button>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 text-xs italic">
+                      No matching suggestions in this category. You can add a custom skill.
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Skill Cards Grid (All 4 Categories) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 relative z-10">
@@ -1635,12 +1769,12 @@ export const CandidateProfilePage: React.FC = () => {
                 <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
                   <span className="flex items-center gap-2">
                     <Code2 className="w-4 h-4 text-indigo-400" />
-                    Core Engineering Stack ({profile.skills.technical.length})
+                    Core Engineering Stack ({(profile.skills?.technical || []).length})
                   </span>
                   <span className="text-[10px] text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-md border border-indigo-500/30 font-extrabold uppercase">Primary</span>
                 </h4>
                 <div className="flex flex-wrap gap-2 relative z-10">
-                  {profile.skills.technical.map((s) => (
+                  {(profile.skills?.technical || []).map((s) => (
                     <span
                       key={s}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-200 border border-indigo-400/35 hover:border-indigo-300/70 text-xs font-semibold shadow-sm transition-all"
@@ -1651,7 +1785,7 @@ export const CandidateProfilePage: React.FC = () => {
                       </button>
                     </span>
                   ))}
-                  {profile.skills.technical.length === 0 && (
+                  {(profile.skills?.technical || []).length === 0 && (
                     <p className="text-xs text-slate-400 py-2">No technical stack skills added yet.</p>
                   )}
                 </div>
@@ -1662,12 +1796,12 @@ export const CandidateProfilePage: React.FC = () => {
                 <h4 className="text-sm font-bold text-white mb-3 flex items-center justify-between relative z-10">
                   <span className="flex items-center gap-2">
                     <FolderGit2 className="w-4 h-4 text-purple-400" />
-                    Cloud, DevOps & Tools ({profile.skills.tools.length})
+                    Cloud, DevOps & Tools ({(profile.skills?.tools || []).length})
                   </span>
                   <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md border border-purple-500/30 font-extrabold uppercase">Infra</span>
                 </h4>
                 <div className="flex flex-wrap gap-2 relative z-10">
-                  {profile.skills.tools.map((s) => (
+                  {(profile.skills?.tools || []).map((s) => (
                     <span
                       key={s}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 text-purple-200 border border-purple-400/35 hover:border-purple-300/70 text-xs font-semibold shadow-sm transition-all"
@@ -1678,7 +1812,7 @@ export const CandidateProfilePage: React.FC = () => {
                       </button>
                     </span>
                   ))}
-                  {profile.skills.tools.length === 0 && (
+                  {(profile.skills?.tools || []).length === 0 && (
                     <p className="text-xs text-slate-400 py-2">No tools or DevOps tools added yet.</p>
                   )}
                 </div>
@@ -1743,8 +1877,8 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: WORK EXPERIENCE */}
         {(activeTab === 'all' || activeTab === 'experience') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="purple" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-purple-500/15 hover:border-purple-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="purple" rounded="rounded-3xl" topIllumination={true} />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-purple-500/20 relative z-10">
               <div>
@@ -1866,8 +2000,8 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: EDUCATION */}
         {(activeTab === 'all' || activeTab === 'education') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="blue" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-blue-500/15 hover:border-blue-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="blue" rounded="rounded-3xl" topIllumination={true} />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-blue-500/20 relative z-10">
               <div>
@@ -1959,8 +2093,8 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: FEATURED PROJECTS */}
         {(activeTab === 'all' || activeTab === 'projects') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="cyan" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-cyan-500/15 hover:border-cyan-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="cyan" rounded="rounded-3xl" topIllumination={true} />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20 relative z-10">
               <div>
@@ -2057,8 +2191,8 @@ export const CandidateProfilePage: React.FC = () => {
 
         {/* SECTION: CERTIFICATIONS (NO 3D IMAGES • PURE NATURAL SHINE) */}
         {(activeTab === 'all' || activeTab === 'certifications') && (
-          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-white/[0.08] hover:border-white/[0.14] backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
-            <CardReflectiveShine variant="emerald" rounded="rounded-3xl" />
+          <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0c132c]/85 via-[#080d20]/90 to-[#060918]/95 border border-emerald-500/15 hover:border-emerald-400/25 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7)] space-y-6 transition-all duration-300 overflow-hidden group">
+            <CardReflectiveShine variant="emerald" rounded="rounded-3xl" topIllumination={true} />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-emerald-500/20 relative z-10">
               <div>
@@ -2143,7 +2277,8 @@ export const CandidateProfilePage: React.FC = () => {
               </div>
 
               {/* Verified Technical Security & Compliance Card (Replaces 3D Trophy Image!) */}
-              <div className="lg:col-span-4 group relative flex flex-col items-center justify-center p-6 rounded-2xl bg-white/[0.025] hover:bg-white/[0.035] border border-white/[0.08] hover:border-white/[0.14] text-center overflow-hidden shadow-sm transition-all duration-200">
+              <div className="lg:col-span-4 group relative flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-[#0d142b]/85 via-[#080d20]/90 to-[#060918]/95 border border-emerald-500/15 hover:border-emerald-400/25 text-center overflow-hidden shadow-sm transition-all duration-200">
+                <CardReflectiveShine variant="emerald" rounded="rounded-2xl" topIllumination={true} />
                 {/* Animated Verified Security Badge */}
                 <div className="relative mb-3 z-10">
                   <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]">

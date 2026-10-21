@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ShieldCheck, Cpu, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Cpu } from 'lucide-react';
 import type { CandidateDashboardData } from '../../services';
+import type { CandidateProfile } from '../../types';
+import { candidateService } from '../../services';
+import { AlexRiveraLaptopResume } from './AlexRiveraLaptopResume';
 
 interface HeroWorkspace3DStageProps {
   dashboardData: CandidateDashboardData;
@@ -16,31 +19,43 @@ export const HeroWorkspace3DStage: React.FC<HeroWorkspace3DStageProps> = ({
   const stageRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<number>(prefersReduced ? 6 : 1);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [profile, setProfile] = useState<CandidateProfile | null>(null);
 
   const hasResume = dashboardData.hasPrimaryResume;
   const atsScore = dashboardData.atsScore;
-  const resumeName = dashboardData.primaryResumeFileName || 'Primary_Resume.pdf';
+  const resumeName = dashboardData.primaryResumeFileName || 'ALEX-RIVERA-RESUME.pdf';
+
+  // Load candidate profile data to ensure authentic Alex Rivera details
+  useEffect(() => {
+    let cancelled = false;
+    candidateService.getProfile().then((data) => {
+      if (!cancelled && data) {
+        setProfile(data);
+      }
+    }).catch(() => {
+      // Graceful fallback to default Alex Rivera mock profile
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Coordinated entrance sequence (Phase 1 to Phase 6)
   useEffect(() => {
     if (prefersReduced) return;
 
-    const t1 = setTimeout(() => setPhase(2), 150);  // Phase 2: Workspace scene reveals
-    const t2 = setTimeout(() => setPhase(3), 600);  // Phase 3: Resume scan indicator glides
-    const t3 = setTimeout(() => setPhase(4), 1300); // Phase 4: ATS result / telemetry reveals
-    const t4 = setTimeout(() => setPhase(5), 1800); // Phase 5: Content synchronized
-    const t5 = setTimeout(() => setPhase(6), 2400); // Phase 6: Settled calm resting state
+    const t1 = setTimeout(() => setPhase(2), 150);  // Phase 2: Laptop reveals
+    const t2 = setTimeout(() => setPhase(3), 500);  // Phase 3: Resume scan indicator glides
+    const t3 = setTimeout(() => setPhase(4), 1100); // Phase 4: Settle & telemetry
+    const t4 = setTimeout(() => setPhase(6), 1800); // Phase 6: Settled calm resting state
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
-      clearTimeout(t5);
     };
   }, [prefersReduced]);
 
-  // Subtle interactive parallax tilt (restrained, max 2.5 degrees)
+  // Subtle interactive parallax tilt (restrained, max 2.2 degrees)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (prefersReduced || !stageRef.current) return;
     const rect = stageRef.current.getBoundingClientRect();
@@ -58,7 +73,7 @@ export const HeroWorkspace3DStage: React.FC<HeroWorkspace3DStageProps> = ({
       ref={stageRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative w-full aspect-[16/10] sm:aspect-[16/10] lg:aspect-[16/10.5] rounded-3xl overflow-hidden border border-white/[0.08] hover:border-white/[0.14] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.65)] bg-[#070b18] group select-none transition-colors duration-300"
+      className="relative w-full aspect-[16/10] sm:aspect-[16/10] lg:aspect-[16/10.5] rounded-3xl overflow-hidden border border-white/[0.08] hover:border-white/[0.14] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.65)] bg-[#070b18] group select-none transition-colors duration-300 flex items-center justify-center p-3 sm:p-5"
       style={{
         perspective: '1200px'
       }}
@@ -66,12 +81,13 @@ export const HeroWorkspace3DStage: React.FC<HeroWorkspace3DStageProps> = ({
       {/* ── Subtle Top Specular Rim & Soft Ambient Lighting ─────────────────── */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none z-30" />
       <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none z-10" />
+      <div className="absolute -bottom-16 left-1/4 w-64 h-64 rounded-full bg-cyan-500/[0.05] blur-3xl pointer-events-none z-10" />
 
-      {/* ── 3D Visual Stage with subtle perspective tilt ───────────────────────── */}
+      {/* ── 3D Interactive Parallax Stage ──────────────────────────────────── */}
       <motion.div
         animate={{
-          rotateY: mousePos.x * 1.1,
-          rotateX: -mousePos.y * 1.1,
+          rotateY: mousePos.x * 1.5,
+          rotateX: -mousePos.y * 1.5,
           scale: phase >= 2 ? 1 : 0.98
         }}
         transition={{
@@ -80,100 +96,55 @@ export const HeroWorkspace3DStage: React.FC<HeroWorkspace3DStageProps> = ({
           stiffness: 160,
           mass: 0.8
         }}
-        className="relative w-full h-full transform-gpu"
+        className="relative w-full h-full flex items-center justify-center transform-gpu"
       >
-        {/* Real 3D-Rendered Modern Workspace Scene */}
-        <motion.img
-          src="/assets/candidate/workspace_3d_hero.jpg"
-          alt="3D Candidate Career Workspace"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: phase >= 2 ? 1 : 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full h-full object-cover object-center filter brightness-[0.93] contrast-[1.04]"
-          loading="eager"
-        />
+        {/* Central Floating Laptop Assembly */}
+        <div className="relative w-full max-w-[530px] sm:max-w-[560px] aspect-[868/598] flex items-center justify-center">
+          {/* Subtle Grounding Shadow beneath floating laptop */}
+          <div className="absolute -bottom-2 left-[12%] right-[12%] h-5 bg-black/60 rounded-full blur-lg pointer-events-none" />
 
-        {/* Ambient Depth & Natural Shadow Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050814]/85 via-transparent to-[#050814]/25 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050814]/40 via-transparent to-[#050814]/30 pointer-events-none" />
+          {/* ── Laptop Screen Canvas (Fit within bezel boundaries) ─────────────── */}
+          <div
+            className="absolute overflow-hidden rounded-[3px] bg-white z-0 shadow-inner"
+            style={{
+              left: '13.13%',
+              top: '4.18%',
+              width: '73.73%',
+              height: '62.71%'
+            }}
+          >
+            {/* The Authentic Alex Rivera Resume Document */}
+            <AlexRiveraLaptopResume
+              profile={profile}
+              cleanName={cleanName}
+              atsScore={atsScore}
+            />
 
-        {/* ── PHASE 3: Scanning Light Beam (Moves smoothly across the laptop display) ──── */}
-        {phase >= 3 && phase < 6 && (
-          <motion.div
-            initial={{ top: '24%', opacity: 0 }}
-            animate={{ top: ['24%', '64%', '36%'], opacity: [0, 0.7, 0] }}
-            transition={{ duration: 1.6, ease: 'easeInOut' }}
-            className="absolute left-[28%] right-[28%] h-0.5 bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.5)] pointer-events-none z-20"
-          />
-        )}
-
-        {/* ── Restrained In-Scene Telemetry HUD (Integrated naturally, no floating card) ── */}
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-[11px] font-medium text-slate-200 shadow-md">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="font-mono text-cyan-300">NEXUS 3D INTELLIGENCE</span>
-          </div>
-
-          {hasResume && (
-            <motion.div
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: phase >= 4 ? 1 : 0, x: phase >= 4 ? 0 : -6 }}
-              transition={{ duration: 0.4 }}
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-950/60 backdrop-blur-md border border-emerald-500/25 text-[10px] font-semibold text-emerald-300"
-            >
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              <span>Resume Parsed</span>
-            </motion.div>
-          )}
-        </div>
-
-        {/* ── PHASE 4: Lower Calibration Bar (Anchored subtly to bottom of stage) ── */}
-        <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-white/10 text-[11px] text-slate-300">
-            <Cpu className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="truncate max-w-[220px] sm:max-w-xs font-mono text-[10px] text-slate-300">
-              {hasResume ? resumeName : 'No primary resume uploaded'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {atsScore !== null && atsScore !== undefined ? (
+            {/* Scanning Light Beam (Phase 3 animation across the document) */}
+            {phase >= 3 && phase < 6 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: phase >= 4 ? 1 : 0, scale: phase >= 4 ? 1 : 0.9 }}
-                transition={{ duration: 0.4 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30 text-[11px] font-bold text-emerald-300 shadow-lg"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{atsScore}% ATS Match Score</span>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: phase >= 4 ? 1 : 0 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/10 text-[11px] text-slate-400"
-              >
-                <AlertCircle className="w-3 h-3 text-amber-400" />
-                <span>Upload a resume to begin ATS analysis</span>
-              </motion.div>
+                initial={{ top: '0%', opacity: 0 }}
+                animate={{ top: ['0%', '100%', '30%'], opacity: [0, 0.65, 0] }}
+                transition={{ duration: 1.4, ease: 'easeInOut' }}
+                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.6)] pointer-events-none z-20"
+              />
             )}
-          </div>
-        </div>
 
-        {/* Subtle Resting Idle Light Ripple across glass */}
-        {phase === 6 && (
-          <motion.div
-            animate={{
-              opacity: [0.03, 0.08, 0.03]
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: 'easeInOut'
-            }}
-            className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-transparent to-cyan-500/10 pointer-events-none"
+            {/* Subtle Realistic Glass Surface Reflection */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-10" />
+          </div>
+
+          {/* ── Transparent Laptop Chassis Overlay (Cutout screen reveals document) ─ */}
+          <motion.img
+            src="/assets/candidate/laptop_transparent.png"
+            alt="Candidate Career Workspace Laptop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: phase >= 2 ? 1 : 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.55)]"
+            loading="eager"
           />
-        )}
+        </div>
       </motion.div>
     </div>
   );

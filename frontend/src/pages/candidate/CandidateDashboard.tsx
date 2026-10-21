@@ -21,6 +21,7 @@ import { DepthCard } from '../../components/ui/DepthCard';
 import { useToast } from '../../context/ToastContext';
 import { CreateResumeModal } from '../../components/candidate/CreateResumeModal';
 import { CandidateHeroSection } from '../../components/candidate/CandidateHeroSection';
+import { DashboardSkeleton } from '../../components/loading';
 import { CandidateMetricCard } from '../../components/candidate/CandidateMetricCard';
 import { CandidateResumeIntelligenceSection } from '../../components/candidate/CandidateResumeIntelligenceSection';
 import { CandidateApplicationJourneySection } from '../../components/candidate/CandidateApplicationJourneySection';
@@ -189,23 +190,7 @@ export const CandidateDashboard: React.FC = () => {
   };
 
   if (isLoading || !dashboardData) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs w-fit">
-          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
-          <span>Calculating profile readiness and workspace analytics...</span>
-        </div>
-        <div className="space-y-6 animate-pulse">
-          <div className="h-44 w-full rounded-3xl bg-slate-800/40 border border-white/5" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-slate-800/40 border border-white/5" />
-            ))}
-          </div>
-          <div className="h-80 w-full rounded-2xl bg-slate-800/40 border border-white/5" />
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const displayName = user?.name || dashboardData.candidateName || 'Candidate';
@@ -341,9 +326,9 @@ export const CandidateDashboard: React.FC = () => {
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <DepthCard hoverEffect={false} glass={true} className="overflow-hidden rounded-3xl border border-white/[0.08] hover:border-indigo-500/25 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] card-shine-all-sides transition-all duration-300 relative group">
+        <DepthCard hoverEffect={false} glass={true} className="overflow-hidden rounded-3xl border border-white/[0.08] hover:border-indigo-500/25 card-top-illumination-hero card-shine-all-sides transition-all duration-300 relative group">
           {/* ── 4-Side Perimeter Light Rims & Inward Reflection ───────────────────── */}
-          <CardReflectiveShine variant="purple" rounded="rounded-3xl" hasHoverSweep={true} />
+          <CardReflectiveShine variant="purple" intensity="hero" rounded="rounded-3xl" topIllumination={true} hasHoverSweep={true} />
 
           {/* Header Banner with 3D ATS Job Matching Visual */}
           <div className="relative overflow-hidden border-b border-white/[0.06] p-6 bg-gradient-to-r from-[#0d1633] via-[#090e24] to-[#060a18]">

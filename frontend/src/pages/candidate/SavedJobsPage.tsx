@@ -1,35 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Bookmark,
-  MapPin,
-  Briefcase,
-  Trash2,
+  Compass,
   ArrowRight,
   Sparkles,
-  Send,
-  Building2,
-  Calendar,
   ExternalLink,
-  CheckCircle2
+  HelpCircle,
+  RefreshCw,
+  AlertCircle,
+  FileCheck2
 } from 'lucide-react';
 import { candidateService } from '../../services';
 import { useToast } from '../../context/ToastContext';
-import { Job, Resume } from '../../types';
-import { Card } from '../../components/ui/Card';
+import { Job, Resume, Application } from '../../types';
 import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
-import { Skeleton } from '../../components/ui/Skeleton';
-import { formatCurrency, formatSalaryRange, formatFullDate } from '../../utils/formatters';
+import { EasyApplyModal } from '../../components/candidate/EasyApplyModal';
+import { SavedJobsCareerScene } from '../../components/candidate/SavedJobsCareerScene';
+import { SavedJobsInfoModal } from '../../components/candidate/SavedJobsInfoModal';
+import { SavedJobCard } from '../../components/candidate/SavedJobCard';
+import { SavedJobsSkeleton } from '../../components/candidate/SavedJobsSkeleton';
+import { SavedJobsExecutiveDesk } from '../../components/candidate/SavedJobsExecutiveDesk';
 
 export const SavedJobsPage: React.FC = () => {
-  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [selectedResumeId, setSelectedResumeId] = useState<string>('');
-  const [applyingJob, setApplyingJob] = useState<Job | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const prefersReduced = useReducedMotion();
+  const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [applyingJob, setApplyingJob] = useState<Job | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -38,24 +43,28 @@ export const SavedJobsPage: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [jobsData, resumesData] = await Promise.all([
+      setLoadError(null);
+
+      const [jobsData, appsData, resumesData] = await Promise.all([
         candidateService.getSavedJobs(),
+        candidateService.getApplications().catch(() => [] as Application[]),
         candidateService.getResumes().catch(() => [] as Resume[])
       ]);
-      setSavedJobs(jobsData);
-      setResumes(resumesData);
-      if (resumesData.length > 0) {
-        const primary = resumesData.find((r) => r.isPrimary) || resumesData[0];
-        setSelectedResumeId(primary.id);
-      }
-    } catch (err) {
+
+      setSavedJobs(jobsData || []);
+      setApplications(appsData || []);
+      setResumes(resumesData || []);
+    } catch (err: any) {
       console.error('Failed to load saved jobs', err);
+      setLoadError(
+        err?.message || 'We couldn\'t load your saved jobs. Check your connection and try again.'
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRemove = async (jobId: string) => {
+  const handleRemoveBookmark = async (jobId: string) => {
     try {
       await candidateService.toggleSaveJob(jobId);
       setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
@@ -67,262 +76,223 @@ export const SavedJobsPage: React.FC = () => {
     } catch (err) {
       showToast({
         type: 'error',
-        title: 'Error',
-        message: 'Could not remove job from saved list.'
+        title: 'Removal Error',
+        message: 'Could not remove job from your saved list. Please try again.'
       });
     }
   };
 
-  const handleApplySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!applyingJob || !selectedResumeId) return;
+  // Applied job IDs set for fast O(1) lookup
+  const appliedJobIds = new Set(applications.map((app) => app.jobId));
 
-    try {
-      setIsSubmitting(true);
-      await candidateService.applyForJob(applyingJob.id, selectedResumeId);
-      showToast({
-        type: 'success',
-        title: 'Application Submitted! 🎉',
-        message: `Successfully applied to ${applyingJob.title} at ${applyingJob.company}.`
-      });
-      setApplyingJob(null);
-    } catch (err: any) {
-      showToast({
-        type: 'error',
-        title: 'Application Failed',
-        message: err.message || 'Could not submit application.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const renderSalary = (job: Job) => {
-    const anyJob = job as any;
-    const min = job.salary?.min ?? anyJob.salaryMin;
-    const max = job.salary?.max ?? anyJob.salaryMax;
-    const currency = job.salary?.currency ?? anyJob.currency ?? 'INR';
-    const period = job.salary?.period ?? anyJob.salaryPeriod ?? 'yearly';
-    return formatSalaryRange(min, max, currency, period, 'Competitive Salary');
-  };
+  // Calculated count label
+  const countLabel = isLoading
+    ? 'Checking saved opportunities...'
+    : savedJobs.length === 0
+    ? 'No saved opportunities'
+    : savedJobs.length === 1
+    ? '1 saved opportunity'
+    : `${savedJobs.length} saved opportunities`;
 
   return (
-    <div className="space-y-8 select-none">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-7 select-none font-sans text-slate-100">
+      {/* ── 1. REFINED PAGE HEADER ────────────────────────────────────── */}
+      <motion.div
+        initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.05]"
+      >
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Saved & Bookmarked Jobs</h1>
-            {!isLoading && savedJobs.length > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                {savedJobs.length} {savedJobs.length === 1 ? 'Job' : 'Jobs'}
-              </span>
-            )}
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm shrink-0">
+              <Bookmark className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Saved & Bookmarked Jobs
+                </h1>
+                {!isLoading && (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                      savedJobs.length > 0
+                        ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                        : 'bg-slate-800/60 text-slate-400 border-slate-700/60'
+                    }`}
+                  >
+                    {countLabel}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Keep track of the opportunities you want to explore and apply for.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Positions you've bookmarked for later review and application submission.
-          </p>
         </div>
 
-        <Link to="/candidate/jobs">
-          <Button variant="outline" size="sm" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
-            Explore More Jobs
-          </Button>
-        </Link>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-32 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
-        </div>
-      ) : savedJobs.length === 0 ? (
-        <Card glass className="p-14 text-center text-xs text-slate-400 space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mx-auto">
-            <Bookmark className="w-7 h-7 text-indigo-400" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-base font-bold text-white">No saved jobs yet</p>
-            <p className="text-slate-400 max-w-sm mx-auto">
-              Explore recommended engineering positions and click the bookmark icon to save jobs for later review.
-            </p>
-          </div>
-          <Link to="/candidate/jobs" className="inline-block pt-2">
-            <Button variant="primary" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-              Discover Jobs
+        {/* Header Action: Explore Jobs */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link to="/candidate/jobs">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Compass className="w-3.5 h-3.5 text-indigo-400" />}
+            >
+              Explore Jobs
             </Button>
           </Link>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {savedJobs.map((job) => (
-            <Card key={job.id} glass hoverEffect className="p-6 transition-all border border-white/[0.08] hover:border-white/20">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                <div className="flex items-start gap-4">
-                  {/* Company Logo */}
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 shrink-0 flex items-center justify-center">
-                    {job.companyLogo ? (
-                      <img
-                        src={job.companyLogo}
-                        alt={job.company}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Hide image and show building fallback
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <Building2 className="w-6 h-6 text-slate-500" />
-                    )}
-                  </div>
+        </div>
+      </motion.div>
 
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/candidate/jobs/${job.id}`}
-                        className="text-base font-bold text-white hover:text-indigo-400 transition-colors"
-                      >
-                        {job.title}
-                      </Link>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                        {job.matchScore || 88}% Match
-                      </span>
-                    </div>
+      {/* ── 2. MAIN CONTENT AREA (LOADING / ERROR / EMPTY / CARDS) ─────── */}
+      {isLoading ? (
+        <SavedJobsSkeleton />
+      ) : loadError ? (
+        /* Error State Panel */
+        <motion.div
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card-aura-outer-luminous rounded-2xl p-8 sm:p-12 text-center space-y-4 max-w-xl mx-auto"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
+            <AlertCircle className="w-6 h-6 text-rose-400" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-white">We couldn't load your saved jobs.</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Check your connection and try again. If the issue persists, our servers may be syncing.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+              onClick={loadData}
+            >
+              Retry
+            </Button>
+          </div>
+        </motion.div>
+      ) : savedJobs.length === 0 ? (
+        /* ── 3. EMPTY STATE COMPOSITION ──────────────────────────────── */
+        <motion.div
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="card-aura-outer-luminous rounded-2xl p-6 sm:p-10 lg:p-12"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Column: 3D Studio Career Scene */}
+            <div className="lg:col-span-6 flex justify-center">
+              <SavedJobsCareerScene />
+            </div>
 
-                    <p className="text-xs text-slate-300 font-semibold flex items-center gap-1.5 flex-wrap">
-                      <span>{job.company}</span>
-                      <span className="text-slate-600">•</span>
-                      <span className="text-slate-400 font-normal flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-500" />
-                        {job.location}
-                      </span>
-                    </p>
+            {/* Right Column: Thoughtful Empty State Message */}
+            <div className="lg:col-span-6 space-y-5 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Career Opportunities Hub</span>
+              </div>
 
-                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-400">
-                      <span className="px-2 py-0.5 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700/50 font-medium">
-                        {job.type}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700/50 font-medium">
-                        {job.experienceLevel}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/40 font-semibold">
-                        {renderSalary(job)}
-                      </span>
-                    </div>
+              <div className="space-y-2.5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                  Your next opportunity starts here
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto lg:mx-0">
+                  Save interesting roles while exploring jobs. Your bookmarked opportunities will stay
+                  here so you can compare them and return when you're ready.
+                </p>
+              </div>
 
-                    {/* Skills pills */}
-                    {job.skills && job.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-2">
-                        {job.skills.slice(0, 6).map((skill) => (
-                          <span
-                            key={skill}
-                            className="text-[11px] px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {job.skills.length > 6 && (
-                          <span className="text-[10px] text-slate-400 self-center">
-                            +{job.skills.length - 6} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Side Actions */}
-                <div className="flex items-center gap-2.5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-                  <button
-                    onClick={() => handleRemove(job.id)}
-                    className="p-2.5 rounded-xl bg-slate-800/60 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-slate-700 transition-colors cursor-pointer"
-                    title="Remove from saved jobs"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-
-                  <Link to={`/candidate/jobs/${job.id}`}>
-                    <Button variant="outline" size="sm">
-                      Details
-                    </Button>
-                  </Link>
-
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 justify-center lg:justify-start">
+                <Link to="/candidate/jobs" className="w-full sm:w-auto">
                   <Button
                     variant="primary"
-                    size="sm"
-                    leftIcon={<Send className="w-3.5 h-3.5" />}
-                    onClick={() => setApplyingJob(job)}
+                    size="md"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                    className="w-full sm:w-auto shadow-[0_0_20px_rgba(99,102,241,0.35)]"
                   >
-                    Easy Apply
+                    Explore Jobs
                   </Button>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setIsInfoModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white transition-colors cursor-pointer py-2 px-3 rounded-lg hover:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>How saved jobs work</span>
+                </button>
+              </div>
+
+              {/* Subtle feature reassurance points */}
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/[0.06] text-[11px] text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Private to your profile</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span>Real-time status updates</span>
                 </div>
               </div>
-            </Card>
-          ))}
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        /* ── 4. REAL SAVED JOBS & EXECUTIVE CAREER SHOWCASE ───────────── */
+        <div className="space-y-5">
+          {/* Executive Career Desk Showcase with 3D Realistic Objects & Live Metrics */}
+          <SavedJobsExecutiveDesk
+            savedJobs={savedJobs}
+            appliedCount={appliedJobIds.size}
+          />
+
+          {/* Saved Job Cards with Specular Border Sweep & Sapphire Clasp */}
+          <div className="space-y-4">
+            {savedJobs.map((job, idx) => (
+              <SavedJobCard
+                key={job.id}
+                job={job}
+                index={idx}
+                isApplied={appliedJobIds.has(job.id) || !!job.applied}
+                onApply={(targetJob) => setApplyingJob(targetJob)}
+                onRemove={handleRemoveBookmark}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* EASY APPLY MODAL */}
-      <Modal
+      {/* ── 5. EASY APPLY MODAL (REAL APPLICATION SUBMISSION) ─────────── */}
+      <EasyApplyModal
+        job={applyingJob}
         isOpen={!!applyingJob}
         onClose={() => setApplyingJob(null)}
-        title={`Apply to ${applyingJob?.title}`}
-        description={`Submit application to ${applyingJob?.company}`}
-        maxWidth="lg"
-      >
-        {applyingJob && (
-          <form onSubmit={handleApplySubmit} className="space-y-5">
-            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs space-y-1.5">
-              <p className="font-bold text-white">Your Candidate Profile Summary</p>
-              <p className="text-slate-300">
-                Location: <span className="text-white font-semibold">{applyingJob.location}</span>
-              </p>
-              <div className="flex items-center gap-2 pt-1">
-                <span className="font-semibold text-emerald-400">Match Score: {applyingJob.matchScore || 88}%</span>
-                <span className="text-slate-400">• Verified ATS Compatible</span>
-              </div>
-            </div>
+        onSuccess={(jobId) => {
+          // Immediately record application state
+          setApplications((prev) => [
+            ...prev,
+            { jobId, status: 'Applied', id: `temp-${Date.now()}` } as Application
+          ]);
+          setSavedJobs((prev) =>
+            prev.map((j) => (j.id === jobId ? { ...j, applied: true } : j))
+          );
+        }}
+      />
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                Select Resume for Submission
-              </label>
-              {resumes.length > 0 ? (
-                <select
-                  value={selectedResumeId}
-                  onChange={(e) => setSelectedResumeId(e.target.value)}
-                  className="w-full bg-slate-900 text-slate-100 text-sm rounded-xl border border-slate-700 p-2.5 cursor-pointer focus:outline-none focus:border-indigo-500"
-                  required
-                >
-                  {resumes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.fileName} {r.isPrimary ? '(Primary Active)' : ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-xs text-amber-400">
-                  No resumes uploaded yet. You can upload one in Resume Management.
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-              <Button type="button" variant="secondary" onClick={() => setApplyingJob(null)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="glow"
-                isLoading={isSubmitting}
-                disabled={resumes.length === 0}
-                leftIcon={<Send className="w-4 h-4" />}
-              >
-                Submit Application
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+      {/* ── 6. ACCESSIBLE INFORMATION MODAL ───────────────────────────── */}
+      <SavedJobsInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+      />
     </div>
   );
 };
+
+export default SavedJobsPage;

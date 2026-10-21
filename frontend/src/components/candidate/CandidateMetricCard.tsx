@@ -108,12 +108,12 @@ export const CandidateMetricCard: React.FC<CandidateMetricCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        'relative rounded-2xl overflow-hidden bg-gradient-to-b from-[#0d1430] via-[#090f24] to-[#060919] p-5 flex flex-col justify-between h-full transition-all duration-300 card-shine-all-sides group',
+        'relative rounded-2xl overflow-hidden bg-gradient-to-b from-[#0d1430] via-[#090f24] to-[#060919] p-5 flex flex-col justify-between h-full border border-white/[0.08] card-top-illumination-standard transition-all duration-300 group',
         cardHoverBorder
       )}
     >
       {/* ── 1. Corner Ambient Lighting & Specular Top Rim ───────────────────── */}
-      <CardReflectiveShine variant={currentVariant} rounded="rounded-2xl" hasHoverSweep={true} />
+      <CardReflectiveShine variant={currentVariant} intensity="standard" rounded="rounded-2xl" topIllumination={true} hasHoverSweep={true} />
 
       {/* ── 2. Subtle Interactive Spotlight Sheen (Soft, restrained) ────────── */}
       {isHovered && !prefersReduced && (
