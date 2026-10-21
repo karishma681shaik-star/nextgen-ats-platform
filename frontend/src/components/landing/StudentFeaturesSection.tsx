@@ -26,7 +26,12 @@ import {
   Award,
   Code2,
   Eye,
-  Check
+  Check,
+  Scan,
+  Radio,
+  Activity,
+  Zap,
+  Compass
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +48,15 @@ interface JourneyStage {
   imageSrc: string;
   imageAlt: string;
   imageCaption: string;
+  telemetryChip: string;
+  hudTopRight: {
+    label: string;
+    value: string;
+  };
+  hudBottomLeft: {
+    label: string;
+    value: string;
+  };
   actionText: string;
   actionRoute: string;
   actionDescription: string;
@@ -59,9 +73,18 @@ const JOURNEY_STAGES: JourneyStage[] = [
     badge: 'Stage 01 · ATS Foundation',
     icon: FileText,
     accentColor: 'indigo',
-    imageSrc: '/assets/student-journey-builder.jpg',
-    imageAlt: 'Final-year Indian engineering student working on a professional resume on laptop',
-    imageCaption: 'Real-world preparation: Engineering candidate formatting ATS-ready credentials',
+    imageSrc: '/assets/student-journey-builder-v2.jpg?v=20261021',
+    imageAlt: 'Photorealistic 3D holographic resume builder workstation with floating glowing resume and skills matrix badges',
+    imageCaption: 'Quantum 3D Holodeck: Real-time ATS structure validation with machine-readable single-column hierarchy',
+    telemetryChip: 'ATS Engine RFC-8259',
+    hudTopRight: {
+      label: 'PARSER COMPLIANCE',
+      value: '99.8% OPTIMAL',
+    },
+    hudBottomLeft: {
+      label: 'SKILLS MATRIX',
+      value: '6 VERIFIED BADGES',
+    },
     actionText: 'Build My Resume',
     actionRoute: '/candidate/resumes',
     actionDescription: 'Launch the AI-assisted resume builder to generate an ATS-standard format.',
@@ -76,9 +99,18 @@ const JOURNEY_STAGES: JourneyStage[] = [
     badge: 'Stage 02 · ATS Diagnostic',
     icon: FileSearch,
     accentColor: 'purple',
-    imageSrc: '/assets/student-journey-analyzer.jpg',
-    imageAlt: 'Laptop displaying professional ATS resume analysis dashboard with score and missing keywords',
-    imageCaption: '5-vector deep diagnostic: Evaluating keyword density, structure, and impact',
+    imageSrc: '/assets/student-journey-analyzer-v2.jpg?v=20261021',
+    imageAlt: 'Photorealistic 3D AI neural core sphere projecting a 94/100 ATS score ring and keyword density glass cards',
+    imageCaption: 'Neural Diagnostic Chamber: Deep semantic resonance & STAR-method rewrite telemetry',
+    telemetryChip: 'Neural Diagnostic Core',
+    hudTopRight: {
+      label: 'ATS MATCH READINESS',
+      value: '94 / 100 PTS',
+    },
+    hudBottomLeft: {
+      label: 'IMPACT REWRITE',
+      value: '+22 PTS QUANTIFIED',
+    },
     actionText: 'Analyze My Resume',
     actionRoute: '/candidate/resume-analysis',
     actionDescription: 'Run your resume through real-time ATS scoring to spot gaps before applying.',
@@ -93,9 +125,18 @@ const JOURNEY_STAGES: JourneyStage[] = [
     badge: 'Stage 03 · Skill Matching',
     icon: Briefcase,
     accentColor: 'cyan',
-    imageSrc: '/assets/student-journey-tracker.jpg',
-    imageAlt: 'Laptop workstation showing job discovery listings and application pipeline tracker',
-    imageCaption: 'Precision discovery: Filtering high-affinity roles with verified skill synergy',
+    imageSrc: '/assets/student-journey-tracker-v2.jpg?v=20261021',
+    imageAlt: 'Photorealistic 3D holographic globe radar pedestal projecting high-affinity opportunity cards',
+    imageCaption: 'Quantum Synergy Radar: Real-time opportunity filtering scored against verified tech stack',
+    telemetryChip: 'Quantum Career Radar',
+    hudTopRight: {
+      label: 'ACTIVE OPPORTUNITIES',
+      value: '24 MATCHES',
+    },
+    hudBottomLeft: {
+      label: 'PEAK SYNERGY ROLE',
+      value: '96% CLOUD ENG',
+    },
     actionText: 'Explore Matching Jobs',
     actionRoute: '/jobs',
     actionDescription: 'Browse open roles and instantly view your skill compatibility percentages.',
@@ -110,9 +151,18 @@ const JOURNEY_STAGES: JourneyStage[] = [
     badge: 'Stage 04 · Recruiter Sync',
     icon: UserCheck,
     accentColor: 'emerald',
-    imageSrc: '/assets/student-journey-shortlist.jpg',
-    imageAlt: 'Corporate executive recruiter reviewing candidate dossier and moving to shortlist stage',
-    imageCaption: 'Recruiter workbench: Transparent status updates from submission to interview',
+    imageSrc: '/assets/student-journey-shortlist-v2.jpg?v=20261021',
+    imageAlt: 'Photorealistic 3D executive talent command center with glowing golden SHORTLISTED verification seal',
+    imageCaption: 'Executive Command Deck: Direct recruiter workbench synchronization & fast-track queue',
+    telemetryChip: 'Executive Search Vault',
+    hudTopRight: {
+      label: 'SHORTLIST STATUS',
+      value: 'VERIFIED CANDIDATE',
+    },
+    hudBottomLeft: {
+      label: 'PIPELINE SPEED',
+      value: 'FAST-TRACK QUEUE',
+    },
     actionText: 'Track Applications',
     actionRoute: '/candidate/applications',
     actionDescription: 'Monitor active status updates as recruiters review your profile.',
@@ -121,6 +171,9 @@ const JOURNEY_STAGES: JourneyStage[] = [
 
 export const StudentFeaturesSection: React.FC = () => {
   const [activeStageIndex, setActiveStageIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'holo' | 'scan'>('holo');
+  const [isLaserActive, setIsLaserActive] = useState<boolean>(true);
+
   const [stage1Tab, setStage1Tab] = useState<'sections' | 'safety'>('sections');
   const [stage2Tab, setStage2Tab] = useState<'diagnostic' | 'star'>('diagnostic');
   const [stage2StarVersion, setStage2StarVersion] = useState<'before' | 'after'>('after');
@@ -150,11 +203,11 @@ export const StudentFeaturesSection: React.FC = () => {
   };
 
   return (
-    <section id="students" className="scroll-mt-24 py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-950/60">
+    <section id="students" className="scroll-mt-24 py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-950/70">
       {/* Ambient background glow accents */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-20 right-0 w-[30rem] h-[30rem] bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-96 bg-cyan-600/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-20 right-0 w-[30rem] h-[30rem] bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-96 bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto space-y-12 relative z-10">
         {/* Section Header */}
@@ -215,9 +268,9 @@ export const StudentFeaturesSection: React.FC = () => {
                 <button
                   key={stage.id}
                   onClick={() => setActiveStageIndex(idx)}
-                  className={`group relative p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                  className={`group relative p-3 sm:p-4 rounded-2xl border text-left transition-all duration-300 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-indigo-500/50 stage-cyber-pod ${
                     isActive
-                      ? 'bg-slate-900/90 border-indigo-500/70 shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-500/40'
+                      ? 'stage-cyber-pod-active'
                       : isPast
                       ? 'bg-slate-900/60 border-emerald-500/30 hover:border-emerald-500/60'
                       : 'bg-slate-900/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
@@ -257,13 +310,19 @@ export const StudentFeaturesSection: React.FC = () => {
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
                     {isActive ? (
-                      <span className="text-indigo-400 font-semibold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" /> Active Stage
+                      <span className="text-indigo-400 font-semibold flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                        </span>
+                        Active Telemetry
                       </span>
                     ) : isPast ? (
-                      <span className="text-emerald-400/90 font-medium">Completed</span>
+                      <span className="text-emerald-400/90 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Completed
+                      </span>
                     ) : (
-                      'Upcoming'
+                      'Upcoming Stage'
                     )}
                   </div>
                 </button>
@@ -282,37 +341,137 @@ export const StudentFeaturesSection: React.FC = () => {
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start"
           >
-            {/* Left Column (7 cols): Realistic Workstation Component & Cinematic Supporting Visual */}
+            {/* Left Column (7 cols): Ultra-Realistic 3D Holographic Stage Viewport & Cyber Mini Console */}
             <div className="lg:col-span-7 space-y-4">
-              {/* Supporting Cinematic Visual Banner */}
-              <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group">
-                <img
-                  src={currentStage.imageSrc}
-                  alt={currentStage.imageAlt}
-                  className="w-full h-52 sm:h-64 object-cover object-center group-hover:scale-[1.02] transition-transform duration-700"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              {/* 3D Holodeck Stage Viewport with Specular Border & Interactive Telemetry */}
+              <div className="holodeck-viewport-specular group relative">
+                {/* Cyber Corner Brackets */}
+                <div className="cyber-corner-bracket cyber-bracket-tl" />
+                <div className="cyber-corner-bracket cyber-bracket-tr" />
+                <div className="cyber-corner-bracket cyber-bracket-bl" />
+                <div className="cyber-corner-bracket cyber-bracket-br" />
 
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md text-slate-200 border border-slate-700 flex items-center gap-1.5 shadow-sm">
-                    <Sparkles className="w-3 h-3 text-indigo-400" />
-                    {currentStage.badge}
-                  </span>
+                {/* Traveling Active Laser Scanning Beam */}
+                {isLaserActive && <div className="ats-laser-scanbeam" />}
+
+                {/* Top Interactive Telemetry Control Bar */}
+                <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-auto">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-950/85 backdrop-blur-md text-slate-100 border border-slate-700/80 flex items-center gap-1.5 shadow-md">
+                      <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
+                      {currentStage.badge}
+                    </span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-lg bg-indigo-950/70 text-indigo-300 border border-indigo-500/30">
+                      <Activity className="w-3 h-3 text-indigo-400" />
+                      {currentStage.telemetryChip}
+                    </span>
+                  </div>
+
+                  {/* View Mode & Scanner Interactive Toggles */}
+                  <div className="flex items-center gap-1.5 bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-800">
+                    <button
+                      onClick={() => setViewMode('holo')}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                        viewMode === 'holo'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Photorealistic 3D Holodeck View"
+                    >
+                      Holo
+                    </button>
+                    <button
+                      onClick={() => setViewMode('scan')}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                        viewMode === 'scan'
+                          ? 'bg-cyan-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Neural Spectrum Diagnostic View"
+                    >
+                      Neural
+                    </button>
+                    <button
+                      onClick={() => setIsLaserActive(!isLaserActive)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all ${
+                        isLaserActive
+                          ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40'
+                          : 'text-slate-500 bg-slate-900'
+                      }`}
+                      title="Toggle Real-Time ATS Laser Scanner"
+                    >
+                      <Scan className="w-2.5 h-2.5" />
+                      <span>{isLaserActive ? 'Laser ON' : 'Laser OFF'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                  <p className="text-[11px] text-slate-300 font-medium bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 max-w-md shadow-sm">
-                    {currentStage.imageCaption}
-                  </p>
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-950/85 px-2 py-1 rounded border border-slate-800 hidden sm:inline-block">
-                    Step {currentStage.number} of 04
-                  </span>
+                {/* Main 3D Photorealistic Image with dynamic perspective and filter */}
+                <div className="relative overflow-hidden w-full h-64 sm:h-80 transition-all duration-700">
+                  <img
+                    src={currentStage.imageSrc}
+                    alt={currentStage.imageAlt}
+                    className={`w-full h-full object-cover object-center group-hover:scale-[1.03] transition-all duration-700 ${
+                      viewMode === 'scan'
+                        ? 'filter contrast-125 saturate-150 hue-rotate-15'
+                        : ''
+                    }`}
+                    loading="eager"
+                  />
+
+                  {/* Vignette & Holographic Depth Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(2,6,23,0.75)_100%)] pointer-events-none" />
+
+                  {/* Floating Holographic Objects: Interactive Telemetry HUD Chips on the 3D Render */}
+                  <div className="absolute top-14 right-4 z-20 pointer-events-auto">
+                    <div className="hologram-hud-chip px-3 py-1.5 rounded-xl flex items-center gap-2 border">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                      <div>
+                        <div className="text-[9px] font-mono text-slate-400 leading-tight">
+                          {currentStage.hudTopRight.label}
+                        </div>
+                        <div className="text-xs font-mono font-black text-cyan-300">
+                          {currentStage.hudTopRight.value}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-12 left-4 z-20 pointer-events-auto">
+                    <div className="hologram-hud-chip px-3 py-1.5 rounded-xl flex items-center gap-2 border">
+                      <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                      <div>
+                        <div className="text-[9px] font-mono text-slate-400 leading-tight">
+                          {currentStage.hudBottomLeft.label}
+                        </div>
+                        <div className="text-xs font-mono font-bold text-white">
+                          {currentStage.hudBottomLeft.value}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Telemetry Status Ribbon */}
+                <div className="relative z-20 bg-slate-950/90 border-t border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-300 font-medium truncate">
+                    <Radio className="w-3 h-3 text-emerald-400 animate-pulse shrink-0" />
+                    <span className="truncate">{currentStage.imageCaption}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span className="text-[10px] font-mono text-slate-400 hidden sm:inline-block">
+                      STAGE 0{activeStageIndex + 1} // 04
+                    </span>
+                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                      ULTRA-HD 8K
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Functional Mini Interactive Software UI */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-5 space-y-4 shadow-xl">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/95 p-5 space-y-4 shadow-2xl backdrop-blur-xl">
                 {/* Stage 01 Mini UI: Structured Resume Sections vs ATS Safety Check */}
                 {currentStage.id === 'build' && (
                   <div className="space-y-3">

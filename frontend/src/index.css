@@ -1077,33 +1077,31 @@
 
 /* ============================================================
    SAVED JOBS & CAREER CARDS — ULTRA-PREMIUM EXTERNAL RIM ILLUMINATION
-   Thin blue-violet outer edge, subtle cyan highlight, and soft external aura
+   Refined obsidian crystal glass, whisper-thin hairline border, and deep velvet shadow
    ============================================================ */
 .card-aura-outer-luminous {
   position: relative;
-  background: linear-gradient(180deg, rgba(10, 16, 35, 0.94) 0%, rgba(6, 10, 24, 0.97) 100%);
-  border: 1px solid rgba(129, 140, 248, 0.30);
+  background: linear-gradient(180deg, rgba(13, 20, 38, 0.82) 0%, rgba(7, 11, 24, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
-    0 0 0 1px rgba(56, 189, 248, 0.10),
-    0 0 26px -4px rgba(99, 102, 241, 0.20),
-    0 0 14px -2px rgba(56, 189, 248, 0.12),
-    0 20px 48px -12px rgba(0, 0, 0, 0.85),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.16);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.3s ease;
+    0 18px 45px -12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease;
 }
 
 .card-aura-outer-luminous-interactive {
   position: relative;
-  background: linear-gradient(180deg, rgba(10, 16, 35, 0.94) 0%, rgba(6, 10, 24, 0.97) 100%);
-  border: 1px solid rgba(129, 140, 248, 0.28);
+  background: linear-gradient(180deg, rgba(13, 20, 38, 0.82) 0%, rgba(7, 11, 24, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
-    0 0 0 1px rgba(56, 189, 248, 0.08),
-    0 0 22px -4px rgba(99, 102, 241, 0.18),
-    0 0 12px -2px rgba(56, 189, 248, 0.10),
     0 16px 40px -12px rgba(0, 0, 0, 0.80),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.15);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.25s ease;
@@ -1111,13 +1109,11 @@
 
 .card-aura-outer-luminous-interactive:hover {
   transform: translateY(-2px);
-  border-color: rgba(165, 180, 252, 0.50);
+  border-color: rgba(165, 180, 252, 0.22);
   box-shadow: 
-    0 0 0 1px rgba(56, 189, 248, 0.20),
-    0 0 34px -2px rgba(129, 140, 248, 0.32),
-    0 0 18px 0 rgba(56, 189, 248, 0.18),
-    0 24px 56px -12px rgba(0, 0, 0, 0.92),
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.22);
+    0 22px 55px -12px rgba(0, 0, 0, 0.90),
+    0 0 16px -3px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1131,77 +1127,63 @@
 }
 
 /* ============================================================
-   SAVED JOBS & CAREER CARDS — ULTRA-LUMINOUS BORDER SHINE & SPECULAR GLINT
-   Brilliant electric cyan/violet specular beam, crystal rim glow & outer illumination
+   SAVED JOBS & CAREER CARDS — ULTRA-PREMIUM ELEGANT OBSIDIAN PLATE
+   Refined hairline border, subtle top specular highlight,
+   and deep velvet obsidian elevation without blinding neon halos.
    ============================================================ */
-@keyframes cardRimSpecularSweep {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
 .card-ultra-shine {
   position: relative;
-  background: linear-gradient(180deg, rgba(11, 18, 40, 0.96) 0%, rgba(6, 10, 24, 0.98) 100%);
-  border: 1px solid rgba(125, 211, 252, 0.48);
+  background: linear-gradient(180deg, rgba(13, 20, 38, 0.82) 0%, rgba(7, 11, 24, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow: 
-    0 0 0 1px rgba(56, 189, 248, 0.25),
-    0 0 28px -2px rgba(56, 189, 248, 0.38),
-    0 0 52px -4px rgba(99, 102, 241, 0.30),
-    0 20px 48px -12px rgba(0, 0, 0, 0.88),
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.35),
-    inset 0 0 20px 0 rgba(56, 189, 248, 0.08);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.3s ease;
+    0 20px 50px -12px rgba(0, 0, 0, 0.85),
+    0 0 1px 1px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease;
 }
 
+/* Delicate, surgical hairline specular accent on top */
 .card-ultra-shine::before {
   content: '';
   position: absolute;
   top: -1px;
-  left: -1px;
-  right: -1px;
-  height: 2px;
+  left: 20px;
+  right: 20px;
+  height: 1px;
   background: linear-gradient(
     90deg,
-    rgba(99, 102, 241, 0) 0%,
-    rgba(56, 189, 248, 0.8) 15%,
-    rgba(255, 255, 255, 1) 45%,
-    rgba(168, 85, 247, 0.9) 65%,
-    rgba(56, 189, 248, 0.8) 85%,
-    rgba(99, 102, 241, 0) 100%
+    transparent 0%,
+    rgba(165, 180, 252, 0.30) 25%,
+    rgba(255, 255, 255, 0.60) 50%,
+    rgba(129, 140, 248, 0.30) 75%,
+    transparent 100%
   );
-  background-size: 200% 100%;
-  animation: cardRimSpecularSweep 5.5s linear infinite;
-  box-shadow: 
-    0 0 14px 2px rgba(56, 189, 248, 0.70),
-    0 0 22px 2px rgba(168, 85, 247, 0.50);
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
   pointer-events: none;
   z-index: 10;
 }
 
 .card-ultra-shine:hover {
-  transform: translateY(-3px);
-  border-color: rgba(186, 230, 253, 0.90);
+  transform: translateY(-2px);
+  border-color: rgba(165, 180, 252, 0.22);
   box-shadow: 
-    0 0 0 1.5px rgba(125, 211, 252, 0.65),
-    0 0 40px 3px rgba(56, 189, 248, 0.65),
-    0 0 70px 6px rgba(139, 92, 246, 0.48),
-    0 24px 60px -10px rgba(0, 0, 0, 0.94),
-    inset 0 2px 3px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 30px 0 rgba(56, 189, 248, 0.18);
+    0 24px 60px -12px rgba(0, 0, 0, 0.92),
+    0 0 20px -3px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
 }
 
 .card-ultra-shine:hover::before {
-  box-shadow: 
-    0 0 20px 3px rgba(56, 189, 248, 0.95),
-    0 0 30px 4px rgba(168, 85, 247, 0.75);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(165, 180, 252, 0.45) 25%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(129, 140, 248, 0.45) 75%,
+    transparent 100%
+  );
 }
 
 /* 3D Realistic Object Sheen & Specular Flares */
@@ -1258,69 +1240,70 @@
   }
 }
 
+/* ============================================================
+   ULTRA-PREMIUM ELEGANT SIDEBAR ACTIVE SELECTION
+   Refined obsidian crystal glass with subtle jewel micro-depth,
+   hairline specular highlight, and restrained ambient radiance.
+   ============================================================ */
 .sidebar-nav-active-shine {
   position: relative;
   background: linear-gradient(
     90deg,
-    rgba(99, 102, 241, 0.65) 0%,
-    rgba(139, 92, 246, 0.80) 50%,
-    rgba(6, 182, 212, 0.50) 100%
+    rgba(30, 41, 75, 0.45) 0%,
+    rgba(18, 25, 52, 0.35) 60%,
+    rgba(15, 23, 42, 0.20) 100%
   ) !important;
-  border: 1px solid rgba(165, 180, 252, 0.80) !important;
+  border: 1px solid rgba(129, 140, 248, 0.22) !important;
   box-shadow: 
-    0 0 0 1px rgba(56, 189, 248, 0.40),
-    0 0 24px 0 rgba(99, 102, 241, 0.60),
-    0 0 42px 2px rgba(147, 51, 234, 0.40),
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.60),
-    inset 0 0 18px 0 rgba(56, 189, 248, 0.25) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    0 4px 16px -2px rgba(0, 0, 0, 0.60),
+    0 0 14px -3px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 12px 0 rgba(99, 102, 241, 0.06) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .sidebar-nav-active-shine::before {
   content: '';
   position: absolute;
   top: -1px;
-  left: -1px;
-  right: -1px;
-  height: 2px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(56, 189, 248, 0.8) 20%,
-    rgba(255, 255, 255, 1) 50%,
-    rgba(192, 132, 252, 0.9) 80%,
+    rgba(165, 180, 252, 0.5) 30%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(129, 140, 248, 0.5) 70%,
     transparent 100%
   );
-  background-size: 200% 100%;
-  animation: sidebarItemGlint 3.8s linear infinite;
-  box-shadow: 0 0 12px 1.5px rgba(56, 189, 248, 0.85),
-              0 0 20px 2px rgba(168, 85, 247, 0.70);
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
   pointer-events: none;
   z-index: 10;
 }
 
 .sidebar-nav-active-shine:hover {
-  transform: translateX(3px);
-  border-color: rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 75, 0.60) 0%,
+    rgba(18, 25, 52, 0.45) 60%,
+    rgba(15, 23, 42, 0.30) 100%
+  ) !important;
+  border-color: rgba(165, 180, 252, 0.35) !important;
   box-shadow: 
-    0 0 0 1.5px rgba(56, 189, 248, 0.55),
-    0 0 30px 2px rgba(99, 102, 241, 0.80),
-    0 0 50px 4px rgba(147, 51, 234, 0.55),
-    inset 0 2px 3px 0 rgba(255, 255, 255, 0.80),
-    inset 0 0 24px 0 rgba(56, 189, 248, 0.35) !important;
+    0 6px 20px -2px rgba(0, 0, 0, 0.70),
+    0 0 18px -2px rgba(99, 102, 241, 0.20),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
+    inset 0 0 14px 0 rgba(99, 102, 241, 0.10) !important;
 }
 
 .sidebar-icon-glow {
-  animation: holographicBeaconPulse 3s ease-in-out infinite;
+  filter: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar-nav-active-shine::before {
-    animation: none !important;
-  }
-  .sidebar-icon-glow {
     animation: none !important;
   }
 }
@@ -2006,6 +1989,303 @@
     animation: none !important;
   }
 }
+
+/* ============================================================
+   REALISTIC CRYPTOGRAPHIC IDENTITY BADGE & REGISTRATION PODS
+   ============================================================ */
+@keyframes badgeHoloSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.realistic-identity-badge {
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(9, 14, 28, 0.98) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.15),
+    0 12px 32px -6px rgba(0, 0, 0, 0.8),
+    0 0 24px -2px rgba(99, 102, 241, 0.25),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.5);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.realistic-identity-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.8) 25%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(168, 85, 247, 0.8) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: badgeHoloSweep 4.5s linear infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.realistic-identity-badge:hover {
+  transform: translateY(-2px);
+  border-color: rgba(186, 230, 253, 0.7);
+  box-shadow: 
+    0 0 0 1.5px rgba(56, 189, 248, 0.35),
+    0 16px 40px -6px rgba(0, 0, 0, 0.9),
+    0 0 35px 0 rgba(56, 189, 248, 0.35),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Role Selector Pods */
+.role-select-pod {
+  position: relative;
+  border-radius: 1rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.role-select-pod-active-cyan {
+  background: linear-gradient(135deg, rgba(8, 24, 48, 0.9) 0%, rgba(4, 12, 28, 0.95) 100%) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.8) !important;
+  box-shadow: 
+    0 0 0 1px rgba(56, 189, 248, 0.25),
+    0 0 28px -2px rgba(6, 182, 212, 0.45),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.role-select-pod-active-purple {
+  background: linear-gradient(135deg, rgba(28, 12, 48, 0.9) 0%, rgba(14, 6, 28, 0.95) 100%) !important;
+  border: 1.5px solid rgba(168, 85, 247, 0.8) !important;
+  box-shadow: 
+    0 0 0 1px rgba(168, 85, 247, 0.25),
+    0 0 28px -2px rgba(168, 85, 247, 0.45),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.role-select-pod-inactive {
+  background: rgba(8, 13, 26, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.role-select-pod-inactive:hover {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .realistic-identity-badge::before {
+    animation: none !important;
+  }
+  .realistic-identity-badge:hover,
+  .role-select-pod-active-cyan,
+  .role-select-pod-active-purple,
+  .holodeck-viewport-specular:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   ULTRA-PREMIUM HOLODECK VIEWPORT & CYBER HUD STYLES
+   Futuristic 3D career workstation showcase with laser scanlines,
+   interactive telemetry pods, and specular glassmorphism.
+   ============================================================ */
+
+.holodeck-viewport-specular {
+  position: relative;
+  border-radius: 1.5rem;
+  background: radial-gradient(130% 100% at 50% 0%, rgba(15, 23, 42, 0.95) 0%, rgba(3, 7, 18, 0.98) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 
+    0 0 0 1px rgba(129, 140, 248, 0.2),
+    0 25px 60px -15px rgba(0, 0, 0, 0.95),
+    0 0 35px -5px rgba(99, 102, 241, 0.3),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 30px 0 rgba(99, 102, 241, 0.12);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.holodeck-viewport-specular::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.5rem;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.8) 0%,
+    rgba(168, 85, 247, 0.3) 25%,
+    rgba(99, 102, 241, 0.1) 50%,
+    rgba(56, 189, 248, 0.3) 75%,
+    rgba(168, 85, 247, 0.9) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.holodeck-viewport-specular:hover {
+  border-color: rgba(99, 102, 241, 0.7);
+  box-shadow: 
+    0 0 0 1px rgba(129, 140, 248, 0.4),
+    0 35px 80px -15px rgba(0, 0, 0, 0.98),
+    0 0 50px -5px rgba(99, 102, 241, 0.5),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 45px 0 rgba(99, 102, 241, 0.2);
+}
+
+/* Traveling Animated Laser Scanning Sweep */
+@keyframes laserScanSweep {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 98%;
+    opacity: 0;
+  }
+}
+
+.ats-laser-scanbeam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 0) 0%,
+    rgba(56, 189, 248, 0.6) 15%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(168, 85, 247, 0.6) 85%,
+    rgba(168, 85, 247, 0) 100%
+  );
+  box-shadow: 
+    0 0 12px 3px rgba(56, 189, 248, 0.8),
+    0 0 25px 6px rgba(168, 85, 247, 0.5);
+  pointer-events: none;
+  z-index: 20;
+  animation: laserScanSweep 4s ease-in-out infinite;
+}
+
+/* Hologram HUD Chip */
+.hologram-hud-chip {
+  background: rgba(10, 15, 30, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 
+    0 8px 24px -4px rgba(0, 0, 0, 0.7),
+    0 0 14px 0 rgba(99, 102, 241, 0.25),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hologram-hud-chip:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 
+    0 12px 30px -4px rgba(0, 0, 0, 0.85),
+    0 0 22px 0 rgba(56, 189, 248, 0.45),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Cybernetic Corner Bracket Accents */
+.cyber-corner-bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 24;
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+.cyber-bracket-tl {
+  top: 10px;
+  left: 10px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.cyber-bracket-tr {
+  top: 10px;
+  right: 10px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+
+.cyber-bracket-bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+
+.cyber-bracket-br {
+  bottom: 10px;
+  right: 10px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+/* Stage Cyber Pod Tabs */
+.stage-cyber-pod {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.stage-cyber-pod::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stage-cyber-pod:hover::after,
+.stage-cyber-pod-active::after {
+  opacity: 1;
+}
+
+.stage-cyber-pod-active {
+  background: radial-gradient(120% 100% at 50% 0%, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border-color: rgba(99, 102, 241, 0.85) !important;
+  box-shadow: 
+    0 0 0 1px rgba(129, 140, 248, 0.35),
+    0 12px 32px -4px rgba(99, 102, 241, 0.35),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+
 
 
 

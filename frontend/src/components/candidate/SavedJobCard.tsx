@@ -83,17 +83,17 @@ export const SavedJobCard: React.FC<SavedJobCardProps> = ({
       onMouseLeave={() => setIsCardHovered(false)}
       className="card-ultra-shine rounded-2xl p-5 sm:p-6 relative group overflow-hidden transition-all duration-300"
     >
-      {/* Specular Ambient Glow inside the card */}
+      {/* Specular Ambient Glow inside the card - subtle and elegant */}
       <div
-        className="absolute top-0 right-1/4 w-80 h-28 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent blur-2xl pointer-events-none transition-opacity duration-500 group-hover:opacity-100 opacity-40 -z-10"
+        className="absolute top-0 right-1/4 w-80 h-28 bg-gradient-to-r from-cyan-500/5 via-indigo-500/5 to-transparent blur-2xl pointer-events-none transition-opacity duration-500 group-hover:opacity-60 opacity-20 -z-10"
         aria-hidden="true"
       />
 
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
         {/* Left: Company Identity & Job Details */}
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          {/* Company Logo with Luminous Border */}
-          <div className="w-14 h-14 min-w-[56px] max-w-[56px] min-h-[56px] max-h-[56px] rounded-2xl overflow-hidden border border-cyan-500/40 bg-slate-900/90 shrink-0 flex items-center justify-center text-slate-200 font-bold text-sm shadow-[0_0_16px_rgba(6,182,212,0.25)] relative group-hover:border-cyan-300 transition-colors p-2.5">
+          {/* Company Logo with Refined Border */}
+          <div className="w-14 h-14 min-w-[56px] max-w-[56px] min-h-[56px] max-h-[56px] rounded-2xl overflow-hidden border border-white/[0.12] bg-slate-900/80 shrink-0 flex items-center justify-center text-slate-200 font-bold text-sm shadow-sm relative group-hover:border-indigo-400/40 transition-colors p-2.5">
             {job.companyLogo && !logoError ? (
               <img
                 src={job.companyLogo}

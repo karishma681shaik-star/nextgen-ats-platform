@@ -177,29 +177,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 onClick={onClose}
                 className={({ isActive }) =>
                   cn(
-                    'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 relative',
+                    'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 relative overflow-hidden',
                     isActive
-                      ? 'sidebar-nav-active-shine text-white font-bold'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.05]'
+                      ? 'sidebar-nav-active-shine text-white font-semibold'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]'
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
-                    {/* Animated 3D Holographic Icon Object when Selected */}
+                    {/* Left Precision Luminous Indicator Bar */}
+                    {isActive && (
+                      <span
+                        className={cn(
+                          'absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full shadow-xs',
+                          role === 'recruiter'
+                            ? 'bg-gradient-to-b from-purple-400 to-indigo-400'
+                            : role === 'admin'
+                            ? 'bg-gradient-to-b from-emerald-400 to-teal-400'
+                            : 'bg-gradient-to-b from-cyan-400 via-indigo-400 to-purple-400'
+                        )}
+                      />
+                    )}
+
+                    {/* Refined Jewel Icon Container when Selected */}
                     {isActive ? (
-                      <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-white/35 via-white/15 to-transparent border border-white/50 flex items-center justify-center shrink-0 shadow-[0_0_16px_rgba(255,255,255,0.45),inset_0_1px_1.5px_rgba(255,255,255,0.7)] sidebar-icon-glow">
-                        <Icon className="w-4 h-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.95)]" />
-                        <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-300 opacity-80" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-300 shadow-[0_0_6px_rgba(34,211,238,1)]" />
-                        </span>
+                      <div
+                        className={cn(
+                          'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]',
+                          role === 'recruiter'
+                            ? 'bg-purple-500/15 border-purple-400/30 text-purple-300'
+                            : role === 'admin'
+                            ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300'
+                            : 'bg-indigo-500/15 border-indigo-400/30 text-indigo-300'
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
                       </div>
                     ) : (
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-400 group-hover:text-slate-200 group-hover:bg-white/[0.04] transition-all">
                         <Icon
                           className={cn(
-                            'w-4 h-4 transition-transform group-hover:scale-115',
+                            'w-4 h-4 transition-transform group-hover:scale-110',
                             item.highlight ? highlightIconColor : ''
                           )}
                         />
@@ -209,9 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <span
                       className={cn(
                         'flex-1 truncate tracking-tight transition-all',
-                        isActive
-                          ? 'font-extrabold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.45)]'
-                          : 'font-medium'
+                        isActive ? 'font-semibold text-white' : 'font-medium'
                       )}
                     >
                       {item.label}
@@ -224,12 +241,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       </span>
                     )}
 
-                    {/* Active Animated Arrow / Beacon Indicator */}
+                    {/* Active Subtle Chevron Indicator */}
                     {isActive && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,1)] animate-pulse" />
-                        <ChevronRight className="w-4 h-4 text-cyan-200 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]" />
-                      </div>
+                      <ChevronRight
+                        className={cn(
+                          'w-3.5 h-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity',
+                          role === 'recruiter'
+                            ? 'text-purple-300'
+                            : role === 'admin'
+                            ? 'text-emerald-300'
+                            : 'text-indigo-300'
+                        )}
+                      />
                     )}
 
                     {/* Pulsing dot for highlight items */}

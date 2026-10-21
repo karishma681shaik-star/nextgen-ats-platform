@@ -80,26 +80,26 @@ export const SavedJobsExecutiveDesk: React.FC<SavedJobsExecutiveDeskProps> = ({
           stiffness: 180,
           mass: 0.6
         }}
-        className="card-ultra-shine rounded-2xl p-5 sm:p-6 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_35px_-4px_rgba(99,102,241,0.30)]"
+        className="card-ultra-shine rounded-2xl p-5 sm:p-6 relative overflow-hidden"
       >
-        {/* Specular Ambient Glow Orbs */}
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
+        {/* Specular Ambient Glow Orbs - subtle and restrained */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           {/* Left Column (7 cols): Header Telemetry & Live Opportunity Metrics */}
           <div className="lg:col-span-7 space-y-4">
             {/* Top Telemetry Tag */}
             <div className="flex items-center gap-3">
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
               </span>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs font-bold tracking-wider text-cyan-300 uppercase">
                   OPPORTUNITY TELEMETRY & VAULT MATRIX
                 </span>
-                <span className="text-[10px] font-mono text-slate-400 bg-white/[0.05] px-2 py-0.5 rounded border border-white/[0.10]">
+                <span className="text-[10px] font-mono text-slate-400 bg-white/[0.05] px-2 py-0.5 rounded border border-white/[0.08]">
                   REAL-TIME v2026.4
                 </span>
               </div>
@@ -111,28 +111,28 @@ export const SavedJobsExecutiveDesk: React.FC<SavedJobsExecutiveDeskProps> = ({
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-cyan-500/25 shadow-sm">
+              <div className="p-3 rounded-xl bg-slate-950/50 border border-white/[0.07] shadow-sm">
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Bookmarked</p>
                 <p className="text-xl font-black text-white mt-0.5 flex items-baseline gap-1">
                   {totalCount} <span className="text-xs font-normal text-slate-400">{totalCount === 1 ? 'Role' : 'Roles'}</span>
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-emerald-500/25 shadow-sm">
+              <div className="p-3 rounded-xl bg-slate-950/50 border border-white/[0.07] shadow-sm">
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Open Positions</p>
                 <p className="text-xl font-black text-emerald-300 mt-0.5 flex items-baseline gap-1">
                   {activeCount} <span className="text-xs font-normal text-slate-400">Active</span>
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-indigo-500/25 shadow-sm">
+              <div className="p-3 rounded-xl bg-slate-950/50 border border-white/[0.07] shadow-sm">
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Avg ATS Match</p>
                 <p className="text-xl font-black text-cyan-300 mt-0.5 flex items-baseline gap-1">
                   {avgMatch}% <span className="text-xs font-normal text-slate-400">Match</span>
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-purple-500/25 shadow-sm">
+              <div className="p-3 rounded-xl bg-slate-950/50 border border-white/[0.07] shadow-sm">
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Dispatched</p>
                 <p className="text-xl font-black text-indigo-300 mt-0.5 flex items-baseline gap-1">
                   {appliedCount} <span className="text-xs font-normal text-slate-400">Applied</span>
