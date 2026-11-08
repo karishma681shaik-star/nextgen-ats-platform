@@ -428,7 +428,7 @@ public class ResumeService {
             } catch (Exception ignored) {}
         }
 
-        // ── 1. Contact Details (10 pts) ──
+        // ── 1. Contact Details (15 pts) ──
         String firstName = textVal(data, "firstName");
         String lastName = textVal(data, "lastName");
         String name = textVal(data, "name");
@@ -448,53 +448,90 @@ public class ResumeService {
 
         boolean contactPassing = hasName && hasPhone && hasEmail && hasLocation;
 
-        // ── 2 & 3. Skills Validation (20 pts: 5 pts section presence, 15 pts density >= 5) ──
+        List<String> missingContactParts = new ArrayList<>();
+        if (!hasName) missingContactParts.add("full name");
+        if (!hasEmail) missingContactParts.add("valid email");
+        if (!hasPhone) missingContactParts.add("phone number");
+        if (!hasLocation) missingContactParts.add("location");
+
+        String contactCurrentVal = missingContactParts.isEmpty()
+                ? "Full contact info provided"
+                : "Missing: " + String.join(", ", missingContactParts);
+        String contactReason = missingContactParts.isEmpty()
+                ? "Verified: Full contact info (name, email, phone, location) is complete."
+                : (missingContactParts.size() == 4
+                    ? "Add your full name, phone number, email address, and location."
+                    : "Add your missing " + String.join(", ", missingContactParts) + " to ensure recruiters can reach you.");
+
+        // ── 2. Professional Summary (10 pts) ──
+        String summary = textVal(data, "summary");
+        if (summary.isBlank()) summary = textVal(data, "bio");
+        boolean hasSummary = !isPlaceholder(summary);
+        boolean summaryPassing = hasSummary && summary.trim().length() >= 40;
+        String summaryCurrentVal = !hasSummary
+                ? "No summary provided"
+                : (summaryPassing ? "Comprehensive summary (" + summary.trim().length() + " chars)" : "Brief summary (" + summary.trim().length() + "/40 chars)");
+        String summaryTitle = !hasSummary ? "Missing Professional Summary" : (summaryPassing ? "Professional Summary Provided" : "Expand Professional Summary");
+        String summaryReason = !hasSummary
+                ? "Write a 2-3 sentence career summary highlighting your core expertise and value."
+                : (summaryPassing
+                    ? "Verified: Career summary is present and highlights core competencies."
+                    : "Your summary is too brief. Expand it to 2-3 sentences (minimum 40 characters) highlighting your primary technical domain.");
+
+        // ── 3. Education Credentials (15 pts) ──
+        int genuineEduCount = countGenuineEducation(data);
+        boolean educationPassing = genuineEduCount >= 1;
+        boolean hasRawEdu = data != null && data.has("education") && data.get("education").isArray() && data.get("education").size() > 0;
+        String eduTitle = educationPassing ? "Academic Education Verified" : (hasRawEdu ? "Education Entry Incomplete" : "Missing Education Section & Credentials");
+        String eduReason = educationPassing
+                ? "Verified: Institution and degree credentials are confirmed."
+                : (hasRawEdu
+                    ? "Update your education entry to include both your Institution Name and Degree."
+                    : "Add your degree, institution name, and graduation timeline.");
+        String eduCurrentVal = educationPassing ? genuineEduCount + " verified qualification(s)" : (hasRawEdu ? "Incomplete degree or institution" : "0 education entries");
+
+        // ── 4. Skills & Competencies (20 pts: 10 pts presence, 10 pts density >= 5) ──
         List<String> genuineSkills = extractGenuineSkills(data, resume);
         int skillCount = genuineSkills.size();
         boolean skillsSectionPassing = skillCount >= 1;
         boolean skillsCountPassing = skillCount >= 5;
 
-        // ── 4 & 5. Experience & Projects (35 pts total) ──
+        // ── 5. Practical Experience & Projects (30 pts total) ──
         int genuineExpCount = countGenuineExperience(data);
         int genuineProjCount = countGenuineProjects(data);
         boolean hasComprehensiveExpDesc = hasComprehensiveDescriptions(data);
+        boolean hasComprehensiveProjDesc = hasComprehensiveProjectDescriptions(data);
 
-        // ── 6. Education Credentials (15 pts) ──
-        int genuineEduCount = countGenuineEducation(data);
-        boolean educationPassing = genuineEduCount >= 1;
-        boolean hasRawEdu = data != null && data.has("education") && data.get("education").isArray() && data.get("education").size() > 0;
-
-        // ── 7. Professional Summary (10 pts) ──
-        String summary = textVal(data, "summary");
-        if (summary.isBlank()) summary = textVal(data, "bio");
-        boolean summaryPassing = !isPlaceholder(summary) && summary.trim().length() >= 40;
-
-        // ── 8 & 9. Structure and Formatting (10 pts: 5 pts metrics, 5 pts action verbs) ──
+        // ── 6. Content Quality & Impact (10 pts) ──
         String allDescriptions = aggregateAllDescriptions(data);
-        boolean metricsPassing = Pattern.compile("\\b\\d+(\\.\\d+)?%|\\$\\d+|\\b\\d+\\+?\\s*(users|clients|requests|ms|hours|days|x|fold)\\b", Pattern.CASE_INSENSITIVE)
-                .matcher(allDescriptions).find();
-        boolean actionVerbsPassing = Pattern.compile("\\b(Led|Developed|Designed|Engineered|Spearheaded|Architected|Implemented|Automated|Optimized|Constructed|Orchestrated|Transformed|Built|Created|Delivered)\\b", Pattern.CASE_INSENSITIVE)
-                .matcher(allDescriptions).find();
+        boolean hasAnyDescriptions = allDescriptions != null && allDescriptions.trim().length() >= 30;
+        boolean metricsPassing = Pattern.compile("\\b\\d+(\\.\\d+)?%|\\$\\d+|\\b\\d+\\+?\\s*(users|clients|requests|ms|hours|days|x|fold|k|m|million|billion)\\b", Pattern.CASE_INSENSITIVE)
+                .matcher(allDescriptions != null ? allDescriptions : "").find();
+        boolean actionVerbsPassing = Pattern.compile("\\b(Led|Developed|Designed|Engineered|Spearheaded|Architected|Implemented|Automated|Optimized|Constructed|Orchestrated|Transformed|Built|Created|Delivered|Collaborated|Formulated)\\b", Pattern.CASE_INSENSITIVE)
+                .matcher(allDescriptions != null ? allDescriptions : "").find();
 
-        // Build recommendations list
+        // Build recommendations list with strict hierarchical dependency
         List<ResumeRecommendationDTO> all = new ArrayList<>();
 
-        // 1. Contact Details (10.0 pts)
+        // 1. Contact Details (15.0 pts)
         all.add(createRecommendation(
                 "contact-essential",
                 "Contact Info",
                 "error",
                 "Essential Contact Details Missing",
                 "Essential Contact Details Verified",
-                "Add your full name, phone number, email address, and location.",
+                contactReason,
                 "Verified: Full contact info (name, email, phone, location) is complete.",
-                10.0,
+                15.0,
                 contactPassing,
                 dismissedIds.contains("contact-essential"),
                 "personal-info",
                 "Incomplete or placeholder contact info prevents recruiters from reaching out for interview invitations.",
                 "Candidates without clear location and direct contact information are skipped by recruiters.",
-                "Use a professional email and include city/state for location-based search filtering."
+                "Use a professional email and include city/state for location-based search filtering.",
+                contactCurrentVal,
+                "Full Name, Email, Phone Number, Location",
+                "Fill in all required fields in the Personal Information section."
         ));
 
         // 2. Professional Summary (10.0 pts)
@@ -502,9 +539,9 @@ public class ResumeService {
                 "summary-genuine",
                 "Summary",
                 "warning",
-                "Missing Professional Summary",
+                summaryTitle,
                 "Professional Summary Provided",
-                "Write a 2-3 sentence career summary highlighting your core expertise and value.",
+                summaryReason,
                 "Verified: Career summary is present and highlights core competencies.",
                 10.0,
                 summaryPassing,
@@ -512,7 +549,10 @@ public class ResumeService {
                 "summary",
                 "The summary is indexed heavily for high-level keyword clusters and target job titles.",
                 "Provides an immediate snapshot of career identity and alignment with the target role.",
-                "Summarize your years of experience, primary domain, and top career achievements."
+                "Summarize your years of experience, primary domain, and top career achievements.",
+                summaryCurrentVal,
+                "2-3 sentences (minimum 40 characters)",
+                "Craft a concise summary highlighting your domain skills and impact."
         ));
 
         // 3. Education (15.0 pts)
@@ -520,9 +560,9 @@ public class ResumeService {
                 "section-education",
                 "Education",
                 "error",
-                hasRawEdu ? "Education Entry Incomplete" : "Missing Education Section & Credentials",
-                "Academic Education Added",
-                hasRawEdu ? "Update your most recent education entry to include your Degree, Institute, Dates." : "Add your degree, institution name, and graduation timeline.",
+                eduTitle,
+                "Academic Education Verified",
+                eduReason,
                 "Verified: Institution and degree credentials are confirmed.",
                 15.0,
                 educationPassing,
@@ -530,103 +570,122 @@ public class ResumeService {
                 "education",
                 "Enterprise organizations enforce strict minimum degree requirements in ATS screening.",
                 "Recruiters verify degree completion and major relevance during preliminary screening.",
-                "Include institution name, degree obtained, and graduation year."
+                "Include institution name, degree obtained, and graduation year.",
+                eduCurrentVal,
+                "At least 1 institution and degree entry",
+                "Add your formal degree, university or college name, and graduation timeline."
         ));
 
-        // 4. Skills Section Presence (5.0 pts)
-        all.add(createRecommendation(
-                "section-skills",
-                "Skills",
-                "error",
-                "Missing Skills Section & Competencies",
-                "Skills Section & Competencies Added",
-                "Add a dedicated Skills section containing your core technical tools and capabilities.",
-                "Verified: Core technical and industry skills are included in your resume (" + skillCount + " listed).",
-                5.0,
-                skillsSectionPassing,
-                dismissedIds.contains("section-skills"),
-                "skills",
-                "A dedicated Skills section allows ATS keyword matchers to index your exact competencies.",
-                "Allows recruiters to instantly confirm whether you satisfy required prerequisites and technical demands.",
-                "Group skills by categories (Programming Languages, Frameworks, Tools) to improve readability."
-        ));
-
-        // 5. Skills Density & Count (15.0 pts)
-        all.add(createRecommendation(
-                "skills-count",
-                "Skills",
-                "warning",
-                "Insufficient Skill Count",
-                "Sufficient Core Skills Count (>= 5 skills)",
-                "Add at least 5 relevant technical or industry skills to meet ATS keyword density (currently " + skillCount + "/5).",
-                "Verified: Meets recommended keyword density with " + skillCount + " core skills.",
-                15.0,
-                skillsCountPassing,
-                dismissedIds.contains("skills-count"),
-                "skills",
-                "ATS algorithms calculate keyword match density. Profiles with under 5 core skills rarely hit the 70% threshold.",
-                "Recruiters use skill search filters to narrow applicant pools from hundreds to top contenders.",
-                "Include both primary programming languages/frameworks and domain tools."
-        ));
-
-        // 6 & 7. Practical Experience & Projects (35.0 pts total) - Intelligent Fresher Fairness
-        boolean isFresher = (genuineExpCount == 0);
-        if (!isFresher) {
+        // 4. Skills Section & Competencies (20.0 pts - Hierarchical Dependency)
+        if (skillCount == 0) {
+            // Section completely missing: show ONLY the primary blocker (20 pts)
             all.add(createRecommendation(
-                    "section-work-projects",
+                    "section-skills",
+                    "Skills",
+                    "error",
+                    "Missing Skills Section & Competencies",
+                    "Skills Section & Competencies Added",
+                    "Add a dedicated Skills section containing your core technical tools and capabilities.",
+                    "Verified: Core technical and industry skills are included in your resume.",
+                    20.0,
+                    false,
+                    dismissedIds.contains("section-skills"),
+                    "skills",
+                    "A dedicated Skills section allows ATS keyword matchers to index your exact competencies.",
+                    "Allows recruiters to instantly confirm whether you satisfy required prerequisites and technical stack demands.",
+                    "Group skills by categories (Programming Languages, Frameworks, Tools) to improve readability.",
+                    "0 skills listed",
+                    "Dedicated skills section with core competencies",
+                    "Open the Skills section and add your key technical languages, frameworks, and tools."
+            ));
+        } else {
+            // Section exists: primary passes (10 pts)
+            all.add(createRecommendation(
+                    "section-skills",
+                    "Skills",
+                    "error",
+                    "Missing Skills Section & Competencies",
+                    "Skills Section & Competencies Added",
+                    "Add a dedicated Skills section containing your core technical tools and capabilities.",
+                    "Verified: Core technical and industry skills are included in your resume (" + skillCount + " listed).",
+                    10.0,
+                    true,
+                    dismissedIds.contains("section-skills"),
+                    "skills",
+                    "A dedicated Skills section allows ATS keyword matchers to index your exact competencies.",
+                    "Allows recruiters to instantly confirm whether you satisfy required prerequisites and technical demands.",
+                    "Group skills by categories (Programming Languages, Frameworks, Tools) to improve readability.",
+                    skillCount + " skills listed",
+                    "Core technical skills section",
+                    "Maintain structured categorization for ATS parsers."
+            ));
+
+            // Secondary density check (10 pts)
+            all.add(createRecommendation(
+                    "skills-count",
+                    "Skills",
+                    skillsCountPassing ? "info" : "warning",
+                    "Insufficient Skill Count",
+                    "Sufficient Core Skills Count (>= 5 skills)",
+                    "Expand your Skills section by adding more relevant technologies or tools (currently " + skillCount + "/5, min 5).",
+                    "Verified: Meets recommended keyword density with " + skillCount + " core skills.",
+                    10.0,
+                    skillsCountPassing,
+                    dismissedIds.contains("skills-count"),
+                    "skills",
+                    "ATS algorithms calculate keyword match density. Profiles with under 5 core skills rarely hit the 70% threshold.",
+                    "Recruiters use skill search filters to narrow applicant pools from hundreds to top contenders.",
+                    "Include both primary programming languages/frameworks and domain tools.",
+                    skillCount + " skills listed",
+                    "5 or more relevant skills",
+                    "Add additional technical tools, frameworks, and programming languages you have worked with."
+            ));
+        }
+
+        // 5. Practical Experience & Projects (30.0 pts - Intelligent Fresher Fairness)
+        if (genuineExpCount >= 1) {
+            // Profile 1: Experienced candidate with work history
+            all.add(createRecommendation(
+                    "section-experience",
                     "Work Experience",
                     "error",
                     "Missing Work Experience",
-                    "Work Experience Included",
+                    "Professional Work Experience Documented",
                     "Add your employment history, job title, company, and timeline.",
-                    "Verified: Professional work experience is documented.",
-                    10.0,
-                    genuineExpCount >= 1,
-                    dismissedIds.contains("section-work-projects"),
+                    "Verified: Professional work experience is documented (" + genuineExpCount + " role(s)).",
+                    15.0,
+                    true,
+                    dismissedIds.contains("section-experience") || dismissedIds.contains("section-work-projects"),
                     "experience",
                     "ATS algorithms look for structured work experience to gauge hands-on technical background.",
                     "Recruiters spend 80% of their initial scan evaluating career progression.",
-                    "Ensure entries are in reverse chronological order with measurable bullet points."
+                    "Ensure entries are in reverse chronological order with measurable bullet points.",
+                    genuineExpCount + " role(s) documented",
+                    "At least 1 professional work experience entry",
+                    "Keep your roles updated with current title and organization."
             ));
 
             all.add(createRecommendation(
                     "exp-descriptions-genuine",
                     "Work Experience",
-                    "warning",
+                    hasComprehensiveExpDesc ? "info" : "warning",
                     "Detailed Experience Bullet Points",
                     "Detailed Experience Bullet Points Included",
-                    "Add comprehensive bullet points describing responsibilities and accomplishments.",
+                    "Add comprehensive bullet points describing responsibilities and accomplishments (minimum 40 characters).",
                     "Verified: Roles contain comprehensive accomplishment bullet points.",
-                    10.0,
+                    15.0,
                     hasComprehensiveExpDesc,
                     dismissedIds.contains("exp-descriptions-genuine"),
                     "experience",
                     "Bullet descriptions provide contextual keywords ATS systems score against requirements.",
                     "Recruiters want to see specific contributions rather than generic job duties.",
-                    "Frame bullet points with the XYZ formula: Accomplished [X] as measured by [Y], by doing [Z]."
+                    "Frame bullet points with the XYZ formula: Accomplished [X] as measured by [Y], by doing [Z].",
+                    hasComprehensiveExpDesc ? "Detailed bullet points provided" : "Bullet points too brief or missing",
+                    "Action-driven bullet points (>= 40 characters)",
+                    "Elaborate on your day-to-day contributions, technologies used, and outcomes delivered."
             ));
-
-            all.add(createRecommendation(
-                    "section-projects",
-                    "Projects",
-                    "info",
-                    "Missing Projects Section",
-                    "Projects & Deliverables Documented",
-                    "Add technical or academic projects to demonstrate hands-on applied capabilities.",
-                    "Verified: Hands-on project portfolio documented (" + genuineProjCount + " listed).",
-                    15.0,
-                    genuineProjCount >= 1,
-                    dismissedIds.contains("section-projects"),
-                    "projects",
-                    "Projects highlight practical application of skills beyond job responsibilities.",
-                    "Helps recruiters gauge engineering initiative and technical depth.",
-                    "Include technologies used, your direct contribution, and measurable deliverables."
-            ));
-        } else {
-            // Fresher / Student candidate without corporate tenure
-            boolean hasMultipleProjects = genuineProjCount >= 2;
-            boolean hasSingleProject = genuineProjCount == 1;
-
+        } else if (genuineProjCount >= 1) {
+            // Profile 2: Fresher / Student candidate with project deliverables (NO PENALTY FOR NO WORK EXPERIENCE!)
             all.add(createRecommendation(
                     "section-projects",
                     "Projects",
@@ -636,75 +695,103 @@ public class ResumeService {
                     "Add academic, capstone, or personal technical projects highlighting your hands-on coding ability.",
                     "Verified: Practical project deliverables documented (" + genuineProjCount + " listed).",
                     15.0,
-                    genuineProjCount >= 1,
+                    true,
                     dismissedIds.contains("section-projects"),
                     "projects",
                     "For freshers and early-career candidates, projects serve as primary proof of technical competence.",
                     "Recruiters evaluate problem solving, architecture choices, and stack familiarity through project work.",
-                    "Highlight technologies used, role, and provide links or measurable metrics."
+                    "Highlight technologies used, role, and provide links or measurable metrics.",
+                    genuineProjCount + " project(s) documented",
+                    "At least 1 technical or academic project",
+                    "Keep project documentation clear with architecture and repository links."
             ));
 
             all.add(createRecommendation(
-                    "section-work-projects",
-                    "Practical Experience",
-                    hasMultipleProjects ? "info" : "warning",
-                    hasSingleProject
-                            ? "Add Second Project or Internship"
-                            : "Missing Work Experience or Projects",
-                    hasMultipleProjects
-                            ? "Hands-on Project Portfolio Verified (Fresher Credit)"
-                            : "Practical Experience Documented",
-                    hasSingleProject
-                            ? "Early-career candidates should add at least 2 detailed projects or internships to demonstrate competence (currently 1)."
-                            : "Add professional employment, internships, or academic projects.",
+                    "proj-descriptions-genuine",
+                    "Projects",
+                    hasComprehensiveProjDesc ? "info" : "warning",
+                    "Detailed Project Descriptions & Tech Stack",
+                    "Hands-on Project Portfolio Verified (Fresher Credit)",
+                    "Add comprehensive descriptions and technologies used to showcase your hands-on technical depth.",
                     "Verified: Practical project portfolio demonstrates strong hands-on capabilities in lieu of corporate tenure.",
-                    20.0,
-                    hasMultipleProjects,
-                    dismissedIds.contains("section-work-projects"),
+                    15.0,
+                    hasComprehensiveProjDesc,
+                    dismissedIds.contains("proj-descriptions-genuine") || dismissedIds.contains("section-work-projects"),
                     "projects",
                     "Early-career ATS models weight robust academic projects equivalently to entry-level internships.",
                     "Demonstrates initiative, end-to-end delivery, and code craftsmanship.",
-                    "Include 2 or more projects with architecture overview, stack details, and GitHub links."
+                    "Include architecture overview, stack details, and GitHub links.",
+                    hasComprehensiveProjDesc ? "Technical deliverables and tech stack described" : "Project description or tech stack missing",
+                    "Detailed project description and technologies used",
+                    "Describe the technical challenge solved, technologies used, and system outcomes."
+            ));
+        } else {
+            // Profile 3: Completely empty practical experience (0 exp and 0 projects)
+            all.add(createRecommendation(
+                    "section-work-projects",
+                    "Practical Experience",
+                    "error",
+                    "Missing Practical Experience (Projects or Work Experience)",
+                    "Practical Experience Documented",
+                    "Add at least one technical project, internship, or professional role demonstrating your practical capabilities.",
+                    "Verified: Practical experience or technical projects are documented.",
+                    30.0,
+                    false,
+                    dismissedIds.contains("section-practical-exp") || dismissedIds.contains("section-work-projects") || dismissedIds.contains("section-projects"),
+                    "projects",
+                    "ATS algorithms and recruiters require evidence of applied hands-on capabilities through projects or employment.",
+                    "Early-career candidates can satisfy this requirement with robust academic projects, while experienced candidates use work history.",
+                    "Add an academic capstone, personal coding project, internship, or professional role.",
+                    "0 projects and 0 work experience entries",
+                    "At least 1 technical project or work experience entry",
+                    "Click Fix to add a technical project or work experience entry."
             ));
         }
 
-        // 8. Measurable Metrics (5.0 pts)
-        all.add(createRecommendation(
-                "quantifiable-metrics",
-                "Content Quality",
-                "info",
-                "Quantifiable Metrics & Measurable Impact",
-                "Quantifiable Metrics & Impact Demonstrated",
-                "Include numbers, percentages, or growth metrics to prove tangible impact.",
-                "Verified: Measurable metrics and percentages found in project or work descriptions.",
-                5.0,
-                metricsPassing,
-                dismissedIds.contains("quantifiable-metrics"),
-                "experience",
-                "Resumes with measurable results score higher in AI-driven semantic ranking algorithms.",
-                "Numbers give hiring managers confidence in your scale of impact and competency.",
-                "Add stats such as 'Reduced load time by 35%' or 'Managed a team of 6 engineers'."
-        ));
+        // 6. Content Quality & Impact (10.0 pts) - ONLY evaluated when descriptions exist!
+        if (hasAnyDescriptions) {
+            all.add(createRecommendation(
+                    "quantifiable-metrics",
+                    "Content Quality",
+                    "info",
+                    "Quantifiable Metrics & Measurable Impact",
+                    "Quantifiable Metrics & Impact Demonstrated",
+                    "Include numbers, percentages, or growth metrics to prove tangible impact.",
+                    "Verified: Measurable metrics and percentages found in project or work descriptions.",
+                    5.0,
+                    metricsPassing,
+                    dismissedIds.contains("quantifiable-metrics"),
+                    genuineExpCount >= 1 ? "experience" : "projects",
+                    "Resumes with measurable results score higher in AI-driven semantic ranking algorithms.",
+                    "Numbers give hiring managers confidence in your scale of impact and competency.",
+                    "Add stats such as 'Reduced latency by 35%' or 'Processed 10,000+ daily transactions'.",
+                    metricsPassing ? "Quantifiable metrics detected" : "No measurable metrics found",
+                    "Quantifiable metrics or numbers in descriptions",
+                    "Include specific numbers, percentages, user counts, or performance gains in your descriptions."
+            ));
 
-        // 9. Strong Action Verbs (5.0 pts)
-        all.add(createRecommendation(
-                "action-verbs",
-                "Content Quality",
-                "info",
-                "Strong Action Verbs in Bullet Points",
-                "Strong Action Verbs Applied",
-                "Start bullet points with impactful verbs like Engineered, Spearheaded, or Optimized.",
-                "Verified: Strong leadership and technical action verbs detected in descriptions.",
-                5.0,
-                actionVerbsPassing,
-                dismissedIds.contains("action-verbs"),
-                "experience",
-                "Action verbs signal leadership, ownership, and initiative to natural language parsers.",
-                "Creates an active, compelling narrative that holds recruiter interest.",
-                "Avoid passive voice ('Responsible for...') and replace with decisive action verbs."
-        ));
+            all.add(createRecommendation(
+                    "action-verbs",
+                    "Content Quality",
+                    "info",
+                    "Strong Action Verbs in Bullet Points",
+                    "Strong Action Verbs Applied",
+                    "Start bullet points with impactful verbs like Engineered, Spearheaded, or Optimized.",
+                    "Verified: Strong leadership and technical action verbs detected in descriptions.",
+                    5.0,
+                    actionVerbsPassing,
+                    dismissedIds.contains("action-verbs"),
+                    genuineExpCount >= 1 ? "experience" : "projects",
+                    "Action verbs signal leadership, ownership, and initiative to natural language parsers.",
+                    "Creates an active, compelling narrative that holds recruiter interest.",
+                    "Avoid passive voice ('Responsible for...') and replace with decisive action verbs.",
+                    actionVerbsPassing ? "Strong action verbs detected" : "No strong action verbs found",
+                    "Active verbs (e.g., Engineered, Spearheaded, Developed)",
+                    "Begin each bullet point with a decisive active verb describing your engineering action."
+            ));
+        }
 
-        // Calculate genuine ATS score (sum of passing recommendation weights, independent of dismissal)
+        // Calculate genuine ATS score (sum of passing recommendation weights)
         double earnedWeight = 0;
         for (ResumeRecommendationDTO r : all) {
             if (r.isPassing()) {
@@ -714,7 +801,13 @@ public class ResumeService {
         int atsScore = (int) Math.round(earnedWeight);
         atsScore = Math.max(0, Math.min(100, atsScore));
 
-        String readinessLabel = atsScore >= 90 ? "Excellent"
+        // Evaluate Apply Ready strictly
+        boolean practicalExpPassing = (genuineExpCount >= 1) || (genuineProjCount >= 1 && hasComprehensiveProjDesc);
+        boolean mandatoryPassing = contactPassing && educationPassing && skillsCountPassing && practicalExpPassing;
+        boolean isApplyReady = atsScore >= 80 && mandatoryPassing;
+
+        String readinessLabel = isApplyReady ? "Apply Ready"
+                : atsScore >= 90 ? "Excellent"
                 : atsScore >= 75 ? "Good"
                 : atsScore >= 60 ? "Fair"
                 : atsScore >= 40 ? "Needs Improvement"
@@ -767,7 +860,9 @@ public class ResumeService {
             String reason, String completedDescription,
             double weight, boolean passing, boolean dismissed,
             String navigateTo, String detailedReason,
-            String recruiterImpact, String proTip) {
+            String recruiterImpact, String proTip,
+            String currentValue, String expectedValue,
+            String suggestedCorrection) {
         String status = dismissed ? "DELETED" : (passing ? "COMPLETED" : "PENDING");
         return new ResumeRecommendationDTO(
                 id, category, severity, status,
@@ -775,7 +870,27 @@ public class ResumeService {
                 reason, completedDescription,
                 weight, passing, dismissed,
                 navigateTo, detailedReason,
-                recruiterImpact, proTip
+                recruiterImpact, proTip,
+                currentValue, expectedValue,
+                suggestedCorrection
+        );
+    }
+
+    private ResumeRecommendationDTO createRecommendation(
+            String id, String category, String severity,
+            String pendingTitle, String completedTitle,
+            String reason, String completedDescription,
+            double weight, boolean passing, boolean dismissed,
+            String navigateTo, String detailedReason,
+            String recruiterImpact, String proTip) {
+        return createRecommendation(
+                id, category, severity,
+                pendingTitle, completedTitle,
+                reason, completedDescription,
+                weight, passing, dismissed,
+                navigateTo, detailedReason,
+                recruiterImpact, proTip,
+                null, null, null
         );
     }
 
@@ -918,6 +1033,18 @@ public class ResumeService {
         for (JsonNode exp : data.get("experience")) {
             String desc = textVal(exp, "description");
             if (!isPlaceholder(desc) && desc.trim().length() >= 40) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasComprehensiveProjectDescriptions(JsonNode data) {
+        if (data == null || !data.has("projects") || !data.get("projects").isArray()) return false;
+        for (JsonNode p : data.get("projects")) {
+            String desc = textVal(p, "description");
+            String techs = textVal(p, "technologies");
+            if ((!isPlaceholder(desc) && desc.trim().length() >= 30) || (!isPlaceholder(techs) && techs.trim().length() >= 3)) {
                 return true;
             }
         }

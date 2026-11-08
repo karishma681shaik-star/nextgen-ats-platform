@@ -287,4 +287,43 @@ export const candidateApi = {
       body: JSON.stringify(request),
     });
   },
+
+  async getJobOptimizations(resumeId: string): Promise<any[]> {
+    try {
+      return await apiClient<any[]>(`/resumes/${resumeId}/job-optimizations`);
+    } catch {
+      return [];
+    }
+  },
+
+  async getJobOptimization(resumeId: string, jobId: string): Promise<any> {
+    return apiClient<any>(`/resumes/${resumeId}/job-optimizations/${jobId}`);
+  },
+
+  async getOptimizationHistory(resumeId: string, jobId: string): Promise<any[]> {
+    try {
+      return await apiClient<any[]>(`/resumes/${resumeId}/job-optimizations/${jobId}/history`);
+    } catch {
+      return [];
+    }
+  },
+
+  async applyJobOptimization(resumeId: string, jobId: string, data: any): Promise<any> {
+    return apiClient<any>(`/resumes/${resumeId}/job-optimizations/${jobId}/optimize`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async restoreOptimizationVersion(resumeId: string, jobId: string, historyId: string): Promise<any> {
+    return apiClient<any>(`/resumes/${resumeId}/job-optimizations/${jobId}/history/${historyId}/restore`, {
+      method: 'POST',
+    });
+  },
+
+  async deleteJobOptimization(resumeId: string, jobId: string): Promise<void> {
+    await apiClient(`/resumes/${resumeId}/job-optimizations/${jobId}`, {
+      method: 'DELETE',
+    });
+  },
 };

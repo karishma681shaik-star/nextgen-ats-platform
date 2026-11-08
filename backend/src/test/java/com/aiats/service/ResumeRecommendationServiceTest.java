@@ -92,7 +92,7 @@ class ResumeRecommendationServiceTest {
         boolean hasPendingSkills = analysis.getPending().stream()
                 .anyMatch(r -> r.getId().equals("section-skills"));
         boolean hasPendingExp = analysis.getPending().stream()
-                .anyMatch(r -> r.getId().equals("section-work-projects"));
+                .anyMatch(r -> r.getId().equals("section-work-projects") || r.getId().equals("section-practical-exp"));
         boolean hasPendingEdu = analysis.getPending().stream()
                 .anyMatch(r -> r.getId().equals("section-education"));
 

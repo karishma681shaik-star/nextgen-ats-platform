@@ -185,6 +185,9 @@ export interface ResumeRecommendation {
   detailedReason?: string;
   recruiterImpact?: string;
   proTip?: string;
+  currentValue?: string;
+  expectedValue?: string;
+  suggestedCorrection?: string;
 }
 
 export interface ResumeAtsAnalysis {

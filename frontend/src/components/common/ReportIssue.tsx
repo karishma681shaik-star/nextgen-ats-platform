@@ -11,7 +11,8 @@ import {
   Loader2,
   Send,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  ChevronDown
 } from 'lucide-react';
 import { submitIssueReport, IssueReportResponse } from '../../services/api/issueApi';
 import { useAuth } from '../../context/AuthContext';
@@ -259,19 +260,27 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative w-full max-w-lg bg-[#0a0f24] border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10 text-slate-100 max-h-[90vh]"
+              className="relative w-full max-w-lg bg-[#0a0f24] border border-purple-500/40 rounded-3xl shadow-[0_0_32px_rgba(147,97,255,0.22),0_25px_60px_rgba(3,7,18,0.85),inset_0_1px_1px_rgba(255,255,255,0.25)] overflow-hidden flex flex-col z-10 text-slate-100 max-h-[90vh]"
             >
+              {/* Specular highlights along upper edge and corners */}
+              <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-20" />
+              <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-white/35 via-purple-400/20 to-transparent rounded-tl-3xl pointer-events-none z-20" />
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/35 via-purple-400/20 to-transparent rounded-tr-3xl pointer-events-none z-20" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-500/15 to-transparent rounded-bl-3xl pointer-events-none z-20" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-purple-500/15 to-transparent rounded-br-3xl pointer-events-none z-20" />
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-32 bg-purple-500/15 blur-3xl pointer-events-none z-0" />
+
               {/* Header */}
-              <div className="px-6 py-4 bg-[#070b1a] border-b border-slate-800/90 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/40 flex items-center justify-center shadow-glow">
+              <div className="px-6 py-4.5 bg-[#070b1a] border-b border-slate-800/90 flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-purple-600/20 text-purple-300 border border-purple-500/40 flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.35)] shrink-0">
                     <Bug className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
+                    <h3 className="text-[21px] sm:text-[22px] font-bold text-white tracking-tight leading-snug">
                       Report Issue
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[14px] text-slate-300 leading-normal mt-0.5">
                       Tell us what went wrong and we'll help you resolve it.
                     </p>
                   </div>
@@ -289,7 +298,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 overflow-y-auto space-y-5">
+              <div className="p-5 sm:p-6 overflow-y-auto space-y-4 relative z-10">
                 {/* Success State Screen */}
                 {successData ? (
                   <motion.div
@@ -302,16 +311,16 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                     </div>
 
                     <div className="space-y-1.5">
-                      <h4 className="text-lg font-bold text-white">
+                      <h4 className="text-[20px] font-bold text-white">
                         Report submitted successfully
                       </h4>
-                      <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
+                      <p className="text-[14px] text-slate-300 max-w-sm mx-auto leading-relaxed">
                         Thank you. Our team will review your issue and follow up promptly.
                       </p>
                     </div>
 
                     {/* Report Metadata Badge */}
-                    <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-left space-y-2 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-[#070b19] border border-slate-800 text-left space-y-2 text-[13.5px]">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">Report ID:</span>
                         <span className="font-mono font-bold text-indigo-300 truncate max-w-[200px]">
@@ -324,20 +333,19 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">Status:</span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-mono font-bold">
                           {successData.status}
                         </span>
                       </div>
                     </div>
 
-                    <Button
-                      variant="glow"
-                      size="md"
+                    <button
+                      type="button"
                       onClick={handleClose}
-                      className="w-full mt-2 font-bold shadow-glow"
+                      className="relative w-full h-11 rounded-xl bg-gradient-to-r from-[#6e46e5] to-[#7f54fe] hover:from-[#7c54f4] hover:to-[#8c62ff] text-white text-[15px] font-semibold shadow-[0_0_20px_rgba(110,70,229,0.35)] transition-all cursor-pointer mt-2"
                     >
                       Done
-                    </Button>
+                    </button>
                   </motion.div>
                 ) : (
                   /* Form State */
@@ -347,20 +355,22 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                       href="https://t.me/careerkarish"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-3 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-purple-950/40 to-indigo-950/50 border border-indigo-500/35 flex items-center justify-between gap-3 text-xs hover:border-indigo-400 hover:bg-indigo-950/60 transition-all cursor-pointer group shadow-sm"
+                      className="relative p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#151233]/70 to-purple-950/40 border border-purple-500/40 hover:border-purple-400/70 shadow-[0_0_18px_rgba(147,97,255,0.15)] hover:shadow-[0_0_24px_rgba(147,97,255,0.25)] flex items-center justify-between gap-3 transition-all cursor-pointer group overflow-hidden"
                       title="Join CareerKarish Telegram Community"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      {/* Specular line */}
+                      <div className="absolute inset-x-4 top-0 h-[1px] bg-gradient-to-r from-transparent via-purple-300/40 to-transparent pointer-events-none" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                           <MessageSquare className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-medium text-slate-200 group-hover:text-white transition-colors">
+                          <p className="text-[14px] font-medium text-slate-100 group-hover:text-white transition-colors leading-snug">
                             Need help quickly? Join our community and share your issue.
                           </p>
                         </div>
                       </div>
-                      <div className="p-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 group-hover:text-white group-hover:bg-indigo-600 transition-colors shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-purple-600/30 text-purple-200 border border-purple-500/40 flex items-center justify-center group-hover:text-white group-hover:bg-purple-600 transition-colors shrink-0">
                         <ExternalLink className="w-4 h-4" />
                       </div>
                     </a>
@@ -370,7 +380,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                       <motion.div
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-start gap-2.5"
+                        className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-[13.5px] font-medium flex items-start gap-2.5"
                       >
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
                         <span className="flex-1">{errorMessage}</span>
@@ -379,30 +389,35 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
 
                     {/* Issue Type Field */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        Issue Type <span className="text-red-400">*</span>
+                      <label className="block text-[14px] sm:text-[14.5px] font-medium text-slate-200">
+                        Issue Type <span className="text-red-400 font-bold ml-0.5">*</span>
                       </label>
-                      <select
-                        value={issueType}
-                        onChange={(e) => setIssueType(e.target.value)}
-                        required
-                        className="w-full bg-[#060a17] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer"
-                      >
-                        <option value="" disabled className="bg-[#0a0f24] text-slate-500">
-                          Select issue type
-                        </option>
-                        {ISSUE_TYPES.map((type) => (
-                          <option key={type} value={type} className="bg-[#0a0f24] text-white">
-                            {type}
+                      <div className="relative">
+                        <select
+                          value={issueType}
+                          onChange={(e) => setIssueType(e.target.value)}
+                          required
+                          className="w-full bg-[#070b19] border border-slate-700/80 rounded-xl px-4 py-2.5 pr-10 text-[15px] sm:text-[15.5px] text-white focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/50 focus:shadow-[0_0_16px_rgba(168,85,247,0.25)] transition-all cursor-pointer appearance-none font-normal"
+                        >
+                          <option value="" disabled className="bg-[#0a0f24] text-slate-400">
+                            Select issue type
                           </option>
-                        ))}
-                      </select>
+                          {ISSUE_TYPES.map((type) => (
+                            <option key={type} value={type} className="bg-[#0a0f24] text-white py-1">
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                          <ChevronDown className="w-4 h-4 stroke-[2.25]" />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Description Field */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        Description <span className="text-red-400">*</span>
+                      <label className="block text-[14px] sm:text-[14.5px] font-medium text-slate-200">
+                        Description <span className="text-red-400 font-bold ml-0.5">*</span>
                       </label>
                       <textarea
                         value={description}
@@ -410,16 +425,16 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                         required
                         rows={4}
                         placeholder="Describe the issue you encountered and what you expected to happen."
-                        className="w-full bg-[#060a17] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none leading-relaxed"
+                        className="w-full bg-[#070b19] border border-slate-700/80 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-[14px] sm:placeholder:text-[14.5px] placeholder:text-slate-400/90 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/50 focus:shadow-[0_0_16px_rgba(168,85,247,0.25)] transition-all resize-none leading-relaxed font-normal"
                       />
-                      <div className="text-[10px] text-slate-500 text-right">
+                      <div className="text-[12.5px] text-slate-400 font-mono text-right mt-1">
                         {description.length} / 5000 characters
                       </div>
                     </div>
 
                     {/* Attachments Dropzone */}
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-300">
+                      <label className="block text-[14px] sm:text-[14.5px] font-medium text-slate-200">
                         Attachments (optional, up to 3)
                       </label>
 
@@ -431,10 +446,10 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={handleFileDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`p-5 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
+                        className={`p-4 sm:p-5 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
                           isDragging
-                            ? 'border-purple-400 bg-purple-950/20'
-                            : 'border-slate-800 hover:border-indigo-500/50 bg-[#060a17]/80'
+                            ? 'border-purple-400 bg-purple-950/25 shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+                            : 'border-slate-700/80 hover:border-purple-400/60 bg-[#070b19]/90 hover:bg-[#0c1028]/90'
                         }`}
                       >
                         <input
@@ -449,16 +464,16 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                             }
                           }}
                         />
-                        <div className="w-10 h-10 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center mb-2 shadow-glow">
+                        <div className="w-11 h-11 rounded-full bg-purple-600/25 text-purple-300 border border-purple-400/40 flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(168,85,247,0.35)]">
                           <UploadCloud className="w-5 h-5" />
                         </div>
-                        <p className="text-xs text-slate-200">
-                          <span className="text-purple-400 font-semibold underline underline-offset-2">
+                        <p className="text-[14px] sm:text-[14.5px] text-slate-200 font-normal">
+                          <span className="text-purple-300 hover:text-purple-200 font-semibold underline underline-offset-2">
                             Browse
                           </span>{' '}
                           file or drag and drop here
                         </p>
-                        <p className="text-[10px] text-slate-500 mt-1">
+                        <p className="text-[12px] sm:text-[12.5px] text-slate-400 mt-1">
                           JPG, PNG, WEBP, GIF, PDF, TXT (up to 5MB each)
                         </p>
                       </div>
@@ -469,12 +484,12 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                           {files.map((f, index) => (
                             <div
                               key={index}
-                              className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs"
+                              className="p-2.5 rounded-xl bg-[#070b19] border border-slate-700/80 flex items-center justify-between text-xs"
                             >
                               <div className="flex items-center gap-2 truncate max-w-[80%]">
                                 <FileText className="w-4 h-4 text-purple-400 shrink-0" />
-                                <span className="truncate text-slate-200 font-medium">{f.name}</span>
-                                <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                <span className="truncate text-slate-200 font-medium text-[13.5px]">{f.name}</span>
+                                <span className="text-[12px] text-slate-400 font-mono shrink-0">
                                   ({formatFileSize(f.size)})
                                 </span>
                               </div>
@@ -487,7 +502,7 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
                                 className="p-1 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
                                 title="Remove file"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           ))}
@@ -497,22 +512,25 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
 
                     {/* Submit Button */}
                     <div className="pt-2">
-                      <Button
+                      <button
                         type="submit"
-                        variant="glow"
-                        size="md"
                         disabled={isSubmitting || !issueType || !description.trim()}
-                        className="w-full font-bold shadow-glow bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500"
-                        leftIcon={
-                          isSubmitting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )
-                        }
+                        className="relative w-full h-11 sm:h-12 rounded-xl bg-gradient-to-r from-[#6e46e5] to-[#7f54fe] hover:from-[#7c54f4] hover:to-[#8c62ff] text-white text-[15px] sm:text-[15.5px] font-semibold tracking-wide flex items-center justify-center gap-2.5 shadow-[0_0_22px_rgba(110,70,229,0.4)] hover:shadow-[0_0_30px_rgba(110,70,229,0.6)] border border-purple-300/35 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden active:scale-[0.99]"
                       >
-                        {isSubmitting ? 'Submitting...' : 'Submit Report'}
-                      </Button>
+                        {/* Inner specular line */}
+                        <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                            <span>Submitting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 shrink-0 stroke-[2.25]" />
+                            <span>Submit Report</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </form>
                 )}

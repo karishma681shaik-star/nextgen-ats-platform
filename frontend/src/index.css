@@ -2630,17 +2630,52 @@
   border: 1px solid rgba(59, 70, 99, 0.75);
   border-radius: 0.75rem; /* 12px */
   color: #ffffff;
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5;
+  padding: 0.625rem 0.875rem; /* 10px 14px */
+  min-height: 2.75rem; /* 44px comfortable input height */
   transition: all 0.2s ease;
 }
 
+textarea.illuminated-input {
+  min-height: 7rem;
+  padding: 0.75rem 0.875rem;
+}
+
+select.illuminated-input {
+  min-height: 2.75rem;
+  padding: 0.625rem 2rem 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+}
+
+.illuminated-input::placeholder {
+  color: #94a3b8; /* slate-400 */
+  font-size: 0.9375rem; /* 15px */
+  opacity: 0.75;
+}
+
 .illuminated-input:hover {
-  border-color: rgba(100, 116, 139, 0.9);
+  border-color: rgba(139, 92, 246, 0.5);
+  background-color: rgba(12, 17, 32, 0.95);
 }
 
 .illuminated-input:focus {
   outline: none;
+<<<<<<< HEAD
   border-color: rgba(147, 51, 234, 0.85);
   box-shadow: 0 0 0 1px rgba(147, 51, 234, 0.4), 0 0 14px rgba(147, 51, 234, 0.25);
+=======
+  border-color: rgba(168, 85, 247, 0.9);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.4), 0 0 16px rgba(147, 51, 234, 0.28);
+  background-color: rgba(14, 20, 38, 0.98);
+}
+
+.illuminated-editing-card label {
+  font-size: 0.9375rem; /* 15px form labels */
+  font-weight: 500;
+  color: #e2e8f0; /* slate-200 */
+  letter-spacing: 0.01em;
+>>>>>>> 90b3b75 (Fixed job optimization DTO compilation errors)
 }
 
 /* ============================================================

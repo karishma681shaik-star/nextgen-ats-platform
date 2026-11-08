@@ -5,7 +5,7 @@ public class ResumeRecommendationDTO {
     private String id;
     private String category;
     private String severity; // "error", "warning", "info"
-    private String status;   // "PENDING", "COMPLETED", "DELETED"
+    private String status; // "PENDING", "COMPLETED", "DELETED"
     private String title;
     private String completedTitle;
     private String pendingTitle;
@@ -18,15 +18,21 @@ public class ResumeRecommendationDTO {
     private String detailedReason;
     private String recruiterImpact;
     private String proTip;
+    private String currentValue;
+    private String expectedValue;
+    private String suggestedCorrection;
 
-    public ResumeRecommendationDTO() {}
+    public ResumeRecommendationDTO() {
+    }
 
     public ResumeRecommendationDTO(String id, String category, String severity, String status,
-                                  String pendingTitle, String completedTitle,
-                                  String reason, String completedDescription,
-                                  double weight, boolean passing, boolean dismissed,
-                                  String navigateTo, String detailedReason,
-                                  String recruiterImpact, String proTip) {
+            String pendingTitle, String completedTitle,
+            String reason, String completedDescription,
+            double weight, boolean passing, boolean dismissed,
+            String navigateTo, String detailedReason,
+            String recruiterImpact, String proTip,
+            String currentValue, String expectedValue,
+            String suggestedCorrection) {
         this.id = id;
         this.category = category;
         this.severity = severity;
@@ -43,53 +49,171 @@ public class ResumeRecommendationDTO {
         this.detailedReason = detailedReason;
         this.recruiterImpact = recruiterImpact;
         this.proTip = proTip;
+        this.currentValue = currentValue;
+        this.expectedValue = expectedValue;
+        this.suggestedCorrection = suggestedCorrection;
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public ResumeRecommendationDTO(String id, String category, String severity, String status,
+            String pendingTitle, String completedTitle,
+            String reason, String completedDescription,
+            double weight, boolean passing, boolean dismissed,
+            String navigateTo, String detailedReason,
+            String recruiterImpact, String proTip) {
+        this(id, category, severity, status, pendingTitle, completedTitle, reason, completedDescription,
+                weight, passing, dismissed, navigateTo, detailedReason, recruiterImpact, proTip,
+                null, null, null);
+    }
 
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public String getId() {
+        return id;
+    }
 
-    public String getSeverity() { return severity; }
-    public void setSeverity(String severity) { this.severity = severity; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getCategory() {
+        return category;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setCategory(String category) {
+        this.category = category;
+    }
 
-    public String getCompletedTitle() { return completedTitle; }
-    public void setCompletedTitle(String completedTitle) { this.completedTitle = completedTitle; }
+    public String getSeverity() {
+        return severity;
+    }
 
-    public String getPendingTitle() { return pendingTitle; }
-    public void setPendingTitle(String pendingTitle) { this.pendingTitle = pendingTitle; }
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
 
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public String getStatus() {
+        return status;
+    }
 
-    public String getCompletedDescription() { return completedDescription; }
-    public void setCompletedDescription(String completedDescription) { this.completedDescription = completedDescription; }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public double getWeight() { return weight; }
-    public void setWeight(double weight) { this.weight = weight; }
+    public String getTitle() {
+        return title;
+    }
 
-    public boolean isPassing() { return passing; }
-    public void setPassing(boolean passing) { this.passing = passing; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public boolean isDismissed() { return dismissed; }
-    public void setDismissed(boolean dismissed) { this.dismissed = dismissed; }
+    public String getCompletedTitle() {
+        return completedTitle;
+    }
 
-    public String getNavigateTo() { return navigateTo; }
-    public void setNavigateTo(String navigateTo) { this.navigateTo = navigateTo; }
+    public void setCompletedTitle(String completedTitle) {
+        this.completedTitle = completedTitle;
+    }
 
-    public String getDetailedReason() { return detailedReason; }
-    public void setDetailedReason(String detailedReason) { this.detailedReason = detailedReason; }
+    public String getPendingTitle() {
+        return pendingTitle;
+    }
 
-    public String getRecruiterImpact() { return recruiterImpact; }
-    public void setRecruiterImpact(String recruiterImpact) { this.recruiterImpact = recruiterImpact; }
+    public void setPendingTitle(String pendingTitle) {
+        this.pendingTitle = pendingTitle;
+    }
 
-    public String getProTip() { return proTip; }
-    public void setProTip(String proTip) { this.proTip = proTip; }
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getCompletedDescription() {
+        return completedDescription;
+    }
+
+    public void setCompletedDescription(String completedDescription) {
+        this.completedDescription = completedDescription;
+    }
+
+    public double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
+
+    public boolean isPassing() {
+        return passing;
+    }
+
+    public void setPassing(boolean passing) {
+        this.passing = passing;
+    }
+
+    public boolean isDismissed() {
+        return dismissed;
+    }
+
+    public void setDismissed(boolean dismissed) {
+        this.dismissed = dismissed;
+    }
+
+    public String getNavigateTo() {
+        return navigateTo;
+    }
+
+    public void setNavigateTo(String navigateTo) {
+        this.navigateTo = navigateTo;
+    }
+
+    public String getDetailedReason() {
+        return detailedReason;
+    }
+
+    public void setDetailedReason(String detailedReason) {
+        this.detailedReason = detailedReason;
+    }
+
+    public String getRecruiterImpact() {
+        return recruiterImpact;
+    }
+
+    public void setRecruiterImpact(String recruiterImpact) {
+        this.recruiterImpact = recruiterImpact;
+    }
+
+    public String getProTip() {
+        return proTip;
+    }
+
+    public void setProTip(String proTip) {
+        this.proTip = proTip;
+    }
+
+    public String getCurrentValue() {
+        return currentValue;
+    }
+
+    public void setCurrentValue(String currentValue) {
+        this.currentValue = currentValue;
+    }
+
+    public String getExpectedValue() {
+        return expectedValue;
+    }
+
+    public void setExpectedValue(String expectedValue) {
+        this.expectedValue = expectedValue;
+    }
+
+    public String getSuggestedCorrection() {
+        return suggestedCorrection;
+    }
+
+    public void setSuggestedCorrection(String suggestedCorrection) {
+        this.suggestedCorrection = suggestedCorrection;
+    }
 }
