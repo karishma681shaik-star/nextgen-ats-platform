@@ -6103,8 +6103,8 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       className="hidden"
                     />
 
-                    {/* Form Fields Body */}
-                    <div className="space-y-4 pt-1">
+                    {/* Form Fields Body inside Illuminated Editing Card (Image 1 Exact Match) */}
+                    <div className="illuminated-editing-card p-6 space-y-5">
                       {/* Row 1: First Name & Last Name on Left, Photo on Right */}
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
                         {/* Left Column: First Name & Last Name */}
@@ -6133,8 +6133,8 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               }}
                               placeholder="e.g. Vicky"
                               className={cn(
-                                "w-full bg-[#0d121f] border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors",
-                                formErrors.firstName ? "border-rose-500 focus:border-rose-500" : "border-slate-800 focus:border-indigo-500"
+                                "w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all",
+                                formErrors.firstName ? "border-rose-500 focus:border-rose-500" : ""
                               )}
                             />
                             {formErrors.firstName && (
@@ -6166,8 +6166,8 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               }}
                               placeholder="e.g. Gupta"
                               className={cn(
-                                "w-full bg-[#0d121f] border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors",
-                                formErrors.lastName ? "border-rose-500 focus:border-rose-500" : "border-slate-800 focus:border-indigo-500"
+                                "w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all",
+                                formErrors.lastName ? "border-rose-500 focus:border-rose-500" : ""
                               )}
                             />
                             {formErrors.lastName && (
@@ -6176,11 +6176,11 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           </div>
                         </div>
 
-                        {/* Right Column: Profile Photo Circular Dropzone */}
+                        {/* Right Column: Profile Photo Circular Dropzone (Image 1 Exact Match) */}
                         <div className="sm:col-span-4 flex flex-col items-center justify-center pt-1">
                           <div
                             onClick={() => photoFileInputRef.current?.click()}
-                            className="relative w-28 h-28 rounded-full border border-slate-700/80 bg-slate-900/80 flex flex-col items-center justify-center text-center p-2 cursor-pointer hover:border-indigo-500/80 hover:bg-slate-900 transition-all group overflow-hidden shadow-inner"
+                            className="relative w-28 h-28 rounded-full border border-slate-700/80 bg-slate-900/80 flex flex-col items-center justify-center text-center p-2 cursor-pointer hover:border-purple-500/80 hover:bg-slate-900 transition-all group overflow-hidden shadow-inner"
                           >
                             {resumeData.photo ? (
                               <>
@@ -6203,7 +6203,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               </>
                             ) : (
                               <>
-                                <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mb-1">
+                                <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center mb-1">
                                   <User className="w-4 h-4" />
                                 </div>
                                 <span className="text-[9px] text-slate-300 font-medium leading-tight">
@@ -6215,8 +6215,12 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             )}
                           </div>
 
-                          {/* Guidance doodle & message */}
-                          <div className="flex items-center gap-1 text-[9.5px] text-slate-400 italic text-center mt-2 px-1">
+                          {/* Guidance doodle & message with curved arrow matching Image 1 */}
+                          <div className="flex items-center gap-1.5 text-[9.5px] text-slate-400 italic text-center mt-2.5 px-1">
+                            <svg className="w-3.5 h-3.5 text-slate-400 shrink-0 -rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M7 7l5 5-5 5" />
+                              <path d="M12 12H3" />
+                            </svg>
                             <span>PS: Face should cover ~70% of the image</span>
                           </div>
                         </div>
@@ -6230,7 +6234,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           value={resumeData.headline || ''}
                           onChange={(e) => handleUpdate((p) => ({ ...p, headline: e.target.value }))}
                           placeholder="e.g. Software Developer at AlgoZenith"
-                          className="w-full bg-[#0d121f] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                          className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                         />
                       </div>
 
@@ -6255,8 +6259,8 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           }}
                           placeholder="e.g. name@example.com"
                           className={cn(
-                            "w-full bg-[#0d121f] border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors",
-                            formErrors.email ? "border-rose-500 focus:border-rose-500" : "border-slate-800 focus:border-indigo-500"
+                            "w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all",
+                            formErrors.email ? "border-rose-500 focus:border-rose-500" : ""
                           )}
                         />
                         {formErrors.email && (
@@ -6286,8 +6290,8 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             }}
                             placeholder="e.g. 72899XXXXX"
                             className={cn(
-                              "w-full bg-[#0d121f] border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors",
-                              formErrors.phone ? "border-rose-500 focus:border-rose-500" : "border-slate-800 focus:border-indigo-500"
+                              "w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all",
+                              formErrors.phone ? "border-rose-500 focus:border-rose-500" : ""
                             )}
                           />
                           {formErrors.phone && (
@@ -6309,7 +6313,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               });
                             }}
                             placeholder="e.g. New Delhi"
-                            className="w-full bg-[#0d121f] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                            className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                           />
                         </div>
                       </div>
@@ -6330,7 +6334,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               });
                             }}
                             placeholder="e.g. Delhi"
-                            className="w-full bg-[#0d121f] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                            className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                           />
                         </div>
 
@@ -6348,7 +6352,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               });
                             }}
                             placeholder="e.g. India"
-                            className="w-full bg-[#0d121f] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                            className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                           />
                         </div>
                       </div>
@@ -6451,13 +6455,13 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         </div>
                       </div>
 
-                      {/* Sticky Action Footer: Cancel & Save */}
-                      <div className="pt-6 pb-2 flex items-center justify-center gap-3">
+                      {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                      <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
                         <Button
                           type="button"
                           variant="secondary"
                           onClick={handleCancelPersonalInfo}
-                          className="px-6 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white border border-slate-700 bg-transparent hover:bg-slate-900 cursor-pointer"
+                          className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
                         >
                           Cancel
                         </Button>
@@ -6467,7 +6471,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           variant="primary"
                           onClick={handleSavePersonalInfo}
                           disabled={isSaving}
-                          className="px-8 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/30 cursor-pointer"
+                          className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
                         >
                           {isSaving ? 'Saving...' : 'Save'}
                         </Button>
@@ -6502,104 +6506,106 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       </Button>
                     </div>
 
-                    {/* Rich Editor Box with Glow Card matching Image 2 */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-[#0d121f] p-4 shadow-xl space-y-3">
-                      {/* Toolbar Header */}
-                      <div className="flex items-center justify-between border-b border-white/[0.04] pb-2.5">
-                        <label className="text-xs font-medium text-slate-400">Description</label>
+                    {/* Rich Editor Box with Illuminated Card (Image 1 Exact Match) */}
+                    <div className="illuminated-editing-card p-6 space-y-5">
+                      {/* Description Header & Toolbar */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-purple-500/15 pb-2.5">
+                          <label className="text-xs font-semibold text-slate-300">Description</label>
 
-                        {/* Rich Text Toolbar */}
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleFormatText('bold')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="Bold"
-                          >
-                            B
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleFormatText('italic')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-xs italic font-serif text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="Italic"
-                          >
-                            I
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleFormatText('underline')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-xs underline text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="Underline"
-                          >
-                            U
-                          </button>
-                          <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
-                          <button
-                            type="button"
-                            onClick={() => handleFormatText('bullet')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="Bullet List"
-                          >
-                            <List className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleFormatText('number')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="Numbered List"
-                          >
-                            <ListOrdered className="w-3.5 h-3.5" />
-                          </button>
-                          <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
-                          <button
-                            type="button"
-                            onClick={handleAiGenerateSummary}
-                            disabled={isGeneratingAiSummary}
-                            className="px-2.5 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-[11px] font-semibold text-indigo-300 flex items-center gap-1 transition-all cursor-pointer"
-                            title="Enhance / Generate with AI"
-                          >
-                            <Sparkles className="w-3 h-3 text-indigo-400" />
-                            <span>{isGeneratingAiSummary ? 'Generating...' : 'AI Enhance'}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                            title="More Options"
-                          >
-                            <MoreHorizontal className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Rich Text Toolbar */}
+                          <div className="flex items-center gap-1 bg-[#090d18]/80 border border-slate-800 rounded-lg p-1">
+                            <button
+                              type="button"
+                              onClick={() => handleFormatText('bold')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="Bold"
+                            >
+                              B
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFormatText('italic')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-xs italic font-serif text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="Italic"
+                            >
+                              I
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFormatText('underline')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-xs underline text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="Underline"
+                            >
+                              U
+                            </button>
+                            <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
+                            <button
+                              type="button"
+                              onClick={() => handleFormatText('bullet')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="Bullet List"
+                            >
+                              <List className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFormatText('number')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="Numbered List"
+                            >
+                              <ListOrdered className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
+                            <button
+                              type="button"
+                              onClick={handleAiGenerateSummary}
+                              disabled={isGeneratingAiSummary}
+                              className="px-2.5 py-1 rounded-md bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-[11px] font-semibold text-purple-300 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                              title="Enhance / Generate with AI"
+                            >
+                              <Sparkles className="w-3 h-3 text-purple-400" />
+                              <span>{isGeneratingAiSummary ? 'Generating...' : 'AI Enhance'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                              title="More Options"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Editor Textarea with Illuminated Input styling */}
+                        <textarea
+                          ref={summaryTextareaRef}
+                          rows={8}
+                          value={resumeData.summary || ''}
+                          onChange={(e) => handleUpdate((p) => ({ ...p, summary: e.target.value }))}
+                          placeholder="Briefly describe your professional background and key skills."
+                          className="w-full illuminated-input p-3.5 text-xs text-white leading-relaxed focus:outline-none resize-none placeholder:text-slate-500 transition-all"
+                        />
                       </div>
 
-                      {/* Editor Textarea */}
-                      <textarea
-                        ref={summaryTextareaRef}
-                        rows={9}
-                        value={resumeData.summary || ''}
-                        onChange={(e) => handleUpdate((p) => ({ ...p, summary: e.target.value }))}
-                        placeholder="Briefly describe your professional background and key skills."
-                        className="w-full bg-transparent text-xs text-white leading-relaxed focus:outline-none resize-none placeholder:text-slate-500"
-                      />
-                    </div>
-
-                    {/* Sticky Bottom Action Bar */}
-                    <div className="sticky bottom-0 pt-4 pb-2 bg-[#090d16]/95 backdrop-blur border-t border-white/[0.06] flex items-center justify-center gap-4 z-10">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancelSummary}
-                        className="px-8 py-2.5 rounded-xl border-slate-700 bg-[#0d121f] text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold cursor-pointer"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleSaveSummary}
-                        className="px-10 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 cursor-pointer"
-                      >
-                        Save
-                      </Button>
+                      {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                      <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleCancelSummary}
+                          className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleSaveSummary}
+                          className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
+                        >
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : isEditingExperience ? (
@@ -6664,7 +6670,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         </div>
 
                         {/* Glow Form Card Container matching Images 2, 3, 4 */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-[#0d121f] p-5 shadow-xl space-y-4">
+                        <div className="illuminated-editing-card p-6 space-y-5">
                           {/* Row 1: Job Title & Employment Type */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
@@ -6674,7 +6680,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 value={currentExp.role || ''}
                                 onChange={(e) => handleUpdateExpField(currentExp.id, 'role', e.target.value)}
                                 placeholder="e.g. Software Developer"
-                                className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                               />
                             </div>
 
@@ -6686,7 +6692,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                   onChange={(e) =>
                                     handleUpdateExpField(currentExp.id, 'employmentType', e.target.value)
                                   }
-                                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-colors appearance-none cursor-pointer"
+                                  className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white transition-all appearance-none cursor-pointer"
                                 >
                                   <option value="" disabled className="text-slate-500">
                                     e.g. Internship
@@ -6711,7 +6717,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 value={currentExp.company || ''}
                                 onChange={(e) => handleUpdateExpField(currentExp.id, 'company', e.target.value)}
                                 placeholder="e.g. AlgoZenith"
-                                className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                               />
                             </div>
 
@@ -6722,7 +6728,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 value={currentExp.location || ''}
                                 onChange={(e) => handleUpdateExpField(currentExp.id, 'location', e.target.value)}
                                 placeholder="e.g. Bengaluru, Karnataka"
-                                className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                               />
                             </div>
                           </div>
@@ -6737,7 +6743,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                   onChange={(e) =>
                                     handleUpdateExpField(currentExp.id, 'locationType', e.target.value)
                                   }
-                                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-colors appearance-none cursor-pointer"
+                                  className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white transition-all appearance-none cursor-pointer"
                                 >
                                   <option value="" disabled className="text-slate-500">
                                     e.g. On Site
@@ -6887,7 +6893,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 handleUpdateExpField(currentExp.id, 'technologies', e.target.value)
                               }
                               placeholder="e.g. React"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
 
                             {/* Suggestion Pills */}
@@ -6996,20 +7002,20 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           </div>
                         </div>
 
-                        {/* Sticky Bottom Action Bar */}
-                        <div className="sticky bottom-0 pt-4 pb-2 bg-[#090d16]/95 backdrop-blur border-t border-white/[0.06] flex items-center justify-center gap-4 z-10">
+                        {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                        <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="secondary"
                             onClick={handleCancelExperience}
-                            className="px-8 py-2.5 rounded-xl border-slate-700 bg-[#0d121f] text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+                            className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
                           >
                             Cancel
                           </Button>
                           <Button
                             type="button"
                             onClick={handleSaveExperience}
-                            className="px-10 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 cursor-pointer"
+                            className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
                           >
                             Save
                           </Button>
@@ -7077,7 +7083,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         </div>
 
                         {/* Glow Form Card Container matching Images 2 & 3 */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-[#0d121f] p-5 shadow-xl space-y-4">
+                        <div className="illuminated-editing-card p-6 space-y-5">
                           {/* Row 1: Degree (Full width) */}
                           <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-300">Degree</label>
@@ -7086,7 +7092,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               value={currentEdu.degree || ''}
                               onChange={(e) => handleUpdateEduField(currentEdu.id, 'degree', e.target.value)}
                               placeholder="e.g. B.Tech"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
                           </div>
 
@@ -7098,7 +7104,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               value={currentEdu.institution || ''}
                               onChange={(e) => handleUpdateEduField(currentEdu.id, 'institution', e.target.value)}
                               placeholder="e.g. IIT Delhi"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
                           </div>
 
@@ -7132,7 +7138,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 value={currentEdu.cgpa || ''}
                                 onChange={(e) => handleUpdateEduField(currentEdu.id, 'cgpa', e.target.value)}
                                 placeholder="e.g. 9/10"
-                                className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                               />
                             </div>
 
@@ -7143,7 +7149,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 value={currentEdu.city || currentEdu.location || ''}
                                 onChange={(e) => handleUpdateEduField(currentEdu.id, 'city', e.target.value)}
                                 placeholder="e.g. New Delhi, India"
-                                className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                                className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                               />
                             </div>
                           </div>
@@ -7350,20 +7356,20 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           </div>
                         </div>
 
-                        {/* Sticky Bottom Action Bar */}
-                        <div className="sticky bottom-0 pt-4 pb-2 bg-[#090d16]/95 backdrop-blur border-t border-white/[0.06] flex items-center justify-center gap-4 z-10">
+                        {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                        <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="secondary"
                             onClick={handleCancelEducation}
-                            className="px-8 py-2.5 rounded-xl border-slate-700 bg-[#0d121f] text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+                            className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
                           >
                             Cancel
                           </Button>
                           <Button
                             type="button"
                             onClick={handleSaveEducation}
-                            className="px-10 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 cursor-pointer"
+                            className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
                           >
                             Save
                           </Button>
@@ -7433,7 +7439,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         </div>
 
                         {/* Glow Form Card Container matching Images 2 & 3 */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-[#0d121f] p-5 shadow-xl space-y-4">
+                        <div className="illuminated-editing-card p-6 space-y-5">
                           {/* Row 1: Project Name (Full width) */}
                           <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-300">Project Name</label>
@@ -7442,7 +7448,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               value={currentProj.title || ''}
                               onChange={(e) => handleUpdateProjectField(currentProj.id, 'title', e.target.value)}
                               placeholder="e.g. E-Commerce Platform"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
                           </div>
 
@@ -7454,7 +7460,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               value={currentProj.role || ''}
                               onChange={(e) => handleUpdateProjectField(currentProj.id, 'role', e.target.value)}
                               placeholder="e.g. Lead Developer"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
                           </div>
 
@@ -7683,7 +7689,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                 handleUpdateProjectField(currentProj.id, 'technologies', e.target.value)
                               }
                               placeholder="e.g. React"
-                              className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                              className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                             />
 
                             {/* Suggestion Pills */}
@@ -7788,20 +7794,20 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           </div>
                         </div>
 
-                        {/* Sticky Bottom Action Bar */}
-                        <div className="sticky bottom-0 pt-4 pb-2 bg-[#090d16]/95 backdrop-blur border-t border-white/[0.06] flex items-center justify-center gap-4 z-10">
+                        {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                        <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="secondary"
                             onClick={handleCancelProject}
-                            className="px-8 py-2.5 rounded-xl border-slate-700 bg-[#0d121f] text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+                            className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
                           >
                             Cancel
                           </Button>
                           <Button
                             type="button"
                             onClick={handleSaveProject}
-                            className="px-10 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 cursor-pointer"
+                            className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
                           >
                             Save
                           </Button>
@@ -7845,24 +7851,27 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                             <h2 className="text-xl font-bold text-white tracking-tight">Create Skill</h2>
                           </div>
 
-                          {/* Create Skill Input & Add Button */}
-                          <div className="flex items-center gap-2.5">
-                            <input
-                              type="text"
-                              value={newCategoryName}
-                              onChange={(e) => setNewCategoryName(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
-                              placeholder="e.g. Programming Languages"
-                              className="flex-1 bg-[#090d16] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleCreateCategory}
-                              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/25 cursor-pointer shrink-0 transition-all"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add Skill</span>
-                            </button>
+                          {/* Create Skill Input & Add Button in Illuminated Card */}
+                          <div className="illuminated-editing-card p-4 space-y-2">
+                            <label className="text-xs font-semibold text-slate-300">Create New Skill Category</label>
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="text"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+                                placeholder="e.g. Programming Languages, Cloud Platforms..."
+                                className="flex-1 illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleCreateCategory}
+                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white font-semibold text-xs flex items-center gap-1.5 shadow-[0_0_16px_rgba(139,92,246,0.4)] cursor-pointer shrink-0 transition-all"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Add Category</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -7876,7 +7885,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                               <div
                                 key={cat.key}
                                 id={`skill-cat-${cat.key}`}
-                                className="rounded-2xl border border-white/[0.08] bg-[#0d121f] p-4 shadow-xl space-y-3 transition-all"
+                                className="illuminated-editing-card p-5 space-y-4 transition-all"
                               >
                                 {/* Header: Drag handle, Category Title, Edit & Delete Buttons */}
                                 <div className="flex items-center justify-between pb-1">
@@ -7985,20 +7994,20 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           })}
                         </div>
 
-                        {/* Sticky Bottom Action Bar */}
-                        <div className="sticky bottom-0 pt-4 pb-2 bg-[#090d16]/95 backdrop-blur border-t border-white/[0.06] flex items-center justify-center gap-4 z-10">
+                        {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                        <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="secondary"
                             onClick={handleCancelSkills}
-                            className="px-8 py-2.5 rounded-xl border-slate-700 bg-[#0d121f] text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+                            className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
                           >
                             Cancel
                           </Button>
                           <Button
                             type="button"
                             onClick={handleSaveSkills}
-                            className="px-10 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 cursor-pointer"
+                            className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
                           >
                             Save
                           </Button>
@@ -8032,7 +8041,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     </div>
 
                     {/* Main Glow Card (Image 2) */}
-                    <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-[#121634]/90 via-[#0e1124]/95 to-[#0a0d1c] p-5 space-y-4 shadow-2xl relative overflow-hidden">
+                    <div className="illuminated-editing-card p-6 space-y-5">
                       <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
 
                       {/* Section Title Input */}
@@ -8042,7 +8051,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           value={customSectionForm.title}
                           onChange={(e) => setCustomSectionForm((p) => ({ ...p, title: e.target.value }))}
                           placeholder="e.g. Volunteering"
-                          className="w-full bg-[#080b18]/90 border border-slate-700/80 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                          className="w-full illuminated-input px-3.5 py-2.5 text-xs text-white placeholder-slate-500 transition-all"
                         />
                       </div>
 
@@ -8133,30 +8142,28 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           value={customSectionForm.content}
                           onChange={(e) => setCustomSectionForm((p) => ({ ...p, content: e.target.value }))}
                           placeholder="Describe your role, key responsibilities, and notable achievements. Highlight tools used and measurable impact if any."
-                          className="w-full bg-[#080b18]/90 border border-slate-700/80 focus:border-indigo-500 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-colors resize-none leading-relaxed"
+                          className="w-full illuminated-input p-3.5 text-xs text-slate-200 placeholder-slate-500 transition-all resize-none leading-relaxed"
                         />
                       </div>
                     </div>
 
-                    {/* Bottom Footer Actions (Image 2) */}
-                    <div className="pt-6 relative">
-                      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent shadow-[0_0_12px_rgba(168,85,247,0.5)]" />
-                      <div className="flex items-center justify-center gap-4 pt-3">
-                        <button
-                          type="button"
-                          onClick={handleCancelCustomSection}
-                          className="px-6 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveCustomSection}
-                          className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/40 transition-all cursor-pointer"
-                        >
-                          Save
-                        </button>
-                      </div>
+                    {/* Action Footer: Cancel & Save (Image 1 Exact Match) */}
+                    <div className="pt-6 pb-2 flex items-center justify-center gap-4 border-t border-purple-500/15 relative">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleCancelCustomSection}
+                        className="px-8 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-all"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSaveCustomSection}
+                        className="px-10 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#5558e6] hover:to-[#7c3aed] text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_25px_rgba(139,92,246,0.7)] cursor-pointer transition-all"
+                      >
+                        Save
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -9057,7 +9064,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           {expandedSections.certifications && (
                             <div className="p-4 pt-0 space-y-3 border-t border-white/[0.04] pt-3 relative z-10">
                               {resumeData.certifications.map((cert, idx) => (
-                                <div key={cert.id} className="p-3.5 rounded-xl bg-[#090d16] border border-slate-800 space-y-2.5 relative">
+                                <div key={cert.id} className="illuminated-editing-card p-5 space-y-3.5 relative">
                                   <div className="flex items-center justify-between pb-1 border-b border-white/[0.04]">
                                     <span className="text-[11px] font-semibold text-indigo-400">Certification #{idx + 1}</span>
                                     <button
@@ -9088,7 +9095,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         });
                                       }}
                                       placeholder="Certification Title (e.g. NPTEL Elite Certification - Introduction to Information Retrieval)"
-                                      className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                                      className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all"
                                     />
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
@@ -9106,7 +9113,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           });
                                         }}
                                         placeholder="Issuer (e.g. NPTEL)"
-                                        className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                                        className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all"
                                       />
                                     </div>
                                     <div>
@@ -9123,7 +9130,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           });
                                         }}
                                         placeholder="e.g. 2023 or Sep 2023"
-                                        className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                                        className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all"
                                       />
                                     </div>
                                   </div>
@@ -9142,7 +9149,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           });
                                         }}
                                         placeholder="https://drive.google.com/..."
-                                        className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                                        className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all"
                                       />
                                     </div>
                                     <div>
@@ -9159,7 +9166,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                           });
                                         }}
                                         placeholder="View Certificate"
-                                        className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                                        className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all"
                                       />
                                     </div>
                                   </div>
@@ -9177,7 +9184,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                                         });
                                       }}
                                       placeholder="• Key learnings, topics covered, or score achieved"
-                                      className="w-full bg-[#0d121f] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none font-sans"
+                                      className="w-full illuminated-input px-3 py-2 text-xs text-white placeholder:text-slate-500 transition-all font-sans"
                                     />
                                   </div>
                                 </div>
