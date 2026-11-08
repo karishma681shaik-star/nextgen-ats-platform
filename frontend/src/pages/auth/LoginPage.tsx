@@ -196,7 +196,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ portal: initialPortal }) =
   };
 
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-cyan-500 selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-cyan-500 selection:text-white overflow-x-hidden">
       {/* Route-Aware 3D Background */}
       <BackgroundEffects mode="auth" role={portal} />
 

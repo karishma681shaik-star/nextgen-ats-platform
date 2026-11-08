@@ -98,11 +98,51 @@ public class ResumeController {
     }
 
     @PostMapping("/blank")
-
     public ResponseEntity<ApiResponse<ResumeDTO>> createBlankResume(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(ApiResponse.success(
                 resumeService.createBlankResume(principal.getId()),
                 "Blank resume created successfully"));
+    }
+
+    /**
+     * GET /api/resumes/{resumeId}/recommendations
+     * Evaluates resume content and returns ATS analysis with recommendations categorized
+     * into PENDING, COMPLETED, and DELETED.
+     */
+    @GetMapping("/{resumeId}/recommendations")
+    public ResponseEntity<ApiResponse<com.aiats.dto.resume.ResumeAtsAnalysisDTO>> getAtsRecommendations(
+            @PathVariable UUID resumeId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(
+                resumeService.getAtsAnalysis(principal.getId(), resumeId)));
+    }
+
+    /**
+     * POST /api/resumes/{resumeId}/recommendations/{recommendationId}/dismiss
+     * Dismisses a recommendation, moving it to DELETED without altering resume content.
+     */
+    @PostMapping("/{resumeId}/recommendations/{recommendationId}/dismiss")
+    public ResponseEntity<ApiResponse<com.aiats.dto.resume.ResumeAtsAnalysisDTO>> dismissRecommendation(
+            @PathVariable UUID resumeId,
+            @PathVariable String recommendationId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(
+                resumeService.dismissRecommendation(principal.getId(), resumeId, recommendationId),
+                "Recommendation dismissed"));
+    }
+
+    /**
+     * POST /api/resumes/{resumeId}/recommendations/{recommendationId}/restore
+     * Restores a previously dismissed recommendation back to PENDING or COMPLETED based on current resume data.
+     */
+    @PostMapping("/{resumeId}/recommendations/{recommendationId}/restore")
+    public ResponseEntity<ApiResponse<com.aiats.dto.resume.ResumeAtsAnalysisDTO>> restoreRecommendation(
+            @PathVariable UUID resumeId,
+            @PathVariable String recommendationId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(
+                resumeService.restoreRecommendation(principal.getId(), resumeId, recommendationId),
+                "Recommendation restored"));
     }
 }

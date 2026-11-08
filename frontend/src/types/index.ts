@@ -168,6 +168,40 @@ export interface ATSAnalysis {
   lastAnalyzed: string;
 }
 
+export interface ResumeRecommendation {
+  id: string;
+  category: string;
+  severity: 'error' | 'warning' | 'info';
+  status: 'PENDING' | 'COMPLETED' | 'DELETED';
+  title: string;
+  completedTitle: string;
+  pendingTitle: string;
+  reason: string;
+  completedDescription: string;
+  weight: number;
+  passing: boolean;
+  dismissed: boolean;
+  navigateTo?: string;
+  detailedReason?: string;
+  recruiterImpact?: string;
+  proTip?: string;
+}
+
+export interface ResumeAtsAnalysis {
+  resumeId: string;
+  overallScore: number;
+  atsScore?: number;
+  readinessLabel?: string;
+  totalCount: number;
+  pendingCount: number;
+  completedCount: number;
+  deletedCount: number;
+  pending: ResumeRecommendation[];
+  completed: ResumeRecommendation[];
+  deleted: ResumeRecommendation[];
+  allRecommendations: ResumeRecommendation[];
+}
+
 export type EmploymentType = 'Full-time' | 'Part-time' | 'Contract' | 'Remote' | 'Hybrid' | 'Internship';
 export type ExperienceLevel = 'Entry Level' | 'Mid Level' | 'Senior Level' | 'Lead' | 'Executive';
 export type JobStatus = 'active' | 'closed' | 'draft' | 'pending_approval' | 'rejected' | 'archived';

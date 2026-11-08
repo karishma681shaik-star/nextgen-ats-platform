@@ -1,14 +1,22 @@
 package com.aiats.service;
 
 import com.aiats.dto.resume.ParsedDataDTO;
+import com.aiats.dto.resume.ResumeAtsAnalysisDTO;
 import com.aiats.dto.resume.ResumeDTO;
 import com.aiats.dto.resume.ResumeReadinessDTO;
+import com.aiats.dto.resume.ResumeRecommendationDTO;
 import com.aiats.entity.Resume;
+import com.aiats.entity.ResumeAnalysis;
 import com.aiats.entity.User;
 import com.aiats.exception.BadRequestException;
 import com.aiats.exception.ResourceNotFoundException;
+import com.aiats.repository.ResumeAnalysisRepository;
 import com.aiats.repository.ResumeRepository;
 import com.aiats.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -28,14 +36,22 @@ public class ResumeService {
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
     private final ResumeParserService resumeParserService;
+    private final ResumeAnalysisRepository resumeAnalysisRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.storage.upload-dir:./uploads/resumes}")
     private String uploadDir;
 
-    public ResumeService(ResumeRepository resumeRepository, UserRepository userRepository, ResumeParserService resumeParserService) {
+    public ResumeService(ResumeRepository resumeRepository,
+                         UserRepository userRepository,
+                         ResumeParserService resumeParserService,
+                         ResumeAnalysisRepository resumeAnalysisRepository,
+                         ObjectMapper objectMapper) {
         this.resumeRepository = resumeRepository;
         this.userRepository = userRepository;
         this.resumeParserService = resumeParserService;
+        this.resumeAnalysisRepository = resumeAnalysisRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -165,92 +181,25 @@ public class ResumeService {
             throw new BadRequestException("Unauthorized");
         }
 
-        String rawData = resume.getResumeData();
-
-        boolean hasName = false;
-        boolean hasSummary = false;
-        boolean hasSkills = false;
-        boolean hasExperience = false;
-        boolean hasEducation = false;
-        boolean hasContact = false;
-
-        // ── Parse key fields from resumeData JSON using lightweight string inspection ──
-        if (rawData != null && !rawData.isBlank()) {
-            // Name check: "name":"..." or "fullName":"..."
-            hasName = extractJsonString(rawData, "name").length() >= 2
-                    || extractJsonString(rawData, "fullName").length() >= 2;
-
-            // Summary check: "summary":"..." or "bio":"..."
-            String summary = extractJsonString(rawData, "summary");
-            if (summary.isBlank()) summary = extractJsonString(rawData, "bio");
-            hasSummary = summary.length() >= 20;
-
-            // Skills check from structured JSON skills object
-            String skillsBlock = extractJsonObject(rawData, "skills");
-            if (!skillsBlock.isBlank()) {
-                // Has skills if any non-empty string arrays inside skills block
-                hasSkills = skillsBlock.replaceAll("[\\[\\]{}\"\\s]", "")
-                        .replaceAll("(programmingLanguages|frameworksLibraries|toolsPlatforms|databases|softSkills|technical|soft|tools|languages|customCategories):", "")
-                        .trim().length() > 2;
-            }
-            // Also check extracted_skills field
-            if (!hasSkills && resume.getExtractedSkills() != null && !resume.getExtractedSkills().isBlank()) {
-                hasSkills = resume.getExtractedSkills().trim().length() > 2;
-            }
-
-            // Experience check: "experience":[{...}]
-            String expBlock = extractJsonArray(rawData, "experience");
-            if (!expBlock.isBlank() && !expBlock.equals("[]")) {
-                // Count entries by counting occurrences of "role" or "company" keys
-                long expCount = countJsonArrayEntries(expBlock, "role");
-                hasExperience = expCount >= 1;
-            }
-            if (!hasExperience && resume.getExtractedExperience() != null && !resume.getExtractedExperience().isBlank()) {
-                hasExperience = true;
-            }
-
-            // Education check: "education":[{...}]
-            String eduBlock = extractJsonArray(rawData, "education");
-            if (!eduBlock.isBlank() && !eduBlock.equals("[]")) {
-                long eduCount = countJsonArrayEntries(eduBlock, "degree");
-                hasEducation = eduCount >= 1;
-            }
-            if (!hasEducation && resume.getExtractedEducation() != null && !resume.getExtractedEducation().isBlank()) {
-                hasEducation = true;
-            }
-
-            // Contact check
-            String email = extractJsonString(rawData, "email");
-            String phone = extractJsonString(rawData, "phone");
-            hasContact = email.contains("@") || phone.length() >= 7;
-        }
-
-        // ── Score calculation ──
-        int score = 0;
-        if (hasName)       score += 20;
-        if (hasSummary)    score += 15;
-        if (hasSkills)     score += 20;
-        if (hasExperience) score += 25;
-        if (hasEducation)  score += 10;
-        if (hasContact)    score += 10;
-
+        ResumeAtsAnalysisDTO analysis = evaluateAndSyncAtsAnalysis(userId, resume, null);
+        int score = analysis.getAtsScore();
         boolean ready = score >= 40;
+        String tier = analysis.getReadinessLabel();
+        String message = score >= 90 ? "Your resume is fully ATS-optimized and meets top recruiter benchmarks."
+                : score >= 75 ? "Your resume is well-prepared for job optimization with good content."
+                : score >= 60 ? "Your resume has solid foundational sections. Complete a few more recommendations for higher ranking."
+                : score >= 40 ? "Your resume has developing content. Add additional skills and details before applying."
+                : "Your resume is nearly empty. Add contact info, education, skills, and projects to improve your score.";
 
-        String tier;
-        String message;
-        if (score >= 80) {
-            tier = "Excellent";
-            message = "Your resume is well-prepared for job optimization.";
-        } else if (score >= 60) {
-            tier = "Good";
-            message = "Your resume has good content. A few more details will improve your ATS score.";
-        } else if (score >= 40) {
-            tier = "Fair";
-            message = "Your resume has minimal content. Add experience and skills for better results.";
-        } else {
-            tier = "Poor";
-            message = "Your resume is nearly empty. Please add your name, skills, and at least one experience or education entry before optimizing.";
-        }
+        JsonNode data = null;
+        try {
+            data = objectMapper.readTree(resume.getResumeData());
+        } catch (Exception ignored) {}
+        boolean hasName = !isPlaceholder(textVal(data, "firstName")) || !isPlaceholder(textVal(data, "name"));
+        boolean hasSummary = !isPlaceholder(textVal(data, "summary"));
+        boolean hasSkills = extractGenuineSkills(data, resume).size() >= 1;
+        boolean hasExperience = countGenuineExperience(data) >= 1 || countGenuineProjects(data) >= 1;
+        boolean hasEducation = countGenuineEducation(data) >= 1;
 
         return new ResumeReadinessDTO(score, ready, tier, message,
                 hasName, hasSummary, hasSkills, hasExperience, hasEducation);
@@ -392,7 +341,604 @@ public class ResumeService {
         }
         resume.setResumeData(dto.getResumeData());
         resume.setStatus(dto.getStatus() != null ? dto.getStatus() : resume.getStatus());
-        return toDTO(resumeRepository.save(resume));
+        Resume saved = resumeRepository.save(resume);
+
+        // Dynamically re-evaluate ATS recommendations & sync score on save
+        try {
+            evaluateAndSyncAtsAnalysis(userId, saved, null);
+        } catch (Exception ignored) {}
+
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public ResumeAtsAnalysisDTO getAtsAnalysis(UUID userId, UUID resumeId) {
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found: " + resumeId));
+        if (!resume.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Unauthorized");
+        }
+        return evaluateAndSyncAtsAnalysis(userId, resume, null);
+    }
+
+    @Transactional
+    public ResumeAtsAnalysisDTO dismissRecommendation(UUID userId, UUID resumeId, String recommendationId) {
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found: " + resumeId));
+        if (!resume.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Unauthorized");
+        }
+
+        ResumeAnalysis analysis = resumeAnalysisRepository.findByResumeId(resumeId)
+                .orElseGet(() -> {
+                    ResumeAnalysis a = new ResumeAnalysis();
+                    a.setResume(resume);
+                    return a;
+                });
+
+        Set<String> dismissedIds = loadDismissedIds(analysis);
+        if (recommendationId != null && !recommendationId.isBlank()) {
+            dismissedIds.add(recommendationId.trim());
+        }
+
+        return evaluateAndSyncAtsAnalysis(userId, resume, dismissedIds);
+    }
+
+    @Transactional
+    public ResumeAtsAnalysisDTO restoreRecommendation(UUID userId, UUID resumeId, String recommendationId) {
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found: " + resumeId));
+        if (!resume.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Unauthorized");
+        }
+
+        ResumeAnalysis analysis = resumeAnalysisRepository.findByResumeId(resumeId)
+                .orElseGet(() -> {
+                    ResumeAnalysis a = new ResumeAnalysis();
+                    a.setResume(resume);
+                    return a;
+                });
+
+        Set<String> dismissedIds = loadDismissedIds(analysis);
+        if (recommendationId != null) {
+            dismissedIds.remove(recommendationId.trim());
+        }
+
+        return evaluateAndSyncAtsAnalysis(userId, resume, dismissedIds);
+    }
+
+    @Transactional
+    public ResumeAtsAnalysisDTO evaluateAndSyncAtsAnalysis(UUID userId, Resume resume, Set<String> explicitDismissed) {
+        UUID resumeId = resume.getId();
+        ResumeAnalysis analysis = resumeAnalysisRepository.findByResumeId(resumeId)
+                .orElseGet(() -> {
+                    ResumeAnalysis a = new ResumeAnalysis();
+                    a.setResume(resume);
+                    return a;
+                });
+
+        Set<String> dismissedIds = explicitDismissed != null ? explicitDismissed : loadDismissedIds(analysis);
+
+        // Parse resume JSON
+        JsonNode data = null;
+        String rawData = resume.getResumeData();
+        if (rawData != null && !rawData.isBlank()) {
+            try {
+                data = objectMapper.readTree(rawData);
+            } catch (Exception ignored) {}
+        }
+
+        // ── 1. Contact Details (10 pts) ──
+        String firstName = textVal(data, "firstName");
+        String lastName = textVal(data, "lastName");
+        String name = textVal(data, "name");
+        if (name.isBlank()) name = textVal(data, "fullName");
+        boolean hasName = (!isPlaceholder(firstName) && !isPlaceholder(lastName))
+                || (!isPlaceholder(name) && name.trim().split("\\s+").length >= 2);
+
+        String phone = textVal(data, "phone");
+        boolean hasPhone = !isPlaceholder(phone) && phone.replaceAll("[^0-9]", "").length() >= 7;
+
+        String email = textVal(data, "email");
+        boolean hasEmail = !isPlaceholder(email) && email.contains("@") && email.contains(".");
+
+        String city = textVal(data, "city");
+        String location = textVal(data, "location");
+        boolean hasLocation = (!isPlaceholder(city) && !city.isBlank()) || (!isPlaceholder(location) && !location.isBlank());
+
+        boolean contactPassing = hasName && hasPhone && hasEmail && hasLocation;
+
+        // ── 2 & 3. Skills Validation (20 pts: 5 pts section presence, 15 pts density >= 5) ──
+        List<String> genuineSkills = extractGenuineSkills(data, resume);
+        int skillCount = genuineSkills.size();
+        boolean skillsSectionPassing = skillCount >= 1;
+        boolean skillsCountPassing = skillCount >= 5;
+
+        // ── 4 & 5. Experience & Projects (35 pts total) ──
+        int genuineExpCount = countGenuineExperience(data);
+        int genuineProjCount = countGenuineProjects(data);
+        boolean hasComprehensiveExpDesc = hasComprehensiveDescriptions(data);
+
+        // ── 6. Education Credentials (15 pts) ──
+        int genuineEduCount = countGenuineEducation(data);
+        boolean educationPassing = genuineEduCount >= 1;
+        boolean hasRawEdu = data != null && data.has("education") && data.get("education").isArray() && data.get("education").size() > 0;
+
+        // ── 7. Professional Summary (10 pts) ──
+        String summary = textVal(data, "summary");
+        if (summary.isBlank()) summary = textVal(data, "bio");
+        boolean summaryPassing = !isPlaceholder(summary) && summary.trim().length() >= 40;
+
+        // ── 8 & 9. Structure and Formatting (10 pts: 5 pts metrics, 5 pts action verbs) ──
+        String allDescriptions = aggregateAllDescriptions(data);
+        boolean metricsPassing = Pattern.compile("\\b\\d+(\\.\\d+)?%|\\$\\d+|\\b\\d+\\+?\\s*(users|clients|requests|ms|hours|days|x|fold)\\b", Pattern.CASE_INSENSITIVE)
+                .matcher(allDescriptions).find();
+        boolean actionVerbsPassing = Pattern.compile("\\b(Led|Developed|Designed|Engineered|Spearheaded|Architected|Implemented|Automated|Optimized|Constructed|Orchestrated|Transformed|Built|Created|Delivered)\\b", Pattern.CASE_INSENSITIVE)
+                .matcher(allDescriptions).find();
+
+        // Build recommendations list
+        List<ResumeRecommendationDTO> all = new ArrayList<>();
+
+        // 1. Contact Details (10.0 pts)
+        all.add(createRecommendation(
+                "contact-essential",
+                "Contact Info",
+                "error",
+                "Essential Contact Details Missing",
+                "Essential Contact Details Verified",
+                "Add your full name, phone number, email address, and location.",
+                "Verified: Full contact info (name, email, phone, location) is complete.",
+                10.0,
+                contactPassing,
+                dismissedIds.contains("contact-essential"),
+                "personal-info",
+                "Incomplete or placeholder contact info prevents recruiters from reaching out for interview invitations.",
+                "Candidates without clear location and direct contact information are skipped by recruiters.",
+                "Use a professional email and include city/state for location-based search filtering."
+        ));
+
+        // 2. Professional Summary (10.0 pts)
+        all.add(createRecommendation(
+                "summary-genuine",
+                "Summary",
+                "warning",
+                "Missing Professional Summary",
+                "Professional Summary Provided",
+                "Write a 2-3 sentence career summary highlighting your core expertise and value.",
+                "Verified: Career summary is present and highlights core competencies.",
+                10.0,
+                summaryPassing,
+                dismissedIds.contains("summary-genuine"),
+                "summary",
+                "The summary is indexed heavily for high-level keyword clusters and target job titles.",
+                "Provides an immediate snapshot of career identity and alignment with the target role.",
+                "Summarize your years of experience, primary domain, and top career achievements."
+        ));
+
+        // 3. Education (15.0 pts)
+        all.add(createRecommendation(
+                "section-education",
+                "Education",
+                "error",
+                hasRawEdu ? "Education Entry Incomplete" : "Missing Education Section & Credentials",
+                "Academic Education Added",
+                hasRawEdu ? "Update your most recent education entry to include your Degree, Institute, Dates." : "Add your degree, institution name, and graduation timeline.",
+                "Verified: Institution and degree credentials are confirmed.",
+                15.0,
+                educationPassing,
+                dismissedIds.contains("section-education"),
+                "education",
+                "Enterprise organizations enforce strict minimum degree requirements in ATS screening.",
+                "Recruiters verify degree completion and major relevance during preliminary screening.",
+                "Include institution name, degree obtained, and graduation year."
+        ));
+
+        // 4. Skills Section Presence (5.0 pts)
+        all.add(createRecommendation(
+                "section-skills",
+                "Skills",
+                "error",
+                "Missing Skills Section & Competencies",
+                "Skills Section & Competencies Added",
+                "Add a dedicated Skills section containing your core technical tools and capabilities.",
+                "Verified: Core technical and industry skills are included in your resume (" + skillCount + " listed).",
+                5.0,
+                skillsSectionPassing,
+                dismissedIds.contains("section-skills"),
+                "skills",
+                "A dedicated Skills section allows ATS keyword matchers to index your exact competencies.",
+                "Allows recruiters to instantly confirm whether you satisfy required prerequisites and technical demands.",
+                "Group skills by categories (Programming Languages, Frameworks, Tools) to improve readability."
+        ));
+
+        // 5. Skills Density & Count (15.0 pts)
+        all.add(createRecommendation(
+                "skills-count",
+                "Skills",
+                "warning",
+                "Insufficient Skill Count",
+                "Sufficient Core Skills Count (>= 5 skills)",
+                "Add at least 5 relevant technical or industry skills to meet ATS keyword density (currently " + skillCount + "/5).",
+                "Verified: Meets recommended keyword density with " + skillCount + " core skills.",
+                15.0,
+                skillsCountPassing,
+                dismissedIds.contains("skills-count"),
+                "skills",
+                "ATS algorithms calculate keyword match density. Profiles with under 5 core skills rarely hit the 70% threshold.",
+                "Recruiters use skill search filters to narrow applicant pools from hundreds to top contenders.",
+                "Include both primary programming languages/frameworks and domain tools."
+        ));
+
+        // 6 & 7. Practical Experience & Projects (35.0 pts total) - Intelligent Fresher Fairness
+        boolean isFresher = (genuineExpCount == 0);
+        if (!isFresher) {
+            all.add(createRecommendation(
+                    "section-work-projects",
+                    "Work Experience",
+                    "error",
+                    "Missing Work Experience",
+                    "Work Experience Included",
+                    "Add your employment history, job title, company, and timeline.",
+                    "Verified: Professional work experience is documented.",
+                    10.0,
+                    genuineExpCount >= 1,
+                    dismissedIds.contains("section-work-projects"),
+                    "experience",
+                    "ATS algorithms look for structured work experience to gauge hands-on technical background.",
+                    "Recruiters spend 80% of their initial scan evaluating career progression.",
+                    "Ensure entries are in reverse chronological order with measurable bullet points."
+            ));
+
+            all.add(createRecommendation(
+                    "exp-descriptions-genuine",
+                    "Work Experience",
+                    "warning",
+                    "Detailed Experience Bullet Points",
+                    "Detailed Experience Bullet Points Included",
+                    "Add comprehensive bullet points describing responsibilities and accomplishments.",
+                    "Verified: Roles contain comprehensive accomplishment bullet points.",
+                    10.0,
+                    hasComprehensiveExpDesc,
+                    dismissedIds.contains("exp-descriptions-genuine"),
+                    "experience",
+                    "Bullet descriptions provide contextual keywords ATS systems score against requirements.",
+                    "Recruiters want to see specific contributions rather than generic job duties.",
+                    "Frame bullet points with the XYZ formula: Accomplished [X] as measured by [Y], by doing [Z]."
+            ));
+
+            all.add(createRecommendation(
+                    "section-projects",
+                    "Projects",
+                    "info",
+                    "Missing Projects Section",
+                    "Projects & Deliverables Documented",
+                    "Add technical or academic projects to demonstrate hands-on applied capabilities.",
+                    "Verified: Hands-on project portfolio documented (" + genuineProjCount + " listed).",
+                    15.0,
+                    genuineProjCount >= 1,
+                    dismissedIds.contains("section-projects"),
+                    "projects",
+                    "Projects highlight practical application of skills beyond job responsibilities.",
+                    "Helps recruiters gauge engineering initiative and technical depth.",
+                    "Include technologies used, your direct contribution, and measurable deliverables."
+            ));
+        } else {
+            // Fresher / Student candidate without corporate tenure
+            boolean hasMultipleProjects = genuineProjCount >= 2;
+            boolean hasSingleProject = genuineProjCount == 1;
+
+            all.add(createRecommendation(
+                    "section-projects",
+                    "Projects",
+                    "error",
+                    "Missing Projects Section",
+                    "Projects & Deliverables Documented",
+                    "Add academic, capstone, or personal technical projects highlighting your hands-on coding ability.",
+                    "Verified: Practical project deliverables documented (" + genuineProjCount + " listed).",
+                    15.0,
+                    genuineProjCount >= 1,
+                    dismissedIds.contains("section-projects"),
+                    "projects",
+                    "For freshers and early-career candidates, projects serve as primary proof of technical competence.",
+                    "Recruiters evaluate problem solving, architecture choices, and stack familiarity through project work.",
+                    "Highlight technologies used, role, and provide links or measurable metrics."
+            ));
+
+            all.add(createRecommendation(
+                    "section-work-projects",
+                    "Practical Experience",
+                    hasMultipleProjects ? "info" : "warning",
+                    hasSingleProject
+                            ? "Add Second Project or Internship"
+                            : "Missing Work Experience or Projects",
+                    hasMultipleProjects
+                            ? "Hands-on Project Portfolio Verified (Fresher Credit)"
+                            : "Practical Experience Documented",
+                    hasSingleProject
+                            ? "Early-career candidates should add at least 2 detailed projects or internships to demonstrate competence (currently 1)."
+                            : "Add professional employment, internships, or academic projects.",
+                    "Verified: Practical project portfolio demonstrates strong hands-on capabilities in lieu of corporate tenure.",
+                    20.0,
+                    hasMultipleProjects,
+                    dismissedIds.contains("section-work-projects"),
+                    "projects",
+                    "Early-career ATS models weight robust academic projects equivalently to entry-level internships.",
+                    "Demonstrates initiative, end-to-end delivery, and code craftsmanship.",
+                    "Include 2 or more projects with architecture overview, stack details, and GitHub links."
+            ));
+        }
+
+        // 8. Measurable Metrics (5.0 pts)
+        all.add(createRecommendation(
+                "quantifiable-metrics",
+                "Content Quality",
+                "info",
+                "Quantifiable Metrics & Measurable Impact",
+                "Quantifiable Metrics & Impact Demonstrated",
+                "Include numbers, percentages, or growth metrics to prove tangible impact.",
+                "Verified: Measurable metrics and percentages found in project or work descriptions.",
+                5.0,
+                metricsPassing,
+                dismissedIds.contains("quantifiable-metrics"),
+                "experience",
+                "Resumes with measurable results score higher in AI-driven semantic ranking algorithms.",
+                "Numbers give hiring managers confidence in your scale of impact and competency.",
+                "Add stats such as 'Reduced load time by 35%' or 'Managed a team of 6 engineers'."
+        ));
+
+        // 9. Strong Action Verbs (5.0 pts)
+        all.add(createRecommendation(
+                "action-verbs",
+                "Content Quality",
+                "info",
+                "Strong Action Verbs in Bullet Points",
+                "Strong Action Verbs Applied",
+                "Start bullet points with impactful verbs like Engineered, Spearheaded, or Optimized.",
+                "Verified: Strong leadership and technical action verbs detected in descriptions.",
+                5.0,
+                actionVerbsPassing,
+                dismissedIds.contains("action-verbs"),
+                "experience",
+                "Action verbs signal leadership, ownership, and initiative to natural language parsers.",
+                "Creates an active, compelling narrative that holds recruiter interest.",
+                "Avoid passive voice ('Responsible for...') and replace with decisive action verbs."
+        ));
+
+        // Calculate genuine ATS score (sum of passing recommendation weights, independent of dismissal)
+        double earnedWeight = 0;
+        for (ResumeRecommendationDTO r : all) {
+            if (r.isPassing()) {
+                earnedWeight += r.getWeight();
+            }
+        }
+        int atsScore = (int) Math.round(earnedWeight);
+        atsScore = Math.max(0, Math.min(100, atsScore));
+
+        String readinessLabel = atsScore >= 90 ? "Excellent"
+                : atsScore >= 75 ? "Good"
+                : atsScore >= 60 ? "Fair"
+                : atsScore >= 40 ? "Needs Improvement"
+                : "Poor";
+
+        // Partition into lists
+        List<ResumeRecommendationDTO> pending = new ArrayList<>();
+        List<ResumeRecommendationDTO> completed = new ArrayList<>();
+        List<ResumeRecommendationDTO> deleted = new ArrayList<>();
+
+        for (ResumeRecommendationDTO r : all) {
+            if (r.isDismissed()) {
+                r.setStatus("DELETED");
+                deleted.add(r);
+            } else if (r.isPassing()) {
+                r.setStatus("COMPLETED");
+                completed.add(r);
+            } else {
+                r.setStatus("PENDING");
+                pending.add(r);
+            }
+        }
+
+        // Sort pending by weight descending
+        pending.sort((a, b) -> Double.compare(b.getWeight(), a.getWeight()));
+        completed.sort((a, b) -> Double.compare(b.getWeight(), a.getWeight()));
+        deleted.sort((a, b) -> Double.compare(b.getWeight(), a.getWeight()));
+
+        // Persist to ResumeAnalysis in database
+        try {
+            ObjectNode meta = objectMapper.createObjectNode();
+            ArrayNode arr = meta.putArray("dismissedIds");
+            dismissedIds.forEach(arr::add);
+            meta.put("overallScore", atsScore);
+            meta.put("lastEvaluated", Instant.now().toString());
+
+            analysis.setOverallScore(atsScore);
+            analysis.setRecommendations(objectMapper.writeValueAsString(meta));
+            analysis.setLastAnalyzed(Instant.now());
+            resumeAnalysisRepository.save(analysis);
+        } catch (Exception ignored) {}
+
+        return new ResumeAtsAnalysisDTO(resumeId.toString(), atsScore, readinessLabel,
+                pending, completed, deleted, all);
+    }
+
+    private ResumeRecommendationDTO createRecommendation(
+            String id, String category, String severity,
+            String pendingTitle, String completedTitle,
+            String reason, String completedDescription,
+            double weight, boolean passing, boolean dismissed,
+            String navigateTo, String detailedReason,
+            String recruiterImpact, String proTip) {
+        String status = dismissed ? "DELETED" : (passing ? "COMPLETED" : "PENDING");
+        return new ResumeRecommendationDTO(
+                id, category, severity, status,
+                pendingTitle, completedTitle,
+                reason, completedDescription,
+                weight, passing, dismissed,
+                navigateTo, detailedReason,
+                recruiterImpact, proTip
+        );
+    }
+
+    private Set<String> loadDismissedIds(ResumeAnalysis analysis) {
+        Set<String> set = new HashSet<>();
+        if (analysis != null && analysis.getRecommendations() != null && !analysis.getRecommendations().isBlank()) {
+            try {
+                JsonNode root = objectMapper.readTree(analysis.getRecommendations());
+                if (root.has("dismissedIds") && root.get("dismissedIds").isArray()) {
+                    root.get("dismissedIds").forEach(n -> set.add(n.asText().trim()));
+                }
+            } catch (Exception ignored) {}
+        }
+        return set;
+    }
+
+    private boolean isPlaceholder(String val) {
+        if (val == null) return true;
+        String trimmed = val.trim();
+        if (trimmed.isEmpty()) return true;
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) return true;
+        if (trimmed.startsWith("<") && trimmed.endsWith(">")) return true;
+        String lower = trimmed.toLowerCase();
+        return lower.equals("first name last name")
+                || lower.equals("first name")
+                || lower.equals("last name")
+                || lower.equals("email@mit.edu")
+                || lower.equals("skill here")
+                || lower.equals("skill name")
+                || lower.equals("insert skill")
+                || lower.equals("institution name")
+                || lower.equals("degree")
+                || lower.equals("job title")
+                || lower.equals("organization name")
+                || lower.equals("project name")
+                || lower.contains("summarize your career")
+                || lower.contains("add description")
+                || lower.contains("mention your")
+                || lower.contains("mention project")
+                || lower.contains("mention education")
+                || lower.contains("add programming")
+                || lower.contains("add frameworks")
+                || lower.contains("add tools")
+                || lower.contains("add databases")
+                || lower.contains("add skills")
+                || lower.contains("list 3-5");
+    }
+
+    private String textVal(JsonNode node, String fieldName) {
+        if (node == null || !node.has(fieldName) || node.get(fieldName).isNull()) return "";
+        return node.get(fieldName).asText("").trim();
+    }
+
+    private List<String> extractGenuineSkills(JsonNode data, Resume resume) {
+        Set<String> set = new LinkedHashSet<>();
+        if (data != null && data.has("skills")) {
+            JsonNode skillsNode = data.get("skills");
+            if (skillsNode.isObject()) {
+                skillsNode.fields().forEachRemaining(entry -> {
+                    JsonNode valNode = entry.getValue();
+                    if (valNode.isArray()) {
+                        valNode.forEach(item -> {
+                            if (item.isObject() && item.has("skills")) {
+                                String s = item.get("skills").asText("");
+                                for (String part : s.split("[,\\n]+")) {
+                                    if (!isPlaceholder(part)) set.add(part.trim());
+                                }
+                            } else {
+                                String s = item.asText();
+                                if (!isPlaceholder(s)) set.add(s.trim());
+                            }
+                        });
+                    } else if (valNode.isTextual()) {
+                        for (String part : valNode.asText().split("[,\\n]+")) {
+                            if (!isPlaceholder(part)) set.add(part.trim());
+                        }
+                    }
+                });
+            } else if (skillsNode.isArray()) {
+                skillsNode.forEach(item -> {
+                    String s = item.asText();
+                    if (!isPlaceholder(s)) set.add(s.trim());
+                });
+            } else if (skillsNode.isTextual()) {
+                for (String part : skillsNode.asText().split("[,\\n]+")) {
+                    if (!isPlaceholder(part)) set.add(part.trim());
+                }
+            }
+        }
+        if (set.isEmpty() && resume.getExtractedSkills() != null && !resume.getExtractedSkills().isBlank()) {
+            for (String part : resume.getExtractedSkills().split("[,\\n]+")) {
+                if (!isPlaceholder(part)) set.add(part.trim());
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    private int countGenuineExperience(JsonNode data) {
+        if (data == null || !data.has("experience") || !data.get("experience").isArray()) return 0;
+        int count = 0;
+        for (JsonNode exp : data.get("experience")) {
+            String role = textVal(exp, "role");
+            String company = textVal(exp, "company");
+            if (!isPlaceholder(role) && !isPlaceholder(company)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countGenuineProjects(JsonNode data) {
+        if (data == null || !data.has("projects") || !data.get("projects").isArray()) return 0;
+        int count = 0;
+        for (JsonNode p : data.get("projects")) {
+            String title = textVal(p, "title");
+            String desc = textVal(p, "description");
+            String techs = textVal(p, "technologies");
+            if (!isPlaceholder(title) && (!isPlaceholder(desc) || !isPlaceholder(techs))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countGenuineEducation(JsonNode data) {
+        if (data == null || !data.has("education") || !data.get("education").isArray()) return 0;
+        int count = 0;
+        for (JsonNode edu : data.get("education")) {
+            String institution = textVal(edu, "institution");
+            String degree = textVal(edu, "degree");
+            if (!isPlaceholder(institution) && !isPlaceholder(degree)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean hasComprehensiveDescriptions(JsonNode data) {
+        if (data == null || !data.has("experience") || !data.get("experience").isArray()) return false;
+        for (JsonNode exp : data.get("experience")) {
+            String desc = textVal(exp, "description");
+            if (!isPlaceholder(desc) && desc.trim().length() >= 40) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String aggregateAllDescriptions(JsonNode data) {
+        StringBuilder sb = new StringBuilder();
+        if (data != null) {
+            if (data.has("experience") && data.get("experience").isArray()) {
+                for (JsonNode exp : data.get("experience")) {
+                    sb.append(textVal(exp, "description")).append(" ");
+                }
+            }
+            if (data.has("projects") && data.get("projects").isArray()) {
+                for (JsonNode p : data.get("projects")) {
+                    sb.append(textVal(p, "description")).append(" ");
+                }
+            }
+        }
+        return sb.toString();
     }
 
     @Transactional

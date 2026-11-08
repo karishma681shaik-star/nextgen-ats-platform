@@ -45,6 +45,21 @@ export const ResumeManagementPage: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('ats_currently_working_resume_id');
+    } catch {
+      return null;
+    }
+  });
+  const [hoveredResumeNameId, setHoveredResumeNameId] = useState<string | null>(null);
+
+  const handleSelectResume = (id: string) => {
+    setSelectedResumeId(id);
+    try {
+      localStorage.setItem('ats_currently_working_resume_id', id);
+    } catch {}
+  };
   
   // Modal & Upload states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -230,7 +245,10 @@ export const ResumeManagementPage: React.FC = () => {
   const getReadinessRating = (resume: Resume) => {
     const isReady = resume.isPrimary || resume.fileName.toLowerCase().includes('faangpath');
     if (isReady) {
-      return { label: 'Apply Ready', style: 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30' };
+      return { 
+        label: 'Apply Ready', 
+        style: 'bg-emerald-950/75 text-emerald-300 border-emerald-400/45 shadow-[0_0_14px_rgba(52,211,153,0.25)]' 
+      };
     }
     if (resume.resumeData) {
       try {
@@ -240,11 +258,17 @@ export const ResumeManagementPage: React.FC = () => {
         if (data.skills?.technical?.length >= 5) score += 15;
         if (data.experience?.length > 0) score += 15;
         if (score >= 75) {
-          return { label: 'Apply Ready', style: 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30' };
+          return { 
+            label: 'Apply Ready', 
+            style: 'bg-emerald-950/75 text-emerald-300 border-emerald-400/45 shadow-[0_0_14px_rgba(52,211,153,0.25)]' 
+          };
         }
       } catch {}
     }
-    return { label: 'No Hire', style: 'bg-red-950/60 text-red-500 border-red-500/30' };
+    return { 
+      label: 'No Hire', 
+      style: 'bg-rose-950/75 text-rose-300 border-rose-500/45 shadow-[0_0_14px_rgba(244,63,94,0.22)]' 
+    };
   };
 
   const filteredResumes = resumes.filter((r) =>
@@ -253,19 +277,11 @@ export const ResumeManagementPage: React.FC = () => {
 
   return (
     <div className="space-y-8 select-none pb-28 sm:pb-32">
-      {/* ── Banner/Hero Block ─────────────────────────────────── */}
-      {/* ── Banner/Hero Block ─────────────────────────────────── */}
+      {/* ── Banner/Hero Block (Exact Image 1 Style) ───────────────── */}
       <div className="relative">
-        {/* Ambient luminous purple lighting flare behind the card ("behind the maximize") */}
-        <div className="absolute -top-10 left-1/4 right-12 h-20 bg-gradient-to-r from-purple-600/40 via-violet-500/35 to-indigo-500/20 blur-3xl pointer-events-none rounded-full" />
-        <div className="absolute -top-4 left-1/3 right-1/4 h-10 bg-purple-500/30 blur-xl pointer-events-none rounded-full" />
-
-        {/* Card Container */}
+        {/* Card Container with Image 1 Top Border Shining */}
         <div
-          className="relative overflow-hidden rounded-2xl border border-white/10 px-6 py-6 sm:px-8 sm:py-7 flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8 shadow-[0_0_40px_rgba(147,51,234,0.15)] before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-transparent before:via-purple-400 before:to-indigo-400/40 before:z-20 after:absolute after:inset-x-0 after:top-0 after:h-28 after:bg-gradient-to-b after:from-purple-600/15 after:to-transparent after:pointer-events-none"
-          style={{
-            background: 'linear-gradient(180deg, #111428 0%, #070914 100%)'
-          }}
+          className="card-border-shine-image1 px-6 py-6 sm:px-8 sm:py-7 flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8 overflow-hidden"
         >
           {/* Left: Two Overlapping ATS Resume Sheets Graphic */}
           <div className="shrink-0 flex items-center justify-center">
@@ -286,7 +302,7 @@ export const ResumeManagementPage: React.FC = () => {
           <div className="shrink-0 z-10">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="cursor-pointer px-6 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white text-xs sm:text-sm font-medium tracking-normal shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_28px_rgba(124,58,237,0.65)] transition-all duration-200 active:scale-[0.98]"
+              className="cursor-pointer px-6 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] via-[#7c3aed] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white text-xs sm:text-sm font-medium tracking-normal shadow-[0_0_24px_rgba(124,58,237,0.55)] hover:shadow-[0_0_32px_rgba(124,58,237,0.75)] transition-all duration-200 active:scale-[0.98]"
             >
               Upload or Create Resume
             </button>
@@ -296,24 +312,49 @@ export const ResumeManagementPage: React.FC = () => {
 
       {/* ── Search & Table List Area ─────────────────────────── */}
       <div className="space-y-4">
-        <h2 className="text-base font-bold text-white">Continue where you left off</h2>
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <span>Continue where you left off</span>
+          <span className="text-xs font-normal text-purple-400/80 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
+            {resumes.length} saved
+          </span>
+        </h2>
 
-        {/* Full-width search bar matching Image 1 & 2 */}
+        {/* Full-width Search Bar with Image 1 Type Top Border Shining */}
         <div className="relative w-full">
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#0c0f1d] border border-white/[0.08] hover:border-white/20 focus:border-[#7c3aed] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:outline-none"
-          />
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500">
-            <Search className="w-4 h-4" />
+          {/* Input container with Image 1 style top shining line */}
+          <div className="input-border-shine-image1 overflow-hidden">
+            <div className="relative flex items-center z-10">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search resumes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent pl-11 pr-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-3 flex items-center pr-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0f1d] p-4 divide-y divide-white/[0.05]">
+          /* Loading Skeleton Card */
+          <div
+            className="relative overflow-hidden rounded-2xl border border-white/10 p-4 divide-y divide-white/[0.05] shadow-[0_0_35px_rgba(147,51,234,0.12)] before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-transparent before:via-purple-400 before:to-indigo-400/40 before:z-20"
+            style={{
+              background: 'linear-gradient(180deg, #111428 0%, #070914 100%)'
+            }}
+          >
             {[1, 2, 3].map((k) => (
               <div key={k} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-1">
                 <div className="flex items-center gap-3">
@@ -335,204 +376,269 @@ export const ResumeManagementPage: React.FC = () => {
             ))}
           </div>
         ) : filteredResumes.length === 0 ? (
-          <Card glass className="p-8 text-center text-xs text-slate-400">
+          /* Empty State Card */
+          <div
+            className="relative overflow-hidden rounded-2xl border border-white/10 p-10 text-center text-xs text-slate-400 shadow-[0_0_35px_rgba(147,51,234,0.12)] before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-transparent before:via-purple-400 before:to-indigo-400/40 before:z-20"
+            style={{
+              background: 'linear-gradient(180deg, #111428 0%, #070914 100%)'
+            }}
+          >
             {searchQuery ? 'No resumes match your search query.' : 'No resumes created yet. Click "Upload or Create Resume" to start.'}
-          </Card>
+          </div>
         ) : (
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0f1d] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[750px]">
-                <thead>
-                  <tr className="border-b border-white/[0.06] text-xs font-semibold text-slate-400">
-                    <th className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white">
-                        Name <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                      </span>
-                    </th>
-                    <th className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white">
-                        Readiness Rating <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                      </span>
-                    </th>
-                    <th className="px-6 py-4">Actions</th>
-                    <th className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white">
-                        Updated At <ArrowUpDown className="w-3 h-3 text-slate-500" />
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {filteredResumes
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((resume) => {
-                    const rating = getReadinessRating(resume);
-                    const isActive = resume.isPrimary || resume.fileName.toLowerCase().includes('faangpath');
-                    return (
-                      <tr
-                        key={resume.id}
-                        onClick={() => navigate(`/candidate/resume-builder/${resume.id}?tab=editor`)}
-                        className={cn(
-                          "transition-colors group cursor-pointer border-l-4",
-                          isActive
-                            ? "bg-[#1a1738]/50 border-l-[#7c3aed] hover:bg-[#1a1738]/70"
-                            : "border-l-transparent hover:bg-white/[0.02]"
-                        )}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-indigo-950/40 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                              <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-white group-hover:text-indigo-300 transition-colors">
-                                {resume.fileName.replace(/\.[^/.]+$/, "")}
-                              </span>
-                              {isActive && (
-                                <span className="inline-flex items-center gap-1 text-xs font-medium bg-purple-900/40 text-purple-300 border border-purple-500/30 px-2.5 py-0.5 rounded-full ml-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Active
+          /* ── Table Card Container with EXACT Image 1 Type Top Border Shining ── */
+          <div className="relative">
+
+            {/* Table Container Card (Image 1 Style) */}
+            <div className="card-border-shine-image1 overflow-hidden">
+              <div className="overflow-x-auto relative z-10">
+                <table className="w-full text-left border-collapse min-w-[750px]">
+                  <thead>
+                    <tr className="border-b border-white/[0.08] text-xs font-semibold text-slate-400">
+                      <th className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                          Name <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                        </span>
+                      </th>
+                      <th className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                          Readiness Rating <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                        </span>
+                      </th>
+                      <th className="px-6 py-4">Actions</th>
+                      <th className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+                          Updated At <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                        </span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.04]">
+                    {filteredResumes
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((resume) => {
+                      const rating = getReadinessRating(resume);
+                      const isSelected = selectedResumeId === resume.id;
+                      const isPrimary = resume.isPrimary || resume.fileName.toLowerCase().includes('faangpath');
+
+                      return (
+                        <tr
+                          key={resume.id}
+                          onClick={() => handleSelectResume(resume.id)}
+                          onDoubleClick={() => navigate(`/candidate/resume-builder/${resume.id}?tab=editor`)}
+                          className={cn(
+                            "transition-all duration-200 group/row cursor-pointer border-l-4",
+                            isSelected
+                              ? "bg-gradient-to-r from-[#29174d]/95 via-[#231442]/90 to-[#1e113a]/90 border-l-[#c084fc] shadow-[inset_6px_0_18px_rgba(192,132,252,0.45)] hover:bg-[#2d1a54]"
+                              : "border-l-transparent hover:bg-white/[0.03]"
+                          )}
+                          title="Click to select as currently working · Double-click to open in builder"
+                        >
+                          <td 
+                            className="px-6 py-4 group-resume-name"
+                            onMouseEnter={() => setHoveredResumeNameId(resume.id)}
+                            onMouseLeave={() => setHoveredResumeNameId(null)}
+                            onMouseOver={() => setHoveredResumeNameId(resume.id)}
+                            onMouseOut={(e) => {
+                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                setHoveredResumeNameId(null);
+                              }
+                            }}
+                          >
+                            <div 
+                              className="flex items-center gap-3 cursor-pointer w-fit"
+                              onMouseEnter={() => setHoveredResumeNameId(resume.id)}
+                              onMouseLeave={() => setHoveredResumeNameId(null)}
+                              onMouseOver={() => setHoveredResumeNameId(resume.id)}
+                            >
+                              <div className={cn(
+                                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200",
+                                isSelected
+                                  ? "bg-gradient-to-br from-purple-800/90 to-indigo-900/90 border border-purple-400/60 text-purple-200 shadow-[0_0_16px_rgba(192,132,252,0.5)]"
+                                  : "bg-indigo-950/40 border border-indigo-500/20 text-indigo-400 group-hover/row:border-indigo-400/50"
+                              )}>
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className={cn(
+                                    "text-sm font-medium resume-name-target transition-all",
+                                    isSelected
+                                      ? "text-purple-100 font-semibold drop-shadow-[0_0_8px_rgba(192,132,252,0.3)] !decoration-purple-300"
+                                      : "text-white",
+                                    hoveredResumeNameId === resume.id && "underline underline-offset-[5px] decoration-white decoration-[1.5px]"
+                                  )}
+                                  style={hoveredResumeNameId === resume.id ? {
+                                    textDecoration: 'underline',
+                                    textUnderlineOffset: '5px',
+                                    textDecorationColor: isSelected ? '#d8b4fe' : '#ffffff',
+                                    textDecorationThickness: '1.5px'
+                                  } : undefined}
+                                >
+                                  {resume.fileName.replace(/\.[^/.]+$/, "")}
                                 </span>
-                              )}
+
+                                {/* Currently Working indicator when clicked */}
+                                {isSelected && (
+                                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-gradient-to-r from-purple-950/90 via-violet-900/90 to-purple-900/90 text-purple-200 border border-purple-400/60 px-2.5 py-0.5 rounded-full shadow-[0_0_14px_rgba(168,85,247,0.45)]">
+                                    <span className="relative flex h-2 w-2">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-300"></span>
+                                    </span>
+                                    Currently Working
+                                  </span>
+                                )}
+
+                                {/* Active badge: stays normal without highlighting the row */}
+                                {isPrimary && !isSelected && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-normal text-purple-300/80 bg-purple-950/40 border border-purple-500/20 px-2 py-0.5 rounded-full ml-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Active
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={cn("px-3.5 py-1 rounded-full text-xs font-medium border", rating.style)}>
-                            {rating.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/candidate/resume-builder/${resume.id}?tab=editor`);
-                              }}
-                              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showToast({ type: 'info', title: 'Download Started', message: 'Preparing PDF download...' });
-                                setTimeout(() => {
-                                  navigate(`/candidate/resume-builder/${resume.id}?tab=preview`);
-                                }, 800);
-                              }}
-                              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                              title="Download"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-
-                            {/* Dropdown action button */}
-                            <div className="relative">
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={cn("px-3.5 py-1 rounded-full text-xs font-medium border", rating.style)}>
+                              {rating.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (activeMenuId === resume.id) {
-                                    setActiveMenuId(null);
-                                    setMenuAnchor(null);
-                                  } else {
-                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                    setMenuAnchor({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
-                                    setActiveMenuId(resume.id);
-                                  }
+                                  navigate(`/candidate/resume-builder/${resume.id}?tab=editor`);
                                 }}
-                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                                title="More Actions"
+                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] hover:border hover:border-white/15 hover:shadow-[0_0_10px_rgba(255,255,255,0.12)] transition-all cursor-pointer"
+                                title="Edit in Builder"
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Pencil className="w-4 h-4" />
                               </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showToast({ type: 'info', title: 'Download Started', message: 'Preparing PDF download...' });
+                                  setTimeout(() => {
+                                    navigate(`/candidate/resume-builder/${resume.id}?tab=preview`);
+                                  }, 800);
+                                }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] hover:border hover:border-white/15 hover:shadow-[0_0_10px_rgba(255,255,255,0.12)] transition-all cursor-pointer"
+                                title="Download"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+
+                              {/* Dropdown action button */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (activeMenuId === resume.id) {
+                                      setActiveMenuId(null);
+                                      setMenuAnchor(null);
+                                    } else {
+                                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                      setMenuAnchor({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+                                      setActiveMenuId(resume.id);
+                                    }
+                                  }}
+                                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] hover:border hover:border-white/15 hover:shadow-[0_0_10px_rgba(255,255,255,0.12)] transition-all cursor-pointer"
+                                  title="More Actions"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-400 font-normal">
-                          {new Date(resume.uploadDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-400 font-normal">
+                            {new Date(resume.uploadDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination matching Image 1 */}
+              {filteredResumes.length > 0 && (() => {
+                const totalPages = Math.max(1, Math.ceil(filteredResumes.length / itemsPerPage));
+                return (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-white/[0.06] text-xs text-slate-300 relative z-10">
+                    {/* Left: Summary & Rows per page */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <span className="text-slate-400 font-medium">
+                        Showing <span className="text-white font-semibold">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredResumes.length)}</span>–<span className="text-white font-semibold">{Math.min(currentPage * itemsPerPage, filteredResumes.length)}</span> of <span className="text-white font-semibold">{filteredResumes.length}</span> resumes
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 font-medium whitespace-nowrap">Rows per page:</span>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                          className="bg-[#0e1220] border border-white/[0.12] hover:border-white/25 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium cursor-pointer focus:outline-none transition-colors"
+                        >
+                          {[5, 10, 20, 50].map(n => (
+                            <option key={n} value={n} className="bg-slate-900 text-white">{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Right: Page 1 of X and arrow buttons */}
+                    <div className="flex items-center gap-4">
+                      <span className="font-medium whitespace-nowrap text-slate-300">
+                        Page <span className="text-white font-semibold">{currentPage}</span> of <span className="text-white font-semibold">{totalPages}</span>
+                      </span>
+
+                      {/* Pagination arrow buttons */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
+                          title="First Page"
+                        >
+                          <ChevronsLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
+                          title="Previous Page"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
+                          title="Next Page"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
+                          title="Last Page"
+                        >
+                          <ChevronsRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-
-            {/* Pagination matching Image 1 */}
-            {filteredResumes.length > 0 && (() => {
-              const totalPages = Math.max(1, Math.ceil(filteredResumes.length / itemsPerPage));
-              return (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-white/[0.06] text-xs text-slate-300">
-                  {/* Left: Summary & Rows per page */}
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <span className="text-slate-400 font-medium">
-                      Showing <span className="text-white font-semibold">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredResumes.length)}</span>–<span className="text-white font-semibold">{Math.min(currentPage * itemsPerPage, filteredResumes.length)}</span> of <span className="text-white font-semibold">{filteredResumes.length}</span> resumes
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-medium whitespace-nowrap">Rows per page:</span>
-                      <select
-                        value={itemsPerPage}
-                        onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                        className="bg-[#0e1220] border border-white/[0.12] hover:border-white/25 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium cursor-pointer focus:outline-none transition-colors"
-                      >
-                        {[5, 10, 20, 50].map(n => (
-                          <option key={n} value={n} className="bg-slate-900 text-white">{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Right: Page 1 of X and arrow buttons */}
-                  <div className="flex items-center gap-4">
-                    <span className="font-medium whitespace-nowrap text-slate-300">
-                      Page <span className="text-white font-semibold">{currentPage}</span> of <span className="text-white font-semibold">{totalPages}</span>
-                    </span>
-
-                    {/* Pagination arrow buttons */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setCurrentPage(1)}
-                        disabled={currentPage === 1}
-                        className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
-                        title="First Page"
-                      >
-                        <ChevronsLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
-                        title="Previous Page"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
-                        title="Next Page"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(totalPages)}
-                        disabled={currentPage === totalPages}
-                        className="w-8 h-8 rounded-lg bg-slate-900/60 border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20 text-slate-400 hover:text-white flex items-center justify-center disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
-                        title="Last Page"
-                      >
-                        <ChevronsRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         )}
       </div>
+
+
+
 
       {/* ── Ultra-Premium Create Resume Modal matching Image 1 ── */}
       <CreateResumeModal

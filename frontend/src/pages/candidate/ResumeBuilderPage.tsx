@@ -77,7 +77,7 @@ import { candidateService, jobService } from '../../services';
 import { storage } from '../../services/mock/storage';
 import { sendCopilotMessage } from '../../services/api/copilotApi';
 import { useToast } from '../../context/ToastContext';
-import { Resume, Job } from '../../types';
+import { Resume, Job, ResumeAtsAnalysis } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -1182,9 +1182,438 @@ export const ResumeBuilderPage: React.FC = () => {
 
 
   // ATS Score & Suggestions State (Exact Match to Image 1)
-  const [atsFilterTab, setAtsFilterTab] = useState<'pending' | 'completed' | 'deleted'>('completed');
+  const [atsFilterTab, setAtsFilterTab] = useState<'pending' | 'completed' | 'deleted'>('pending');
   const [deletedSuggestionIds, setDeletedSuggestionIds] = useState<Set<string>>(new Set());
   const [selectedReasonSuggestion, setSelectedReasonSuggestion] = useState<ATSSuggestion | null>(null);
+
+  const [actionFeedbackMessage, setActionFeedbackMessage] = useState<{ text: string; subtext?: string; type: 'fix' | 'delete' | 'restore' } | null>(null);
+  const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const triggerActionFeedback = (text: string, subtext: string | undefined, type: 'fix' | 'delete' | 'restore') => {
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    setActionFeedbackMessage({ text, subtext, type });
+    feedbackTimerRef.current = setTimeout(() => {
+      setActionFeedbackMessage(null);
+    }, 3500);
+  };
+
+  // ─── ATS SCORE & SUGGESTED ACTIONS INTERACTION ENGINE (Parts 1 & 2) ──────
+  // Preview Section Highlight State (Part 1A: temporary subtle purple outline in resume preview)
+  const [previewHighlightedSection, setPreviewHighlightedSection] = useState<string | null>(null);
+  const previewHighlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Editing Form Field Highlight State (Part 1B: direct editing mode focus & highlight)
+  const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null);
+  const fieldHighlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Lock background scroll and handle Escape key for Reason Modal (Part 3)
+  useEffect(() => {
+    if (!selectedReasonSuggestion) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedReasonSuggestion(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selectedReasonSuggestion]);
+
+  // Centralized Action-to-Section mapping (Part 1C)
+  const ATS_SECTION_MAPPING: Record<string, {
+    sectionKey: 'personal-info' | 'summary' | 'experience' | 'education' | 'projects' | 'skills' | 'certifications';
+    defaultFieldId: string;
+    displayName: string;
+  }> = {
+    'contact-essential': {
+      sectionKey: 'personal-info',
+      defaultFieldId: 'field-personal-phone',
+      displayName: 'Personal Information'
+    },
+    'summary-genuine': {
+      sectionKey: 'summary',
+      defaultFieldId: 'field-summary-textarea',
+      displayName: 'Professional Summary'
+    },
+    'section-skills': {
+      sectionKey: 'skills',
+      defaultFieldId: 'keyword-input-programmingLanguages',
+      displayName: 'Skills'
+    },
+    'skills-count': {
+      sectionKey: 'skills',
+      defaultFieldId: 'keyword-input-programmingLanguages',
+      displayName: 'Skills'
+    },
+    'section-education': {
+      sectionKey: 'education',
+      defaultFieldId: 'field-education-degree',
+      displayName: 'Education'
+    },
+    'section-work-projects': {
+      sectionKey: 'experience',
+      defaultFieldId: 'field-experience-role',
+      displayName: 'Work Experience'
+    },
+    'section-projects': {
+      sectionKey: 'projects',
+      defaultFieldId: 'field-project-title',
+      displayName: 'Projects'
+    },
+    'exp-descriptions-genuine': {
+      sectionKey: 'experience',
+      defaultFieldId: 'field-experience-description',
+      displayName: 'Work Experience'
+    },
+    'quantifiable-metrics': {
+      sectionKey: 'experience',
+      defaultFieldId: 'field-experience-description',
+      displayName: 'Work Experience'
+    },
+    'action-verbs': {
+      sectionKey: 'experience',
+      defaultFieldId: 'field-experience-description',
+      displayName: 'Work Experience'
+    }
+  };
+
+  const resolveActionSection = (suggestion: ATSSuggestion) => {
+    if (suggestion.id && ATS_SECTION_MAPPING[suggestion.id]) {
+      return ATS_SECTION_MAPPING[suggestion.id];
+    }
+    const titleLower = (suggestion.title || suggestion.pendingTitle || '').toLowerCase();
+    const catLower = (suggestion.category || '').toLowerCase();
+    const navLower = (suggestion.navigateTo || '').toLowerCase();
+
+    if (navLower === 'projects' || titleLower.includes('project') || catLower.includes('project')) {
+      return ATS_SECTION_MAPPING['section-projects'];
+    }
+    if (navLower === 'education' || titleLower.includes('education') || catLower.includes('education')) {
+      return ATS_SECTION_MAPPING['section-education'];
+    }
+    if (navLower === 'skills' || titleLower.includes('skill') || catLower.includes('skill')) {
+      return ATS_SECTION_MAPPING['skills-count'];
+    }
+    if (navLower === 'summary' || titleLower.includes('summary') || catLower.includes('summary')) {
+      return ATS_SECTION_MAPPING['summary-genuine'];
+    }
+    if (navLower === 'personal-info' || titleLower.includes('contact') || catLower.includes('contact') || titleLower.includes('phone') || titleLower.includes('email')) {
+      return ATS_SECTION_MAPPING['contact-essential'];
+    }
+    return ATS_SECTION_MAPPING['section-work-projects'];
+  };
+
+  // ── PART 1A: EYE BUTTON — PREVIEW MODE ONLY ──
+  // 1. Never navigates to editing form
+  // 2. Never opens edit mode
+  // 3. Never modifies resume data
+  // 4. Keeps user inside existing Resume Editor (ATS score tab remains active)
+  // 5. Scrolls RIGHT-SIDE preview to exact section
+  // 6. Temporarily highlights relevant section with subtle purple outline & background
+  // 7. Smoothly fades out after short duration (2.8s) or when another is clicked
+  // 8. Works even if section is empty / contains only placeholder
+  const handlePreviewAction = (suggestion: ATSSuggestion) => {
+    const target = resolveActionSection(suggestion);
+    const sectionKey = target.sectionKey;
+
+    if (previewHighlightTimeoutRef.current) {
+      clearTimeout(previewHighlightTimeoutRef.current);
+    }
+    setPreviewHighlightedSection(sectionKey);
+
+    setTimeout(() => {
+      const selector = `[data-preview-section="${sectionKey}"], [data-section="${sectionKey}"], #preview-section-${sectionKey}`;
+      const el = document.querySelector(selector);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 40);
+
+    previewHighlightTimeoutRef.current = setTimeout(() => {
+      setPreviewHighlightedSection(null);
+    }, 2800);
+  };
+
+  // ── PART 1B: FIX BUTTON — DIRECT EDITING MODE ──
+  // 1. Identifies exact issue
+  // 2. Switches LEFT-SIDE editor panel to corresponding editing section
+  // 3. Opens the relevant editing form
+  // 4. Automatically focuses and highlights the missing field
+  // 5. Scrolls left panel to that field
+  // 6. Shows subtle attention indicator around field
+  const handleFixAction = (suggestion: ATSSuggestion) => {
+    setSelectedReasonSuggestion(null);
+
+    const target = resolveActionSection(suggestion);
+    const sectionKey = target.sectionKey;
+
+    triggerActionFeedback(
+      `Opening "${suggestion.pendingTitle || suggestion.title}"...`,
+      `Navigating to ${target.displayName} to fix this issue.`,
+      'fix'
+    );
+
+    setSearchParams({ tab: 'editor' });
+
+    setIsEditingPersonalInfo(false);
+    setIsEditingSummary(false);
+    setIsEditingExperience(false);
+    setIsEditingEducation(false);
+    setIsEditingProject(false);
+    setIsEditingSkills(false);
+    setIsEditingCustomSection(false);
+
+    let targetFieldId = target.defaultFieldId;
+
+    if (sectionKey === 'personal-info') {
+      setIsEditingPersonalInfo(true);
+      if (!resumeData?.lastName?.trim() || isPlaceholderText(resumeData.lastName)) {
+        targetFieldId = 'field-personal-lastName';
+      } else if (!resumeData?.phone?.trim() || isPlaceholderText(resumeData.phone)) {
+        targetFieldId = 'field-personal-phone';
+      } else if (!resumeData?.email?.trim() || isPlaceholderText(resumeData.email)) {
+        targetFieldId = 'field-personal-email';
+      } else if (!resumeData?.city?.trim() || isPlaceholderText(resumeData.city)) {
+        targetFieldId = 'field-personal-city';
+      } else if (!resumeData?.firstName?.trim() || isPlaceholderText(resumeData.firstName)) {
+        targetFieldId = 'field-personal-firstName';
+      }
+    } else if (sectionKey === 'summary') {
+      setIsEditingSummary(true);
+      targetFieldId = 'field-summary-textarea';
+    } else if (sectionKey === 'experience') {
+      if (resumeData && resumeData.experience && resumeData.experience.length > 0) {
+        handleStartEditExperience(resumeData.experience[0].id);
+      } else {
+        handleAddNewExperience();
+      }
+      if (suggestion.id === 'quantifiable-metrics' || suggestion.id === 'action-verbs' || suggestion.id === 'exp-descriptions-genuine') {
+        targetFieldId = 'field-experience-description';
+      } else {
+        targetFieldId = 'field-experience-role';
+      }
+    } else if (sectionKey === 'education') {
+      if (resumeData && resumeData.education && resumeData.education.length > 0) {
+        const incomplete = resumeData.education.find(e => !e.degree?.trim() || !e.institution?.trim()) || resumeData.education[0];
+        handleStartEditEducation(incomplete.id);
+        if (!incomplete.degree?.trim()) {
+          targetFieldId = 'field-education-degree';
+        } else {
+          targetFieldId = 'field-education-institution';
+        }
+      } else {
+        handleAddNewEducation();
+        targetFieldId = 'field-education-degree';
+      }
+    } else if (sectionKey === 'projects') {
+      if (resumeData && resumeData.projects && resumeData.projects.length > 0) {
+        handleStartEditProject(resumeData.projects[0].id);
+      } else {
+        handleAddNewProject();
+      }
+      targetFieldId = 'field-project-title';
+    } else if (sectionKey === 'skills') {
+      handleStartEditSkills();
+      targetFieldId = 'keyword-input-programmingLanguages';
+    }
+
+    if (fieldHighlightTimeoutRef.current) {
+      clearTimeout(fieldHighlightTimeoutRef.current);
+    }
+    setHighlightedFieldId(targetFieldId);
+
+    setTimeout(() => {
+      const el = document.getElementById(targetFieldId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 120);
+
+    fieldHighlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedFieldId(null);
+    }, 3500);
+  };
+
+  // ── PART 2C: TAILORED CONTENT LOOKUP FOR REASON POPUP (Image 2 Match) ──
+  interface ActionReasonDetails {
+    sectionDisplayName: string;
+    whatAtsLooksFor: string;
+    recruiterImpact: string;
+    proTip: string;
+  }
+
+  const ACTION_REASON_DETAILS: Record<string, ActionReasonDetails> = {
+    'contact-essential': {
+      sectionDisplayName: 'Personal Information',
+      whatAtsLooksFor: 'ATS parsers scan header metadata for contact coordinates to establish candidate profile records. Missing contact info flags profiles as incomplete and causes automated rejections.',
+      recruiterImpact: 'Candidates without clear location and direct contact information are skipped by recruiters.',
+      proTip: 'Use a professional email (first.last@domain.com) and include city/state for location-based search filtering.'
+    },
+    'section-skills': {
+      sectionDisplayName: 'Skills',
+      whatAtsLooksFor: 'A dedicated Skills section allows ATS keyword matchers to index your exact competencies and verify alignment with the job description keywords.',
+      recruiterImpact: 'Allows recruiters to instantly confirm whether you satisfy required prerequisites and technical stack demands.',
+      proTip: 'Group skills by clear categories (e.g., Programming Languages, Frameworks, Tools) to improve human and algorithmic readability.'
+    },
+    'skills-count': {
+      sectionDisplayName: 'Skills',
+      whatAtsLooksFor: 'ATS algorithms calculate keyword match density. Profiles with under 5 core skills rarely hit the 70% threshold required for recruiter review.',
+      recruiterImpact: 'Recruiters use skill search filters to narrow applicant pools from hundreds to top contenders.',
+      proTip: 'Include both primary programming languages/frameworks and domain tools.'
+    },
+    'section-work-projects': {
+      sectionDisplayName: 'Work Experience',
+      whatAtsLooksFor: 'ATS algorithms evaluate structured work history to gauge hands-on technical background and career progression.',
+      recruiterImpact: 'Recruiters spend 80% of their initial scan evaluating your career progression and project deliverables.',
+      proTip: 'Ensure at least one of Work Experience or Projects is active, placed in reverse chronological order with measurable bullet points.'
+    },
+    'section-projects': {
+      sectionDisplayName: 'Projects',
+      whatAtsLooksFor: 'ATS algorithms parse project titles, tech stacks, and repo/live links to evaluate hands-on technical execution.',
+      recruiterImpact: 'Engineering hiring managers evaluate candidate projects to verify practical coding depth beyond theoretical skills.',
+      proTip: 'Include project name, live demo or GitHub link, tools used, and 2-3 bullet points demonstrating technical impact.'
+    },
+    'section-education': {
+      sectionDisplayName: 'Education',
+      whatAtsLooksFor: 'ATS algorithms evaluate education credentials to verify whether candidates satisfy prerequisite degree levels (e.g., Bachelor\'s, Master\'s) and graduation timelines.',
+      recruiterImpact: 'Verifies educational pedigree, graduation timeline, and relevant academic background.',
+      proTip: 'Include institution name, degree obtained, graduation year, and GPA/CGPA if applicable.'
+    },
+    'summary-genuine': {
+      sectionDisplayName: 'Professional Summary',
+      whatAtsLooksFor: 'The summary is indexed heavily for high-level keyword clusters and target job titles within the initial 50-70 words of the resume.',
+      recruiterImpact: 'Provides an immediate snapshot of your career identity and senior alignment.',
+      proTip: 'Summarize your years of experience, primary domain, and top 2 career achievements.'
+    },
+    'exp-descriptions-genuine': {
+      sectionDisplayName: 'Work Experience',
+      whatAtsLooksFor: 'Bullet descriptions provide the contextual keywords ATS systems score against the job description requirements.',
+      recruiterImpact: 'Recruiters want to see specific contributions rather than generic job duties.',
+      proTip: 'Frame bullet points with the XYZ formula: Accomplished [X] as measured by [Y], by doing [Z].'
+    },
+    'quantifiable-metrics': {
+      sectionDisplayName: 'Work Experience',
+      whatAtsLooksFor: 'Resumes with measurable results score higher in AI-driven semantic ranking algorithms.',
+      recruiterImpact: 'Numbers give hiring managers confidence in your scale of impact and competency.',
+      proTip: 'Add stats such as "Reduced load time by 35%" or "Managed a team of 6 engineers".'
+    },
+    'action-verbs': {
+      sectionDisplayName: 'Content Quality',
+      whatAtsLooksFor: 'Action verbs signal leadership, ownership, and initiative to natural language parsers.',
+      recruiterImpact: 'Creates an active, compelling narrative that holds recruiter interest.',
+      proTip: 'Avoid passive voice ("Responsible for...") and replace with decisive action verbs like Engineered, Spearheaded, or Optimized.'
+    }
+  };
+
+  const getActionReasonDetails = (suggestion: ATSSuggestion): ActionReasonDetails => {
+    if (suggestion.id && ACTION_REASON_DETAILS[suggestion.id]) {
+      const details = ACTION_REASON_DETAILS[suggestion.id];
+      return {
+        sectionDisplayName: suggestion.category || details.sectionDisplayName,
+        whatAtsLooksFor: suggestion.detailedReason || details.whatAtsLooksFor,
+        recruiterImpact: suggestion.recruiterImpact || details.recruiterImpact,
+        proTip: suggestion.proTip || details.proTip
+      };
+    }
+
+    const titleLower = (suggestion.title || suggestion.pendingTitle || '').toLowerCase();
+    const catLower = (suggestion.category || '').toLowerCase();
+    const navLower = (suggestion.navigateTo || '').toLowerCase();
+
+    let fallbackKey = 'section-work-projects';
+    if (navLower === 'projects' || titleLower.includes('project') || catLower.includes('project')) {
+      fallbackKey = 'section-projects';
+    } else if (navLower === 'education' || titleLower.includes('education') || catLower.includes('education')) {
+      fallbackKey = 'section-education';
+    } else if (navLower === 'skills' || titleLower.includes('skill') || catLower.includes('skill')) {
+      fallbackKey = 'skills-count';
+    } else if (navLower === 'summary' || titleLower.includes('summary') || catLower.includes('summary')) {
+      fallbackKey = 'summary-genuine';
+    } else if (navLower === 'personal-info' || titleLower.includes('contact') || catLower.includes('contact')) {
+      fallbackKey = 'contact-essential';
+    }
+
+    const fallback = ACTION_REASON_DETAILS[fallbackKey];
+    return {
+      sectionDisplayName: suggestion.category || fallback.sectionDisplayName,
+      whatAtsLooksFor: suggestion.detailedReason || suggestion.reason || fallback.whatAtsLooksFor,
+      recruiterImpact: suggestion.recruiterImpact || fallback.recruiterImpact,
+      proTip: suggestion.proTip || fallback.proTip
+    };
+  };
+
+  const [backendAtsAnalysis, setBackendAtsAnalysis] = useState<ResumeAtsAnalysis | null>(null);
+
+  const syncRecommendations = async (resumeIdToSync?: string) => {
+    const targetId = resumeIdToSync || id;
+    if (!targetId) return;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+    if (!isUuid) return;
+    try {
+      const analysis = await candidateService.getResumeRecommendations(targetId);
+      if (analysis) {
+        setBackendAtsAnalysis(analysis);
+        if (Array.isArray(analysis.deleted)) {
+          setDeletedSuggestionIds(new Set(analysis.deleted.map((d: any) => d.id)));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not sync backend recommendations:', err);
+    }
+  };
+
+  const handleDismissSuggestion = async (suggestionId: string, suggestionTitle: string) => {
+    triggerActionFeedback(
+      `Dismissed "${suggestionTitle}"`,
+      'Moved to Deleted tab without removing any resume content.',
+      'delete'
+    );
+    setDeletedSuggestionIds(prev => {
+      const next = new Set(prev);
+      next.add(suggestionId);
+      return next;
+    });
+
+    if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      try {
+        const updated = await candidateService.dismissRecommendation(id, suggestionId);
+        if (updated) {
+          setBackendAtsAnalysis(updated);
+        }
+      } catch (err) {
+        console.warn('Failed to dismiss recommendation on backend:', err);
+      }
+    }
+  };
+
+  const handleRestoreSuggestion = async (suggestionId: string, suggestionTitle: string) => {
+    triggerActionFeedback(
+      `Restored "${suggestionTitle}"! ✨`,
+      'Moved back to active recommendations.',
+      'restore'
+    );
+    setDeletedSuggestionIds(prev => {
+      const next = new Set(prev);
+      next.delete(suggestionId);
+      return next;
+    });
+
+    if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      try {
+        const updated = await candidateService.restoreRecommendation(id, suggestionId);
+        if (updated) {
+          setBackendAtsAnalysis(updated);
+        }
+      } catch (err) {
+        console.warn('Failed to restore recommendation on backend:', err);
+      }
+    }
+  };
 
   // Guided AI Optimization Wizard State (Matching Image 1)
   const [isAiWizardActive, setIsAiWizardActive] = useState(() => searchParams.get('wizard') === 'true' || searchParams.get('tab') === 'ai-wizard');
@@ -3817,6 +4246,9 @@ export const ResumeBuilderPage: React.FC = () => {
     category: string;
     severity: 'error' | 'warning' | 'info';
     title: string;
+    pendingTitle?: string;
+    completedTitle?: string;
+    completedDescription?: string;
     reason: string;
     weight: number; // impact on score
     passing: boolean;
@@ -3830,40 +4262,97 @@ export const ResumeBuilderPage: React.FC = () => {
     if (!resumeData) return [];
     const suggestions: ATSSuggestion[] = [];
 
-    // Helper: detect if a string is missing or is an unedited bracketed placeholder like "[Job Title]"
     const isPlaceholder = (val: string | undefined | null) => {
       if (!val) return true;
       const trimmed = val.trim();
       if (!trimmed) return true;
       if (/^\[.*\]$/.test(trimmed)) return true;
-      return false;
+      if (/^<.*>$/.test(trimmed)) return true;
+      const lower = trimmed.toLowerCase();
+      return lower === 'first name last name' ||
+        lower === 'first name' ||
+        lower === 'last name' ||
+        lower === 'email@mit.edu' ||
+        lower === 'skill here' ||
+        lower === 'skill name' ||
+        lower === 'insert skill' ||
+        lower === 'institution name' ||
+        lower === 'degree' ||
+        lower === 'job title' ||
+        lower === 'organization name' ||
+        lower === 'project name' ||
+        lower.includes('summarize your career') ||
+        lower.includes('add description') ||
+        lower.includes('mention your') ||
+        lower.includes('mention project') ||
+        lower.includes('mention education') ||
+        lower.includes('add programming') ||
+        lower.includes('add frameworks') ||
+        lower.includes('add tools') ||
+        lower.includes('add databases') ||
+        lower.includes('add skills') ||
+        lower.includes('list 3-5');
     };
 
-    // ── GENUINE ATS CHECKS ──
-    // 1. SECTION PRESENCE CHECKS (Image 1 Parity: Missing Work or Projects, Missing Skills Section, Missing Education Section)
-    const hasWorkOrProjects = resumeData.activeSections.includes('experience') || resumeData.activeSections.includes('projects');
+    // ── 1. Contact Details (10 pts) ──
+    const hasRealName = (!isPlaceholder(resumeData.firstName) && !isPlaceholder(resumeData.lastName)) ||
+                        (!isPlaceholder(resumeData.name) && (resumeData.name || '').trim().split(/\s+/).length >= 2);
+    const hasRealPhone = !isPlaceholder(resumeData.phone) && (resumeData.phone || '').replace(/[^0-9]/g, '').length >= 7;
+    const hasRealEmail = !isPlaceholder(resumeData.email) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((resumeData.email || '').trim());
+    const hasRealLocation = (!isPlaceholder(resumeData.city) && (resumeData.city || '').trim().length > 0) ||
+                            (!isPlaceholder(resumeData.location) && (resumeData.location || '').trim().length > 0);
+    const contactPassing = hasRealName && hasRealPhone && hasRealEmail && hasRealLocation;
+
     suggestions.push({
-      id: 'section-work-projects',
-      category: 'Work Experience & Projects',
+      id: 'contact-essential',
+      category: 'Contact Info',
       severity: 'error',
-      title: 'Missing Work or Projects',
-      reason: 'Add a Work Experience or Projects section.',
-      weight: 3.5,
-      passing: hasWorkOrProjects,
-      navigateTo: 'experience',
-      detailedReason: 'ATS algorithms look for structured work experience or project history to gauge hands-on technical background. Without either section, automated parsers fail to index roles, achievements, or tenure.',
-      recruiterImpact: 'Recruiters spend 80% of their initial scan evaluating your career progression and project deliverables.',
-      proTip: 'Ensure at least one of Work Experience or Projects is active, placed in reverse chronological order with measurable bullet points.'
+      pendingTitle: 'Essential Contact Details Missing',
+      completedTitle: 'Essential Contact Details Verified',
+      title: contactPassing ? 'Essential Contact Details Verified' : 'Essential Contact Details Missing',
+      reason: 'Add your full name, phone number, email address, and location.',
+      completedDescription: 'Verified: Full contact info (name, email, phone, location) is complete.',
+      weight: 10,
+      passing: contactPassing,
+      navigateTo: 'personal-info',
+      detailedReason: 'Incomplete or placeholder contact info prevents recruiters from reaching out for interview invitations and causes parsing rejections.',
+      recruiterImpact: 'Candidates without clear location and direct contact information are skipped by recruiters.',
+      proTip: 'Use a professional email (first.last@domain.com) and include city/state for location-based search filtering.'
     });
 
-    const hasSkillsSection = resumeData.activeSections.includes('skills');
+    // ── 2 & 3. Skills Validation (20 pts: 5 pts section, 15 pts density >= 5) ──
+    const allSkillsList: string[] = [];
+    if (resumeData.skills) {
+      Object.entries(resumeData.skills).forEach(([key, val]) => {
+        if (key === 'customCategories' && Array.isArray(val)) {
+          val.forEach((cc: any) => {
+            if (cc && typeof cc.skills === 'string') {
+              cc.skills.split(/[,\n]+/).forEach((s: string) => {
+                const trimmed = s.trim();
+                if (trimmed && !isPlaceholder(trimmed)) allSkillsList.push(trimmed);
+              });
+            }
+          });
+        } else if (typeof val === 'string' && val.trim()) {
+          val.split(/[,\n]+/).forEach(s => {
+            const trimmed = s.trim();
+            if (trimmed && !isPlaceholder(trimmed)) allSkillsList.push(trimmed);
+          });
+        }
+      });
+    }
+
+    const hasSkillsSection = hasMeaningfulSkills(resumeData.skills) || allSkillsList.length >= 1;
     suggestions.push({
       id: 'section-skills',
       category: 'Skills',
       severity: 'error',
-      title: 'Missing Skills Section',
-      reason: 'Add a Skills section to your resume.',
-      weight: 3.5,
+      pendingTitle: 'Missing Skills Section & Competencies',
+      completedTitle: 'Skills Section & Competencies Added',
+      title: hasSkillsSection ? 'Skills Section & Competencies Added' : 'Missing Skills Section & Competencies',
+      reason: 'Add a dedicated Skills section containing your core technical tools and capabilities.',
+      completedDescription: `Verified: Core technical and industry skills are included in your resume (${allSkillsList.length} listed).`,
+      weight: 5,
       passing: hasSkillsSection,
       navigateTo: 'skills',
       detailedReason: 'A dedicated Skills section allows ATS keyword matchers to index your exact competencies and verify alignment with the job description keywords.',
@@ -3871,187 +4360,210 @@ export const ResumeBuilderPage: React.FC = () => {
       proTip: 'Group skills by clear categories (e.g., Programming Languages, Frameworks, Tools) to improve human and algorithmic readability.'
     });
 
-    const hasEducationSection = resumeData.activeSections.includes('education');
-    suggestions.push({
-      id: 'section-education',
-      category: 'Education',
-      severity: 'error',
-      title: 'Missing Education Section',
-      reason: 'Add an Education section to your resume.',
-      weight: 3.5,
-      passing: hasEducationSection,
-      navigateTo: 'education',
-      detailedReason: 'Many enterprise organizations enforce strict minimum degree requirements in ATS screening (e.g., Bachelor’s degree in Computer Science or related field).',
-      recruiterImpact: 'Verifies educational pedigree, graduation timeline, and relevant academic background.',
-      proTip: 'Include institution name, degree obtained, graduation year, and GPA/CGPA if above 3.5 or top honors.'
-    });
-
-    // 2. ESSENTIAL CONTENT CHECKS (Evaluated carefully from genuine non-placeholder input)
-    const hasRealName = (!isPlaceholder(resumeData.firstName) && !isPlaceholder(resumeData.lastName)) ||
-                        (!isPlaceholder(resumeData.name) && (resumeData.name || '').trim().split(/\s+/).length >= 2);
-    const hasRealPhone = !isPlaceholder(resumeData.phone) && (resumeData.phone || '').trim().length >= 7;
-    const hasRealEmail = !isPlaceholder(resumeData.email) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((resumeData.email || '').trim());
-    const hasRealLocation = !isPlaceholder(resumeData.city) || !isPlaceholder(resumeData.location);
-    const contactPassing = hasRealName && hasRealPhone && hasRealEmail && hasRealLocation;
-
-    suggestions.push({
-      id: 'contact-essential',
-      category: 'Contact Info',
-      severity: 'error',
-      title: 'Essential Contact Details Missing',
-      reason: 'Add your full name, phone number, email address, and location.',
-      weight: 15,
-      passing: contactPassing,
-      navigateTo: 'personal-info',
-      detailedReason: 'Incomplete or placeholder contact info prevents recruiters from reaching out for interview invitations and can cause parsing rejections.',
-      recruiterImpact: 'Candidates without clear location and direct contact information are skipped by recruiters.',
-      proTip: 'Use a professional email (first.last@domain.com) and include city/state for location-based search filtering.'
-    });
-
-    // Skills Count (genuine non-placeholder skills)
-    const allSkillsList: string[] = [];
-    if (resumeData.skills) {
-      Object.values(resumeData.skills).forEach(val => {
-        if (typeof val === 'string' && val.trim()) {
-          val.split(/[,\n]+/).forEach(s => {
-            const trimmed = s.trim();
-            if (trimmed && !isPlaceholder(trimmed)) {
-              allSkillsList.push(trimmed);
-            }
-          });
-        }
-      });
-    }
-    const skillsPassing = allSkillsList.length >= 5;
+    const skillsCountPassing = allSkillsList.length >= 5;
     suggestions.push({
       id: 'skills-count',
       category: 'Skills',
-      severity: 'warning',
-      title: 'Insufficient Skill Count',
-      reason: `Add at least 5 relevant technical or industry skills (currently ${allSkillsList.length}/5).`,
+      severity: 'error',
+      pendingTitle: 'Insufficient Skill Count',
+      completedTitle: 'Sufficient Core Skills Count (>= 5 skills)',
+      title: skillsCountPassing ? 'Sufficient Core Skills Count (>= 5 skills)' : 'Insufficient Skill Count',
+      reason: `Expand your Skills section by adding more relevant technologies or tools (current: ${allSkillsList.length}, min: 5).`,
+      completedDescription: `Verified: Meets recommended keyword density with ${allSkillsList.length} core skills.`,
       weight: 15,
-      passing: skillsPassing,
+      passing: skillsCountPassing,
       navigateTo: 'skills',
       detailedReason: 'ATS algorithms calculate keyword match density. Profiles with under 5 core skills rarely hit the 70% threshold required for recruiter review.',
       recruiterImpact: 'Recruiters use skill search filters to narrow applicant pools from hundreds to top contenders.',
       proTip: 'Include both core hard skills (languages, frameworks) and pertinent domain tools.'
     });
 
-    // Education Entry (genuine institution + degree)
-    const genuineEdu = (resumeData.education || []).filter(e =>
-      !isPlaceholder(e.institution) && !isPlaceholder(e.degree)
-    );
-    const eduPassing = genuineEdu.length > 0;
+    // ── 4. Education Credentials (15 pts) ──
+    const hasRawEducation = (resumeData.education || []).length > 0;
+    const hasEducationSection = hasMeaningfulEducation(resumeData.education);
     suggestions.push({
-      id: 'education-entry',
+      id: 'section-education',
       category: 'Education',
-      severity: 'warning',
-      title: 'Education Entry Incomplete',
-      reason: 'Provide your institution name, degree, and graduation dates.',
-      weight: 12,
-      passing: eduPassing,
+      severity: 'error',
+      pendingTitle: hasRawEducation ? 'Education Entry Incomplete' : 'Missing Education Section & Credentials',
+      completedTitle: 'Academic Education Added',
+      title: hasEducationSection ? 'Academic Education Added' : (hasRawEducation ? 'Education Entry Incomplete' : 'Missing Education Section & Credentials'),
+      reason: hasRawEducation ? 'Update your most recent education entry to include your Degree, Institute, Dates.' : 'Add your degree, institution name, and graduation timeline.',
+      completedDescription: 'Verified: Institution and degree credentials are confirmed.',
+      weight: 15,
+      passing: hasEducationSection,
       navigateTo: 'education',
-      detailedReason: 'Placeholder education text causes ATS parsing engines to mark the qualification section as null or unverified.',
-      recruiterImpact: 'Recruiters verify degree completion and major relevance during preliminary screening.',
-      proTip: 'Provide the official university or college name and your full degree title.'
+      detailedReason: 'Many enterprise organizations enforce strict minimum degree requirements in ATS screening.',
+      recruiterImpact: 'Verifies educational pedigree, graduation timeline, and relevant academic background.',
+      proTip: 'Include institution name, degree obtained, graduation year, and GPA/CGPA if applicable.'
     });
 
-    // 3. SECONDARY CONTENT CHECKS (Only shown when user begins adding content beyond fresh template)
-    const hasAnyContent = contactPassing || skillsPassing || eduPassing || (resumeData.experience || []).some(e => !isPlaceholder(e.company));
-    if (hasAnyContent) {
-      // Work experience details
-      const genuineExp = (resumeData.experience || []).filter(e =>
-        !isPlaceholder(e.company) && !isPlaceholder(e.role)
-      );
-      const expHasDescriptions = genuineExp.some(e =>
-        !isPlaceholder(e.description) && (e.description || '').trim().length >= 40
-      );
+    // ── 5. Professional Summary (10 pts) ──
+    const summaryValid = !isPlaceholder(resumeData.summary) && (resumeData.summary || '').trim().length >= 40;
+    suggestions.push({
+      id: 'summary-genuine',
+      category: 'Summary',
+      severity: 'warning',
+      pendingTitle: 'Missing Professional Summary',
+      completedTitle: 'Professional Summary Provided',
+      title: summaryValid ? 'Professional Summary Provided' : 'Missing Professional Summary',
+      reason: 'Write a 2-3 sentence career summary highlighting your core expertise and value.',
+      completedDescription: 'Verified: Career summary is present and highlights core competencies.',
+      weight: 10,
+      passing: summaryValid,
+      navigateTo: 'summary',
+      detailedReason: 'The summary is indexed heavily for high-level keyword clusters and target job titles.',
+      recruiterImpact: 'Provides an immediate snapshot of your career identity and senior alignment.',
+      proTip: 'Summarize your years of experience, primary domain, and top 2 career achievements.'
+    });
+
+    // ── 6 & 7. Practical Experience & Projects (35 pts total) - Fresher Fairness ──
+    const genuineExp = (resumeData.experience || []).filter(e =>
+      !isPlaceholder(e.company) && !isPlaceholder(e.role)
+    );
+    const genuineProjects = (resumeData.projects || []).filter(p =>
+      !isPlaceholder(p.title) && (!isPlaceholder(p.description) || !isPlaceholder(p.technologies))
+    );
+    const expHasDescriptions = genuineExp.some(e =>
+      !isPlaceholder(e.description) && (e.description || '').trim().length >= 40
+    );
+    const isFresher = genuineExp.length === 0;
+
+    if (!isFresher) {
+      // Experienced Candidate
+      suggestions.push({
+        id: 'section-work-projects',
+        category: 'Work Experience',
+        severity: 'error',
+        pendingTitle: 'Missing Work Experience',
+        completedTitle: 'Work Experience Included',
+        title: genuineExp.length >= 1 ? 'Work Experience Included' : 'Missing Work Experience',
+        reason: 'Add your employment history, job title, company, and timeline.',
+        completedDescription: 'Verified: Professional work experience is documented.',
+        weight: 10,
+        passing: genuineExp.length >= 1,
+        navigateTo: 'experience',
+        detailedReason: 'ATS algorithms look for structured work experience to gauge hands-on technical background.',
+        recruiterImpact: 'Recruiters spend 80% of their initial scan evaluating career progression.',
+        proTip: 'Ensure entries are in reverse chronological order with measurable bullet points.'
+      });
+
       suggestions.push({
         id: 'exp-descriptions-genuine',
         category: 'Work Experience',
         severity: 'warning',
-        title: 'Detailed Experience Bullet Points',
+        pendingTitle: 'Detailed Experience Bullet Points',
+        completedTitle: 'Detailed Experience Bullet Points Included',
+        title: expHasDescriptions ? 'Detailed Experience Bullet Points Included' : 'Detailed Experience Bullet Points',
         reason: 'Add comprehensive bullet points describing responsibilities and accomplishments.',
-        weight: 15,
-        passing: genuineExp.length > 0 && expHasDescriptions,
+        completedDescription: 'Verified: Roles contain comprehensive accomplishment bullet points.',
+        weight: 10,
+        passing: expHasDescriptions,
         navigateTo: 'experience',
-        detailedReason: 'Bullet descriptions provide the contextual keywords ATS systems score against the job description requirements.',
+        detailedReason: 'Bullet descriptions provide contextual keywords ATS systems score against requirements.',
         recruiterImpact: 'Recruiters want to see specific contributions rather than generic job duties.',
         proTip: 'Frame bullet points with the XYZ formula: Accomplished [X] as measured by [Y], by doing [Z].'
       });
 
-      // Measurable metrics (%, $, numbers)
-      const allDescriptions = [
-        ...genuineExp.map(e => e.description || ''),
-        ...(resumeData.projects || []).map(p => p.description || '')
-      ].join(' ');
-      const hasMetrics = /\b\d+(\.\d+)?%|\$\d+|\b\d+\+?\s*(users|clients|requests|ms|hours|days|x|fold)/i.test(allDescriptions);
       suggestions.push({
-        id: 'quantifiable-metrics',
-        category: 'Work Experience',
+        id: 'section-projects',
+        category: 'Projects',
         severity: 'info',
-        title: 'Quantifiable Metrics & Measurable Impact',
-        reason: 'Include numbers, percentages, or growth metrics to prove tangible impact.',
-        weight: 10,
-        passing: hasMetrics,
-        navigateTo: 'experience',
-        detailedReason: 'Resumes with measurable results score higher in AI-driven semantic ranking algorithms.',
-        recruiterImpact: 'Numbers give hiring managers confidence in your scale of impact and competency.',
-        proTip: 'Add stats such as "Reduced load time by 35%" or "Managed a team of 6 engineers".'
+        pendingTitle: 'Missing Projects Section',
+        completedTitle: 'Projects & Deliverables Documented',
+        title: genuineProjects.length >= 1 ? 'Projects & Deliverables Documented' : 'Missing Projects Section',
+        reason: 'Add technical or academic projects to demonstrate hands-on applied capabilities.',
+        completedDescription: `Verified: Hands-on project portfolio documented (${genuineProjects.length} listed).`,
+        weight: 15,
+        passing: genuineProjects.length >= 1,
+        navigateTo: 'projects',
+        detailedReason: 'Projects highlight practical application of skills beyond job responsibilities.',
+        recruiterImpact: 'Helps recruiters gauge engineering initiative and technical depth.',
+        proTip: 'Include technologies used, your direct contribution, and measurable deliverables.'
+      });
+    } else {
+      // Fresher / Student Candidate without corporate tenure
+      const hasMultipleProjects = genuineProjects.length >= 2;
+      const hasSingleProject = genuineProjects.length === 1;
+
+      suggestions.push({
+        id: 'section-projects',
+        category: 'Projects',
+        severity: 'error',
+        pendingTitle: 'Missing Projects Section',
+        completedTitle: 'Projects & Deliverables Documented',
+        title: genuineProjects.length >= 1 ? 'Projects & Deliverables Documented' : 'Missing Projects Section',
+        reason: 'Add academic, capstone, or personal technical projects highlighting your hands-on coding ability.',
+        completedDescription: `Verified: Practical project deliverables documented (${genuineProjects.length} listed).`,
+        weight: 15,
+        passing: genuineProjects.length >= 1,
+        navigateTo: 'projects',
+        detailedReason: 'For freshers and early-career candidates, projects serve as primary proof of technical competence.',
+        recruiterImpact: 'Recruiters evaluate problem solving, architecture choices, and stack familiarity through project work.',
+        proTip: 'Highlight technologies used, role, and provide links or measurable metrics.'
       });
 
-      // Strong action verbs
-      const hasActionVerbs = /\b(Led|Developed|Designed|Engineered|Spearheaded|Architected|Implemented|Automated|Optimized|Constructed|Orchestrated|Transformed)\b/i.test(allDescriptions);
       suggestions.push({
-        id: 'action-verbs',
-        category: 'Content Quality',
-        severity: 'info',
-        title: 'Strong Action Verbs in Bullet Points',
-        reason: 'Start bullet points with impactful verbs like Engineered, Spearheaded, or Optimized.',
-        weight: 8,
-        passing: hasActionVerbs,
-        navigateTo: 'experience',
-        detailedReason: 'Action verbs signal leadership, ownership, and initiative to natural language parsers.',
-        recruiterImpact: 'Creates an active, compelling narrative that holds recruiter interest.',
-        proTip: 'Avoid passive voice ("Responsible for...") and replace with decisive action verbs.'
-      });
-
-      // Professional summary
-      const summaryValid = !isPlaceholder(resumeData.summary) && (resumeData.summary || '').trim().length >= 50;
-      suggestions.push({
-        id: 'summary-genuine',
-        category: 'Summary',
-        severity: 'warning',
-        title: 'Compelling Professional Summary',
-        reason: 'Write a 2-3 sentence career summary highlighting your core expertise and value.',
-        weight: 9,
-        passing: summaryValid,
-        navigateTo: 'summary',
-        detailedReason: 'The summary is indexed heavily for high-level keyword clusters and target job titles.',
-        recruiterImpact: 'Provides an immediate snapshot of your career identity and senior alignment.',
-        proTip: 'Summarize your years of experience, primary domain, and top 2 career achievements.'
-      });
-
-      // Professional links
-      const hasLinks = !!(
-        (!isPlaceholder(resumeData.linkedinUrl) && (resumeData.linkedinUrl || '').trim()) ||
-        (!isPlaceholder(resumeData.githubUrl) && (resumeData.githubUrl || '').trim()) ||
-        (resumeData.socialLinks && resumeData.socialLinks.some(l => !isPlaceholder(l.url) && (l.url || '').trim()))
-      );
-      suggestions.push({
-        id: 'professional-links',
-        category: 'Contact Info',
-        severity: 'info',
-        title: 'LinkedIn or Portfolio Links Added',
-        reason: 'Link your LinkedIn profile or GitHub repository for recruiter verification.',
-        weight: 6,
-        passing: hasLinks,
-        navigateTo: 'personal-info',
-        detailedReason: 'ATS and recruiters check links to verify open source code, professional networks, and recommendations.',
-        recruiterImpact: '85% of recruiters review LinkedIn profiles before scheduling phone screens.',
-        proTip: 'Include full clickable URLs (e.g., linkedin.com/in/yourname).'
+        id: 'section-work-projects',
+        category: 'Practical Experience',
+        severity: hasMultipleProjects ? 'info' : 'warning',
+        pendingTitle: hasSingleProject ? 'Add Second Project or Internship' : 'Missing Work Experience or Projects',
+        completedTitle: hasMultipleProjects ? 'Hands-on Project Portfolio Verified (Fresher Credit)' : 'Practical Experience Documented',
+        title: hasMultipleProjects ? 'Hands-on Project Portfolio Verified (Fresher Credit)' : (hasSingleProject ? 'Add Second Project or Internship' : 'Missing Work Experience or Projects'),
+        reason: hasSingleProject
+          ? 'Early-career candidates should add at least 2 detailed projects or internships to demonstrate competence (currently 1).'
+          : 'Add professional employment, internships, or academic projects.',
+        completedDescription: 'Verified: Practical project portfolio demonstrates strong hands-on capabilities in lieu of corporate tenure.',
+        weight: 20,
+        passing: hasMultipleProjects,
+        navigateTo: 'projects',
+        detailedReason: 'Early-career ATS models weight robust academic projects equivalently to entry-level internships.',
+        recruiterImpact: 'Demonstrates initiative, end-to-end delivery, and code craftsmanship.',
+        proTip: 'Include 2 or more projects with architecture overview, stack details, and GitHub links.'
       });
     }
+
+    // ── 8. Measurable Metrics (5 pts) ──
+    const allDescriptions = [
+      ...genuineExp.map(e => e.description || ''),
+      ...(resumeData.projects || []).map(p => p.description || '')
+    ].join(' ');
+    const hasMetrics = /\b\d+(\.\d+)?%|\$\d+|\b\d+\+?\s*(users|clients|requests|ms|hours|days|x|fold)/i.test(allDescriptions);
+    suggestions.push({
+      id: 'quantifiable-metrics',
+      category: 'Content Quality',
+      severity: 'info',
+      pendingTitle: 'Quantifiable Metrics & Measurable Impact',
+      completedTitle: 'Quantifiable Metrics & Impact Demonstrated',
+      title: hasMetrics ? 'Quantifiable Metrics & Impact Demonstrated' : 'Quantifiable Metrics & Measurable Impact',
+      reason: 'Include numbers, percentages, or growth metrics to prove tangible impact.',
+      completedDescription: 'Verified: Measurable metrics and percentages found in project or work descriptions.',
+      weight: 5,
+      passing: hasMetrics,
+      navigateTo: 'experience',
+      detailedReason: 'Resumes with measurable results score higher in AI-driven semantic ranking algorithms.',
+      recruiterImpact: 'Numbers give hiring managers confidence in your scale of impact and competency.',
+      proTip: 'Add stats such as "Reduced load time by 35%" or "Managed a team of 6 engineers".'
+    });
+
+    // ── 9. Strong Action Verbs (5 pts) ──
+    const hasActionVerbs = /\b(Led|Developed|Designed|Engineered|Spearheaded|Architected|Implemented|Automated|Optimized|Constructed|Orchestrated|Transformed|Built|Created|Delivered)\b/i.test(allDescriptions);
+    suggestions.push({
+      id: 'action-verbs',
+      category: 'Content Quality',
+      severity: 'info',
+      pendingTitle: 'Strong Action Verbs in Bullet Points',
+      completedTitle: 'Strong Action Verbs Applied',
+      title: hasActionVerbs ? 'Strong Action Verbs Applied' : 'Strong Action Verbs in Bullet Points',
+      reason: 'Start bullet points with impactful verbs like Engineered, Spearheaded, or Optimized.',
+      completedDescription: 'Verified: Strong leadership and technical action verbs detected in descriptions.',
+      weight: 5,
+      passing: hasActionVerbs,
+      navigateTo: 'experience',
+      detailedReason: 'Action verbs signal leadership, ownership, and initiative to natural language parsers.',
+      recruiterImpact: 'Creates an active, compelling narrative that holds recruiter interest.',
+      proTip: 'Avoid passive voice ("Responsible for...") and replace with decisive action verbs.'
+    });
 
     return suggestions;
   };
@@ -5505,10 +6017,53 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
             <div
               style={{
                 width: (isLeftPanelCollapsed || viewMode === 'preview') ? '0px' : `${leftPanelWidth}px`,
-                display: (isLeftPanelCollapsed || viewMode === 'preview') ? 'none' : 'block'
+                display: (isLeftPanelCollapsed || viewMode === 'preview') ? 'none' : 'flex'
               }}
-              className="border-r border-white/[0.06] overflow-y-auto p-6 space-y-6 bg-[#090d16] no-print shrink-0 transition-[width] duration-75 relative custom-scrollbar"
+              className="flex-col border-r border-[#1f2438] bg-[#090d16] no-print shrink-0 transition-[width] duration-75 relative overflow-hidden h-full"
             >
+              {/* Stationary Left Header Bar (Height h-16, exact visual alignment with Right Action Bar & Image 2) */}
+              <div className="h-16 bg-[#090d16] border-b border-[#1f2438] pl-6 pr-3.5 flex items-center justify-between shrink-0 z-20 select-none">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {activeTab !== 'ats-score' && (
+                    <span className="w-2 h-2 rounded-full bg-purple-500/80 shrink-0" />
+                  )}
+                  <span className={cn(
+                    "tracking-tight truncate",
+                    activeTab === 'ats-score' ? "text-xl md:text-[22px] font-bold text-white tracking-tight" : "text-sm font-bold text-white"
+                  )}>
+                    {activeTab === 'editor'
+                      ? (isEditingPersonalInfo ? 'Personal Information' :
+                         isEditingSummary ? 'Professional Summary' :
+                         isEditingExperience ? 'Work Experience' :
+                         isEditingEducation ? 'Education' :
+                         isEditingProject ? 'Projects' :
+                         isEditingSkills ? 'Skills & Competencies' :
+                         isEditingCustomSection ? 'Custom Section' : 'Resume Editor')
+                      : activeTab === 'ats-score'
+                      ? 'ATS Score'
+                      : activeTab === 'job-optimize'
+                      ? 'Optimize for Job'
+                      : 'Customize Template'}
+                  </span>
+                </div>
+
+                {/* Stationary Split-Panel Collapse Toggle Icon (Anchored to top-right of left panel, Image 2 Match) */}
+                <button
+                  type="button"
+                  onClick={() => setIsLeftPanelCollapsed(true)}
+                  className="w-8 h-8 rounded-lg border border-[#23293e] bg-[#0c101d] hover:bg-[#14192b] hover:border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95 shrink-0 group ml-auto"
+                  title="Collapse editor panel"
+                  aria-label="Collapse editor panel"
+                >
+                  <svg className="w-4 h-4 text-slate-400 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2.5" />
+                    <line x1="15" y1="3" x2="15" y2="21" />
+                    <path d="M10 9l-3 3 3 3" />
+                  </svg>
+                </button>
+              </div>
+              {/* Scrollable Content Container (Scrolls independently below the stationary header) */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {/* ── TAB 1: EDIT CONTENT ────────────────────────────── */}
               {activeTab === 'editor' && (
                 isEditingPersonalInfo ? (
@@ -9918,9 +10473,11 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                 </div>
               )}
 
-              {/* ── TAB 3: ATS SCORE (Comprehensive, Accurate, Dynamic - Exact Image 1 Match) ─────────── */}
+              {/* ── TAB 3: ATS SCORE (Image 2 Exact Visual Match) ─────────── */}
               {activeTab === 'ats-score' && (() => {
                 const allSuggestions = getATSSuggestions();
+
+                // Live dynamic classification from current in-memory resume data
                 const pendingSuggestions = allSuggestions.filter(
                   s => !s.passing && !deletedSuggestionIds.has(s.id)
                 );
@@ -9934,103 +10491,154 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                 const deletedCount = deletedSuggestions.length;
 
                 // Total rubric points = 100
-                const totalPossibleRubricWeight = 100;
                 const passedWeight = completedSuggestions.reduce((sum, s) => sum + s.weight, 0);
-                const atsPercent = Math.min(100, Math.round((passedWeight / totalPossibleRubricWeight) * 100));
-                // Filled bars out of 32: 3 bars for blank template (matching Image 1 exactly), scaling up smoothly
-                const filledBars = Math.max(completedCount > 0 ? 3 : 0, Math.round((atsPercent / 100) * 32));
+                const atsPercent = Math.min(100, Math.max(0, Math.round(passedWeight)));
 
-                const readinessLabel =
-                  atsPercent >= 90 ? 'Apply Ready' :
-                    atsPercent >= 75 ? 'Almost Ready' :
-                      atsPercent >= 55 ? 'Above Average' :
-                        atsPercent >= 35 ? 'Needs Work' : 'Poor';
+                // 32 Segmented Bars with smooth color progression (Image 1 Exact Match)
+                const totalSegments = 32;
+                const filledBars = atsPercent === 0
+                  ? 0
+                  : Math.max(1, Math.min(totalSegments, Math.round((atsPercent / 100) * totalSegments)));
 
-                const readinessBadgeClass =
-                  atsPercent >= 90
-                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
+                // Function for smooth color progression from red -> orange -> yellow -> lime -> green
+                const getSegmentColor = (index: number, total: number = 32) => {
+                  const t = Math.max(0, Math.min(1, index / (total - 1)));
+                  let r: number, g: number, b: number;
+                  if (t < 0.25) {
+                    const k = t / 0.25;
+                    r = Math.round(239 + (249 - 239) * k);
+                    g = Math.round(68 + (115 - 68) * k);
+                    b = Math.round(68 + (22 - 68) * k);
+                  } else if (t < 0.5) {
+                    const k = (t - 0.25) / 0.25;
+                    r = Math.round(249 + (245 - 249) * k);
+                    g = Math.round(115 + (185 - 115) * k);
+                    b = Math.round(22 + (11 - 22) * k);
+                  } else if (t < 0.75) {
+                    const k = (t - 0.5) / 0.25;
+                    r = Math.round(245 + (132 - 245) * k);
+                    g = Math.round(185 + (215 - 185) * k);
+                    b = Math.round(11 + (40 - 11) * k);
+                  } else {
+                    const k = (t - 0.75) / 0.25;
+                    r = Math.round(132 + (34 - 132) * k);
+                    g = Math.round(215 + (197 - 215) * k);
+                    b = Math.round(40 + (94 - 40) * k);
+                  }
+                  return {
+                    color: `rgb(${r}, ${g}, ${b})`,
+                    glow: `rgba(${r}, ${g}, ${b}, 0.55)`
+                  };
+                };
+
+                // Critical blockers definition
+                const criticalBlockerIds = new Set([
+                  'contact-essential',
+                  'skills-count',
+                  'section-education',
+                  'section-projects',
+                  'section-work-projects'
+                ]);
+                const hasCriticalBlockers = pendingSuggestions.some(s => criticalBlockerIds.has(s.id));
+                const isApplyReady = atsPercent >= 80 && !hasCriticalBlockers;
+
+                const baseReadinessLabel =
+                  atsPercent >= 90 ? 'Excellent' :
+                    atsPercent >= 75 ? 'Good' :
+                      atsPercent >= 60 ? 'Fair' :
+                        atsPercent >= 40 ? 'Needs Improvement' : 'Poor';
+
+                const displayBadgeLabel = isApplyReady ? 'Apply Ready' : baseReadinessLabel;
+
+                const readinessBadgeClass = isApplyReady
+                  ? 'bg-[#123824] border-[#1b543b] text-[#34d399]'
+                  : atsPercent >= 90
+                    ? 'bg-[#122e23] border-[#1b543b] text-[#34d399]'
                     : atsPercent >= 75
-                      ? 'bg-teal-950/40 border-teal-500/30 text-teal-300'
-                      : atsPercent >= 55
-                        ? 'bg-amber-950/40 border-amber-500/30 text-amber-300'
-                        : atsPercent >= 35
-                          ? 'bg-orange-950/40 border-orange-500/30 text-orange-300'
-                          : 'bg-[#3f1313] border-[#7f1d1d] text-[#fca5a5]';
+                      ? 'bg-[#13283f] border-[#1e426d] text-[#60a5fa]'
+                      : atsPercent >= 60
+                        ? 'bg-[#352410] border-[#5c3a16] text-[#fbbf24]'
+                        : atsPercent >= 40
+                          ? 'bg-[#3d200f] border-[#6b3512] text-[#fb923c]'
+                          : 'bg-[#381619] border-[#5c1d24] text-[#f87171]';
 
-                const severityIcon = (sev: 'error' | 'warning' | 'info') =>
-                  sev === 'error' ? '🔴' : sev === 'warning' ? '🟡' : '🔵';
-                const severityBadge = (sev: 'error' | 'warning' | 'info') =>
-                  sev === 'error'
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                    : sev === 'warning'
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                      : 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-                const severityLabel = (sev: 'error' | 'warning' | 'info') =>
-                  sev === 'error' ? 'Critical' : sev === 'warning' ? 'Warning' : 'Tip';
+                const handleFixNavigation = handleFixAction;
 
                 return (
-                  <div className="space-y-6 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-bold text-white tracking-tight">ATS Score</h2>
-                    </div>
-
-                    {/* Readiness Rating Card (Exact match to Image 1: 3 red/orange bars, "Poor" badge) */}
-                    <div
-                      className="rounded-2xl border border-slate-800/80 p-6 space-y-4 shadow-xl relative overflow-hidden"
-                      style={{
-                        background: 'radial-gradient(ellipse 90% 80% at 50% -10%, rgba(99, 102, 241, 0.38) 0%, rgba(30, 27, 75, 0.5) 50%, #0c1020 100%)'
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-white tracking-wide">Readiness Rating</h3>
-                        <span className="text-xs text-slate-400 cursor-help" title="ATS Readiness score based on comprehensive evaluation">ⓘ</span>
+                  <div
+                    className="space-y-6 animate-in fade-in duration-200"
+                    style={{ fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+                  >
+                    {/* Readiness Rating Card (Image 1 & 2 Exact Visual Match) */}
+                    <div className="ats-glass-card ats-glass-card--readiness p-6 sm:p-7 space-y-4 shadow-2xl">
+                      <div className="flex items-center justify-between relative z-10">
+                        <div>
+                          <h3 className="text-lg sm:text-[19px] font-bold text-white tracking-tight">Readiness Rating</h3>
+                          <p className="text-[13px] sm:text-sm text-slate-400 mt-1">Resume Readiness · Evaluates foundational completeness, formatting, and keyword density</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-2xl sm:text-[26px] font-bold text-white tracking-tight">{atsPercent}</span>
+                          <span className="text-sm sm:text-base text-slate-400 font-semibold"> / 100</span>
+                        </div>
                       </div>
 
-                      {/* Segmented Meter (32 rounded bar pills) */}
-                      <div className="flex items-center justify-between gap-4 pt-1">
-                        <div className="flex items-center gap-1.5 flex-1 overflow-hidden py-1">
-                          {Array.from({ length: 32 }).map((_, i) => {
+                      {/* Horizontal Segmented Readiness Indicator (Image 1 smooth red-to-green gradient) */}
+                      <div className="flex items-center justify-between gap-4 pt-1 relative z-10">
+                        <div className="flex items-center gap-1 sm:gap-1.5 flex-1 overflow-hidden py-1">
+                          {Array.from({ length: totalSegments }).map((_, i) => {
                             const isFilled = i < filledBars;
-                            // Continuous rainbow gradient: 0 = Red (#ef4444), 8 = Orange, 16 = Yellow, 24 = Lime, 31 = Vivid Green
-                            const hue = Math.round((i / 31) * 125);
+                            const segColor = getSegmentColor(i, totalSegments);
                             return (
                               <div
                                 key={i}
-                                className="h-9 md:h-10 flex-1 min-w-[6px] max-w-[11px] rounded-full transition-all duration-300"
+                                className="h-8 sm:h-9 flex-1 min-w-[5px] max-w-[10px] rounded-full transition-all duration-300"
                                 style={{
-                                  backgroundColor: isFilled ? `hsl(${hue}, 95%, 52%)` : '#1e293b',
-                                  boxShadow: isFilled ? `0 0 8px hsla(${hue}, 95%, 52%, 0.55)` : 'none'
+                                  backgroundColor: isFilled ? segColor.color : '#151a2d',
+                                  boxShadow: isFilled ? `0 0 10px ${segColor.glow}` : 'none',
+                                  border: isFilled ? 'none' : '1px solid rgba(255, 255, 255, 0.04)'
                                 }}
                               />
                             );
                           })}
                         </div>
-                        <div className={cn('px-4 py-2.5 rounded-xl border font-bold text-xs shrink-0 shadow-sm tracking-wide', readinessBadgeClass)}>
-                          {readinessLabel}
+                        <div className={cn('px-4 py-1.5 rounded-lg border font-bold text-xs sm:text-sm shrink-0 shadow-sm tracking-wide transition-all', readinessBadgeClass)}>
+                          {displayBadgeLabel}
                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[13px] sm:text-sm text-slate-400 pt-2 relative z-10 border-t border-white/[0.04]">
+                        <span>General resume quality. Not tied to a specific job description.</span>
+                        <button
+                          type="button"
+                          onClick={() => setSearchParams({ tab: 'job-optimize' })}
+                          className="text-purple-400 hover:text-purple-300 font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <span>Match against a Job Description</span>
+                          <span>→</span>
+                        </button>
                       </div>
                     </div>
 
-                    {/* Suggested Actions Card (Exact match to Image 1) */}
+                    {/* Suggested Actions Section (Image 2 Exact Match) */}
                     <div className="space-y-4">
-                      <h3 className="text-base font-bold text-white">Suggested Actions</h3>
+                      <h3 className="text-lg sm:text-[19px] font-bold text-white tracking-tight">Suggested Actions</h3>
 
-                      {/* Action Status Tabs (Image 1 style: Pending 3, Completed 3 [active purple pill], Deleted 0) */}
-                      <div className="flex items-center gap-2">
+                      {/* Action Status Tabs (Image 2 professional design) */}
+                      <div className="inline-flex items-center p-1.5 rounded-2xl border border-[#23293e] bg-[#0c101d] gap-1.5 shadow-inner">
                         <button
                           type="button"
                           onClick={() => setAtsFilterTab('pending')}
                           className={cn(
-                            "px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer",
+                            "px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2.5 transition-all cursor-pointer",
                             atsFilterTab === 'pending'
-                              ? "bg-indigo-600 text-white shadow-md font-bold"
-                              : "bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white"
+                              ? "bg-gradient-to-r from-[#6366f1] to-[#7c3aed] text-white shadow-md shadow-indigo-500/25"
+                              : "text-slate-300 hover:text-white hover:bg-white/[0.04]"
                           )}
                         >
                           <span>Pending</span>
                           <span className={cn(
-                            "w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold",
-                            atsFilterTab === 'pending' ? "bg-white text-indigo-700" : "bg-indigo-950/80 text-indigo-300"
+                            "min-w-[20px] h-[20px] rounded-full text-xs font-bold flex items-center justify-center px-1.5",
+                            atsFilterTab === 'pending' ? "bg-white text-[#6366f1]" : "bg-[#3b1d75] text-[#c4b5fd]"
                           )}>
                             {pendingCount}
                           </span>
@@ -10040,16 +10648,16 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           type="button"
                           onClick={() => setAtsFilterTab('completed')}
                           className={cn(
-                            "px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer",
+                            "px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2.5 transition-all cursor-pointer",
                             atsFilterTab === 'completed'
-                              ? "bg-indigo-600 text-white shadow-md font-bold"
-                              : "bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white"
+                              ? "bg-gradient-to-r from-[#059669] to-[#10b981] text-white shadow-md shadow-emerald-500/25"
+                              : "text-slate-300 hover:text-white hover:bg-white/[0.04]"
                           )}
                         >
                           <span>Completed</span>
                           <span className={cn(
-                            "w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold",
-                            atsFilterTab === 'completed' ? "bg-white text-indigo-700" : "bg-slate-800 text-slate-300"
+                            "min-w-[20px] h-[20px] rounded-full text-xs font-bold flex items-center justify-center px-1.5",
+                            atsFilterTab === 'completed' ? "bg-white text-emerald-700" : "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
                           )}>
                             {completedCount}
                           </span>
@@ -10059,150 +10667,265 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                           type="button"
                           onClick={() => setAtsFilterTab('deleted')}
                           className={cn(
-                            "px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer",
+                            "px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2.5 transition-all cursor-pointer",
                             atsFilterTab === 'deleted'
-                              ? "bg-indigo-600 text-white shadow-md font-bold"
-                              : "bg-slate-900/90 text-slate-400 border border-slate-800 hover:text-white"
+                              ? "bg-[#334155] text-white shadow-md shadow-slate-900/30"
+                              : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                           )}
                         >
                           <span>Deleted</span>
                           <span className={cn(
-                            "w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold",
-                            atsFilterTab === 'deleted' ? "bg-white text-indigo-700" : "bg-slate-800 text-slate-300"
+                            "min-w-[20px] h-[20px] rounded-full text-xs font-bold flex items-center justify-center px-1.5",
+                            atsFilterTab === 'deleted' ? "bg-white text-slate-800" : "bg-slate-800/90 text-slate-400 border border-slate-700"
                           )}>
                             {deletedCount}
                           </span>
                         </button>
                       </div>
 
-                      {/* ── PENDING TAB ── */}
+                      {/* Animated Feedback Banner */}
+                      <AnimatePresence>
+                        {actionFeedbackMessage && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+                            transition={{ duration: 0.25 }}
+                            className={cn(
+                              "px-4 py-3 rounded-2xl border flex items-center justify-between gap-3 shadow-xl backdrop-blur-md",
+                              actionFeedbackMessage.type === 'fix' && "bg-[#181135]/95 border-purple-500/40 text-purple-200 shadow-purple-950/40",
+                              actionFeedbackMessage.type === 'delete' && "bg-[#25121c]/95 border-rose-500/40 text-rose-200 shadow-rose-950/40",
+                              actionFeedbackMessage.type === 'restore' && "bg-[#0d1e35]/95 border-sky-500/40 text-sky-200 shadow-sky-950/40"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs bg-white/10 shrink-0">
+                                {actionFeedbackMessage.type === 'fix' ? '✓' : actionFeedbackMessage.type === 'delete' ? '🗑️' : '↺'}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white tracking-tight truncate">{actionFeedbackMessage.text}</p>
+                                {actionFeedbackMessage.subtext && <p className="text-[11px] text-slate-300 truncate">{actionFeedbackMessage.subtext}</p>}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActionFeedbackMessage(null)}
+                              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* ── PENDING TAB (Image 2 Exact Card Match with improved typography) ── */}
                       {atsFilterTab === 'pending' && (
                         pendingSuggestions.length === 0 ? (
-                          <div className="rounded-2xl border border-slate-800/80 bg-[#0c1020] p-8 text-center text-xs text-slate-400 space-y-2">
-                            <p className="font-bold text-white text-sm">All Suggested Actions Completed! 🎉</p>
-                            <p className="text-slate-400">Your resume satisfies all core ATS structure and content recommendations.</p>
-                          </div>
+                          <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="ats-glass-card p-8 text-center text-xs text-slate-400 space-y-3 shadow-md backdrop-blur-sm"
+                          >
+                            <div className="relative z-10 space-y-3">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#704df7] to-[#5b32e8] text-white flex items-center justify-center mx-auto text-xl shadow-lg shadow-purple-600/35">
+                                🎉
+                              </div>
+                              <p className="font-bold text-white text-base">All Suggested Actions Completed!</p>
+                              <p className="text-slate-400 max-w-sm mx-auto leading-relaxed">
+                                Your resume meets all key ATS requirements. Switch to the <span className="text-purple-300 font-semibold">Completed</span> tab to review all passed recommendations.
+                              </p>
+                            </div>
+                          </motion.div>
                         ) : (
-                          <div className="space-y-3 animate-in fade-in duration-150">
-                            {pendingSuggestions.map(suggestion => (
-                              <div key={suggestion.id} className="rounded-2xl border border-slate-800/80 bg-[#0c1020] p-4 space-y-3 shadow-xl hover:border-slate-700/80 transition-all">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="space-y-1.5 flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className={cn(
-                                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold',
-                                        severityBadge(suggestion.severity)
-                                      )}>
-                                        {severityIcon(suggestion.severity)} {severityLabel(suggestion.severity)}
-                                      </span>
-                                      <span className="text-[10px] text-slate-500 font-medium">{suggestion.category}</span>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-white leading-snug">{suggestion.title}</h4>
-                                    <p className="text-xs text-slate-400 leading-relaxed">{suggestion.reason}</p>
-                                  </div>
+                          <div className="space-y-4">
+                            <AnimatePresence mode="popLayout">
+                              {pendingSuggestions.map(suggestion => (
+                                <motion.div
+                                  key={suggestion.id}
+                                  layout
+                                  initial={{ opacity: 0, y: -20, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{
+                                    opacity: 0,
+                                    y: -60,
+                                    scale: 0.9,
+                                    transition: { duration: 0.25, ease: "easeOut" }
+                                  }}
+                                  transition={{ duration: 0.24, ease: "easeOut" }}
+                                  className="ats-glass-card p-5 sm:p-6 space-y-3.5 group"
+                                >
+                                  <div className="flex items-start justify-between gap-4 relative z-10">
+                                    {/* Left: Category chip, Status Icon, Title, Description, Reason button */}
+                                    <div className="space-y-2.5 flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-md bg-[#181d33] border border-purple-500/20 text-purple-300 text-xs font-semibold uppercase tracking-wider">
+                                          {suggestion.category}
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium">
+                                          {suggestion.weight} pts
+                                        </span>
+                                      </div>
 
-                                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                    {suggestion.navigateTo && (
+                                      <div className="flex items-start gap-2.5">
+                                        <span className="shrink-0 mt-1 flex items-center justify-center">
+                                          <X className="w-4 h-4 text-rose-500 stroke-[2.5]" />
+                                        </span>
+                                        <h4 className="text-base sm:text-[17px] font-bold text-white leading-snug tracking-tight">
+                                          {suggestion.pendingTitle || suggestion.title}
+                                        </h4>
+                                      </div>
+
+                                      <p className="text-[14px] sm:text-[15px] text-slate-300 leading-relaxed font-normal pl-6">
+                                        {suggestion.reason}
+                                      </p>
+
+                                      {(suggestion.detailedReason || suggestion.recruiterImpact) && (
+                                        <p className="text-[13px] text-slate-400 pl-6 leading-normal flex items-start gap-1.5 pt-0.5">
+                                          <span className="text-purple-400 font-semibold shrink-0">Impact:</span>
+                                          <span>{suggestion.detailedReason || suggestion.recruiterImpact}</span>
+                                        </p>
+                                      )}
+
+                                      <div className="pt-1 pl-6">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedReasonSuggestion(suggestion)}
+                                          className="px-3 py-1.5 rounded-lg bg-[#141829] border border-[#23293e] hover:border-slate-600 text-slate-300 hover:text-white text-xs sm:text-[13px] font-medium inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                        >
+                                          <span className="font-medium">Reason</span>
+                                          <span className="text-slate-400 text-[10px] w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center font-normal">?</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Right: Fix Button + Preview Icon Button + Dismiss */}
+                                    <div className="flex items-center gap-2.5 shrink-0 pt-0.5">
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          setSearchParams({ tab: 'editor' });
-                                          const nav = suggestion.navigateTo;
-                                          if (nav === 'personal-info') {
-                                            setIsEditingPersonalInfo(true);
-                                          } else if (nav === 'summary') {
-                                            setIsEditingSummary(true);
-                                          } else if (nav === 'experience') {
-                                            if (resumeData && resumeData.experience.length > 0) {
-                                              handleStartEditExperience(resumeData.experience[0].id);
-                                            } else {
-                                              handleAddNewExperience();
-                                            }
-                                          } else if (nav === 'education') {
-                                            if (resumeData && resumeData.education.length > 0) {
-                                              handleStartEditEducation(resumeData.education[0].id);
-                                            } else {
-                                              handleAddNewEducation();
-                                            }
-                                          } else if (nav === 'projects') {
-                                            if (resumeData && resumeData.projects.length > 0) {
-                                              handleStartEditProject(resumeData.projects[0].id);
-                                            } else {
-                                              handleAddNewProject();
-                                            }
-                                          } else if (nav === 'skills') {
-                                            handleStartEditSkills();
-                                          }
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                        onClick={() => handleFixAction(suggestion)}
+                                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#6e46e5] to-[#7f54fe] hover:from-[#7c54f4] hover:to-[#8c62ff] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-[0_2px_12px_rgba(110,70,229,0.35)] hover:shadow-[0_4px_18px_rgba(110,70,229,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                                       >
-                                        Fix →
+                                        <span className="font-semibold">Fix</span>
+                                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                                       </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setDeletedSuggestionIds(prev => new Set([...prev, suggestion.id]));
-                                        showToast({ type: 'info', title: 'Suggestion dismissed', message: 'Moved to Deleted tab.' });
-                                      }}
-                                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
-                                      title="Dismiss suggestion"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
 
-                                <div className="pt-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedReasonSuggestion(suggestion)}
-                                    className="px-2.5 py-1 rounded-lg bg-[#141b30] border border-slate-700/60 hover:border-slate-600 text-slate-300 hover:text-white text-xs font-medium inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                                  >
-                                    <span>Reason</span>
-                                    <span className="text-slate-400 text-[10px] w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center font-bold">?</span>
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePreviewAction(suggestion)}
+                                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141829] border border-[#23293e] hover:border-purple-500/50 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-xs"
+                                        title="View section in resume preview"
+                                      >
+                                        <Eye className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDismissSuggestion(suggestion.id, suggestion.pendingTitle || suggestion.title)}
+                                        className="opacity-0 group-hover:opacity-100 w-0 group-hover:w-8 h-8 rounded-lg bg-[#141829] border border-[#23293e] hover:border-rose-500/50 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all duration-200 cursor-pointer overflow-hidden"
+                                        title="Dismiss recommendation (move to Deleted tab)"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                           </div>
                         )
                       )}
 
-                      {/* ── COMPLETED TAB (Exact match to Image 1: Individual cards with purple checkmark and Reason button) ── */}
+                      {/* ── COMPLETED TAB ── */}
                       {atsFilterTab === 'completed' && (
                         completedSuggestions.length === 0 ? (
-                          <div className="rounded-2xl border border-slate-800/80 bg-[#0c1020] p-6 text-center text-xs text-slate-400">
-                            <p>No checks passed yet. Start filling in your resume.</p>
-                          </div>
+                          <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="ats-glass-card p-8 text-center text-xs text-slate-400 space-y-2 backdrop-blur-sm"
+                          >
+                            <div className="relative z-10 space-y-2">
+                              <p className="font-bold text-white text-sm">No completed suggestions yet.</p>
+                              <p className="text-slate-400">Resolve recommendations in the Pending tab by adding valid resume content to see them verified here.</p>
+                            </div>
+                          </motion.div>
                         ) : (
-                          <div className="space-y-3 animate-in fade-in duration-150">
-                            {completedSuggestions.map(suggestion => (
-                              <div
-                                key={suggestion.id}
-                                className="rounded-2xl border border-slate-800/80 bg-[#0c1020] p-4 transition-all hover:border-slate-700/80 shadow-lg space-y-2.5"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                                    <Check className="w-3 h-3 text-white stroke-[3]" />
+                          <div className="space-y-4">
+                            <AnimatePresence mode="popLayout">
+                              {completedSuggestions.map(suggestion => (
+                                <motion.div
+                                  key={suggestion.id}
+                                  layout
+                                  initial={{ opacity: 0, y: -20, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{
+                                    opacity: 0,
+                                    y: -60,
+                                    scale: 0.9,
+                                    transition: { duration: 0.25, ease: "easeOut" }
+                                  }}
+                                  transition={{ duration: 0.24, ease: "easeOut" }}
+                                  className="ats-glass-card p-5 sm:p-6 space-y-3.5 group"
+                                >
+                                  <div className="flex items-start justify-between gap-4 relative z-10">
+                                    <div className="space-y-2.5 flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-md bg-[#122e23] border border-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider">
+                                          {suggestion.category}
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium">
+                                          {suggestion.weight} pts
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-start gap-2.5">
+                                        <span className="shrink-0 mt-1 flex items-center justify-center">
+                                          <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                                        </span>
+                                        <h4 className="text-base sm:text-[17px] font-bold text-white leading-snug tracking-tight">
+                                          {suggestion.completedTitle || suggestion.title}
+                                        </h4>
+                                      </div>
+
+                                      <p className="text-[14px] sm:text-[15px] text-slate-300 leading-relaxed font-normal pl-6">
+                                        {suggestion.completedDescription || suggestion.reason}
+                                      </p>
+
+                                      {(suggestion.detailedReason || suggestion.recruiterImpact) && (
+                                        <p className="text-[13px] text-slate-400 pl-6 leading-normal flex items-start gap-1.5 pt-0.5">
+                                          <span className="text-emerald-400 font-semibold shrink-0">Impact:</span>
+                                          <span>{suggestion.detailedReason || suggestion.recruiterImpact}</span>
+                                        </p>
+                                      )}
+
+                                      <div className="pt-1 pl-6">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedReasonSuggestion(suggestion)}
+                                          className="px-3 py-1.5 rounded-lg bg-[#141829] border border-[#23293e] hover:border-slate-600 text-slate-300 hover:text-white text-xs sm:text-[13px] font-medium inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                        >
+                                          <span className="font-medium">Reason</span>
+                                          <span className="text-slate-400 text-[10px] w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center font-normal">?</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2.5 shrink-0 pt-0.5">
+                                      <span className="px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs">
+                                        <Check className="w-3.5 h-3.5 stroke-[3]" /> Passed
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePreviewAction(suggestion)}
+                                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141829] border border-[#23293e] hover:border-purple-500/50 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-xs"
+                                        title="View section in resume preview"
+                                      >
+                                        <Eye className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-bold text-white tracking-tight leading-snug">{suggestion.title}</h4>
-                                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{suggestion.reason}</p>
-                                  </div>
-                                </div>
-                                <div className="pl-8">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedReasonSuggestion(suggestion)}
-                                    className="px-2.5 py-1 rounded-lg bg-[#141b30] border border-slate-700/60 hover:border-slate-600 text-slate-300 hover:text-white text-xs font-medium inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                                  >
-                                    <span>Reason</span>
-                                    <span className="text-slate-400 text-[10px] w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center font-bold">?</span>
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                           </div>
                         )
                       )}
@@ -10210,35 +10933,87 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       {/* ── DELETED TAB ── */}
                       {atsFilterTab === 'deleted' && (
                         deletedSuggestions.length === 0 ? (
-                          <div className="rounded-2xl border border-slate-800/80 bg-[#0c1020] p-6 text-center text-xs text-slate-400">
-                            <p>No dismissed suggestions.</p>
-                          </div>
+                          <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="ats-glass-card p-8 text-center text-xs text-slate-400 space-y-2 backdrop-blur-sm"
+                          >
+                            <div className="relative z-10 space-y-2">
+                              <p className="font-bold text-white text-sm">No dismissed suggestions.</p>
+                              <p className="text-slate-400">Suggestions you dismiss from Pending will appear here and can be restored at any time without altering resume content.</p>
+                            </div>
+                          </motion.div>
                         ) : (
-                          <div className="space-y-2.5 animate-in fade-in duration-150">
-                            {deletedSuggestions.map(suggestion => (
-                              <div key={suggestion.id} className="rounded-2xl border border-slate-800/60 bg-[#0c1020] p-4 opacity-60 space-y-1.5">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] text-slate-400 font-medium line-through leading-snug">{suggestion.title}</p>
-                                    <p className="text-[10px] text-slate-600 mt-0.5">{suggestion.category}</p>
+                          <div className="space-y-4">
+                            <AnimatePresence mode="popLayout">
+                              {deletedSuggestions.map(suggestion => (
+                                <motion.div
+                                  key={suggestion.id}
+                                  layout
+                                  initial={{ opacity: 0, y: -20, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{
+                                    opacity: 0,
+                                    y: -60,
+                                    scale: 0.9,
+                                    transition: { duration: 0.25, ease: "easeOut" }
+                                  }}
+                                  transition={{ duration: 0.24, ease: "easeOut" }}
+                                  className="ats-glass-card p-5 sm:p-6 space-y-3.5 group"
+                                >
+                                  <div className="flex items-start justify-between gap-4 relative z-10">
+                                    <div className="space-y-2.5 flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-md bg-[#1e2337] border border-slate-700/50 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                          {suggestion.category}
+                                        </span>
+                                        <span className="text-xs text-slate-500 font-medium">
+                                          {suggestion.weight} pts
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-start gap-2.5">
+                                        <span className="shrink-0 mt-1 flex items-center justify-center">
+                                          <Trash2 className="w-4 h-4 text-slate-500 stroke-[2]" />
+                                        </span>
+                                        <h4 className="text-base sm:text-[17px] font-semibold text-slate-400 line-through leading-snug tracking-tight">
+                                          {suggestion.pendingTitle || suggestion.title}
+                                        </h4>
+                                      </div>
+
+                                      <p className="text-[14px] sm:text-[15px] text-slate-500 leading-relaxed font-normal pl-6">
+                                        {suggestion.reason}
+                                      </p>
+
+                                      <div className="pt-1 pl-6">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedReasonSuggestion(suggestion)}
+                                          className="px-3 py-1.5 rounded-lg bg-[#141829] border border-[#23293e] hover:border-slate-600 text-slate-400 hover:text-slate-200 text-xs sm:text-[13px] font-medium inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                        >
+                                          <span className="font-medium">Reason</span>
+                                          <span className="text-slate-400 text-[10px] w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center font-normal">?</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2.5 shrink-0 pt-0.5">
+                                      <span className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs sm:text-sm font-semibold">
+                                        Dismissed
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRestoreSuggestion(suggestion.id, suggestion.pendingTitle || suggestion.title)}
+                                        className="px-4 py-2 rounded-xl border border-purple-500/40 bg-purple-500/20 hover:bg-purple-600 text-purple-200 hover:text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                      >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                        <span>Restore</span>
+                                      </button>
+                                    </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeletedSuggestionIds(prev => {
-                                        const next = new Set(prev);
-                                        next.delete(suggestion.id);
-                                        return next;
-                                      });
-                                      showToast({ type: 'success', title: 'Suggestion restored', message: 'Moved back to Pending.' });
-                                    }}
-                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold px-2 py-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 transition-colors cursor-pointer shrink-0"
-                                  >
-                                    Restore
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                           </div>
                         )
                       )}
@@ -10246,6 +11021,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                   </div>
                 );
               })()}
+
 
               {/* ── TAB 4: OPTIMIZE FOR JOB ────────────────────────── */}
               {activeTab === 'job-optimize' && (
@@ -12323,6 +13099,7 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                   )}
                 </div>
               )}
+              </div>
             </div>
 
             {/* ── SPLITTER & RESIZER (Between Two Panes - Exact Image 1 Match) ── */}
@@ -12908,7 +13685,15 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     };
 
                     return (
-                      <div className="resume-candidate-header text-center pb-2 font-serif" data-section="candidate-header">
+                      <div
+                        className={cn(
+                          "resume-candidate-header text-center pb-2 font-serif transition-all duration-300",
+                          previewHighlightedSection === 'personal-info' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                        )}
+                        data-section="candidate-header"
+                        data-preview-section="personal-info"
+                        id="preview-section-personal-info"
+                      >
                         {isPreview ? (
                           isNameFilled && (
                             <h1
@@ -13376,19 +14161,30 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                     const isPreview = viewMode === 'preview';
 
                     // Reusable global check: if preview mode and section has no genuine user content, omit completely
-                    if (isPreview && !hasMeaningfulContent(sectionId, resumeData)) {
+                    // (Unless the section is currently being previewed via the Eye button)
+                    if (isPreview && !hasMeaningfulContent(sectionId, resumeData) && previewHighlightedSection !== sectionId) {
                       return null;
                     }
 
                     // 1. PROFESSIONAL SUMMARY (Image 1, 2, 3, 4 Match)
                     if (sectionId === 'summary') {
-                      if (isPreview && !hasMeaningfulSummary(resumeData.summary)) {
+                      if (isPreview && !hasMeaningfulSummary(resumeData.summary) && previewHighlightedSection !== 'summary') {
                         return null;
                       }
                       const hasSummary = Boolean(resumeData.summary?.trim());
 
                       return (
-                        <section key="summary" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="summary"
+                          data-section="summary"
+                          data-preview-section="summary"
+                          id="preview-section-summary"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'summary' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -13422,20 +14218,32 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 2. WORK EXPERIENCE (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'experience') {
-                      if (isPreview && !hasMeaningfulExperience(resumeData.experience)) {
+                      if (isPreview && !hasMeaningfulExperience(resumeData.experience) && previewHighlightedSection !== 'experience') {
                         return null;
                       }
 
                       const visibleExperience = isPreview
-                        ? filterMeaningfulExperience(resumeData.experience)
+                        ? (filterMeaningfulExperience(resumeData.experience).length > 0
+                          ? filterMeaningfulExperience(resumeData.experience)
+                          : (previewHighlightedSection === 'experience' ? (resumeData.experience || []) : []))
                         : (resumeData.experience || []).filter((exp) => exp.visible !== false);
 
-                      if (isPreview && visibleExperience.length === 0) {
+                      if (isPreview && visibleExperience.length === 0 && previewHighlightedSection !== 'experience') {
                         return null;
                       }
 
                       return (
-                        <section key="experience" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="experience"
+                          data-section="experience"
+                          data-preview-section="experience"
+                          id="preview-section-experience"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'experience' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -13609,21 +14417,33 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 3. EDUCATION (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'education') {
-                      if (isPreview && !hasMeaningfulEducation(resumeData.education)) {
+                      if (isPreview && !hasMeaningfulEducation(resumeData.education) && previewHighlightedSection !== 'education') {
                         return null;
                       }
 
                       const visibleEducation = isPreview
-                        ? filterMeaningfulEducation(resumeData.education)
+                        ? (filterMeaningfulEducation(resumeData.education).length > 0
+                          ? filterMeaningfulEducation(resumeData.education)
+                          : (previewHighlightedSection === 'education' ? (resumeData.education || []) : []))
                         : (resumeData.education || []).filter((edu) => edu.visible !== false);
 
-                      if (isPreview && visibleEducation.length === 0) {
+                      if (isPreview && visibleEducation.length === 0 && previewHighlightedSection !== 'education') {
                         return null;
                       }
 
                       if (isBulky) {
                         return (
-                          <section key="education" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                          <section
+                            key="education"
+                            data-section="education"
+                            data-preview-section="education"
+                            id="preview-section-education"
+                            className={cn(
+                              "transition-all duration-300",
+                              previewHighlightedSection === 'education' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                            )}
+                            style={{ marginTop: resumeData.spacing.sectionGap }}
+                          >
                             <h2
                               className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                               style={{
@@ -13800,7 +14620,17 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                       }
 
                       return (
-                        <section key="education" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="education"
+                          data-section="education"
+                          data-preview-section="education"
+                          id="preview-section-education"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'education' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -13975,20 +14805,32 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 4. PROJECTS (Images 1, 2, 3, 4 Match)
                     if (sectionId === 'projects') {
-                      if (isPreview && !hasMeaningfulProjects(resumeData.projects)) {
+                      if (isPreview && !hasMeaningfulProjects(resumeData.projects) && previewHighlightedSection !== 'projects') {
                         return null;
                       }
 
                       const visibleProjects = isPreview
-                        ? filterMeaningfulProjects(resumeData.projects)
+                        ? (filterMeaningfulProjects(resumeData.projects).length > 0
+                          ? filterMeaningfulProjects(resumeData.projects)
+                          : (previewHighlightedSection === 'projects' ? (resumeData.projects || []) : []))
                         : (resumeData.projects || []).filter((p) => p.visible !== false);
 
-                      if (isPreview && visibleProjects.length === 0) {
+                      if (isPreview && visibleProjects.length === 0 && previewHighlightedSection !== 'projects') {
                         return null;
                       }
 
                       return (
-                        <section key="projects" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="projects"
+                          data-section="projects"
+                          data-preview-section="projects"
+                          id="preview-section-projects"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'projects' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -14199,12 +15041,22 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
                         (cc) => isMeaningfulText(cc.skills)
                       );
 
-                      if (isPreview && filledSkillCategories.length === 0 && customCategories.length === 0) {
+                      if (isPreview && filledSkillCategories.length === 0 && customCategories.length === 0 && previewHighlightedSection !== 'skills') {
                         return null;
                       }
 
                       return (
-                        <section key="skills" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="skills"
+                          data-section="skills"
+                          data-preview-section="skills"
+                          id="preview-section-skills"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'skills' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -14267,20 +15119,32 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
 
                     // 6. CERTIFICATIONS
                     if (sectionId === 'certifications') {
-                      if (isPreview && !hasMeaningfulCertifications(resumeData.certifications)) {
+                      if (isPreview && !hasMeaningfulCertifications(resumeData.certifications) && previewHighlightedSection !== 'certifications') {
                         return null;
                       }
 
                       const visibleCerts = isPreview
-                        ? filterMeaningfulCertifications(resumeData.certifications)
+                        ? (filterMeaningfulCertifications(resumeData.certifications).length > 0
+                          ? filterMeaningfulCertifications(resumeData.certifications)
+                          : (previewHighlightedSection === 'certifications' ? (resumeData.certifications || []) : []))
                         : (resumeData.certifications || []).filter((c: any) => c.visible !== false);
 
-                      if (isPreview && visibleCerts.length === 0) {
+                      if (isPreview && visibleCerts.length === 0 && previewHighlightedSection !== 'certifications') {
                         return null;
                       }
 
                       return (
-                        <section key="certifications" style={{ marginTop: resumeData.spacing.sectionGap }}>
+                        <section
+                          key="certifications"
+                          data-section="certifications"
+                          data-preview-section="certifications"
+                          id="preview-section-certifications"
+                          className={cn(
+                            "transition-all duration-300",
+                            previewHighlightedSection === 'certifications' && "ring-2 ring-purple-500/90 ring-offset-2 ring-offset-white rounded-xl bg-purple-500/[0.04] shadow-[0_0_24px_rgba(112,77,247,0.22)] p-2 -m-2"
+                          )}
+                          style={{ marginTop: resumeData.spacing.sectionGap }}
+                        >
                           <h2
                             className={cn('font-extrabold uppercase tracking-wide border-b pb-0.5 mb-1.5 font-serif', headingColorClass)}
                             style={{
@@ -16062,123 +16926,161 @@ Return ONLY a valid JSON object in this format (no markdown fences, no conversat
         </div>
       )}
 
-      {/* ─── ATS SUGGESTION REASON MODAL (Image 1 Reason Popup) ────────── */}
-      {selectedReasonSuggestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700/80 bg-[#0c1020] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                  selectedReasonSuggestion.passing
-                    ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                )}>
-                  {selectedReasonSuggestion.passing ? (
-                    <Check className="w-5 h-5 text-indigo-400 stroke-[2.5]" />
-                  ) : (
-                    <HelpCircle className="w-5 h-5 text-amber-400" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">{selectedReasonSuggestion.title}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] text-slate-400 font-medium">{selectedReasonSuggestion.category}</span>
-                    <span className="text-slate-600">•</span>
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-bold border",
+      {/* ─── ATS SUGGESTION REASON MODAL (Image 2 Ultra-Premium Match with Top-Edge Specular Reflection) ─── */}
+      {selectedReasonSuggestion && (() => {
+        const reasonDetails = getActionReasonDetails(selectedReasonSuggestion);
+        return (
+          <div
+            onClick={() => setSelectedReasonSuggestion(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label={selectedReasonSuggestion.title || selectedReasonSuggestion.pendingTitle}
+              className="relative w-full max-w-[540px] rounded-3xl border border-[#23293e] bg-[#0c101d] p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.85)] space-y-5 animate-in zoom-in-95 duration-200 overflow-hidden text-slate-200"
+              style={{ fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+            >
+              {/* Subtle white specular reflection ONLY along the top border (Image 2 glass reflection) */}
+              <div
+                className="absolute top-0 inset-x-0 h-[1.5px] pointer-events-none z-20"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0.15) 85%, transparent 100%)'
+                }}
+              />
+              {/* Soft specular ambient glow centered on the top edge */}
+              <div
+                className="absolute -top-1 left-1/2 -translate-x-1/2 w-48 h-2 pointer-events-none z-20 opacity-60 blur-[3px]"
+                style={{
+                  background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.2) 60%, transparent 100%)'
+                }}
+              />
+              {/* Very soft violet illumination behind the upper edge */}
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-32 bg-purple-600/10 rounded-full blur-3xl pointer-events-none z-10" />
+
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  {/* Circle icon badge (warm dark amber circle with bold ? or green check if passing) */}
+                  <div
+                    className={cn(
+                      "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner",
                       selectedReasonSuggestion.passing
-                        ? "bg-emerald-950/50 text-emerald-300 border-emerald-500/30"
-                        : "bg-amber-950/50 text-amber-300 border-amber-500/30"
-                    )}>
-                      {selectedReasonSuggestion.passing ? `Completed (+${selectedReasonSuggestion.weight}pts)` : `Action Required (-${selectedReasonSuggestion.weight}pts)`}
-                    </span>
+                        ? "bg-[#0e2a22] text-emerald-400 border-emerald-500/30"
+                        : "bg-[#271d15] text-[#f59e0b] border-amber-600/30"
+                    )}
+                  >
+                    {selectedReasonSuggestion.passing ? (
+                      <Check className="w-5 h-5 text-emerald-400 stroke-[2.5]" />
+                    ) : (
+                      <span className="text-[#f59e0b] font-bold text-lg select-none">?</span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold text-white tracking-tight leading-snug truncate">
+                      {selectedReasonSuggestion.title || selectedReasonSuggestion.pendingTitle}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-xs text-slate-400 font-medium">
+                        {reasonDetails.sectionDisplayName}
+                      </span>
+                      <span className="text-slate-600 text-xs">•</span>
+                      <span
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shadow-xs inline-flex items-center gap-1",
+                          selectedReasonSuggestion.passing
+                            ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/35"
+                            : "bg-[#2b1e14] text-[#f59e0b] border-[#78350f]/60"
+                        )}
+                      >
+                        {selectedReasonSuggestion.passing
+                          ? (selectedReasonSuggestion.weight > 0
+                              ? `Completed (+${selectedReasonSuggestion.weight}pts)`
+                              : 'Completed')
+                          : (selectedReasonSuggestion.weight > 0
+                              ? `Action Required (-${selectedReasonSuggestion.weight}pts)`
+                              : 'Action Required')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedReasonSuggestion(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Content */}
-            <div className="space-y-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-[#141b30] border border-slate-700/60 space-y-1.5">
-                <h4 className="font-bold text-indigo-300 flex items-center gap-1.5 text-xs">
-                  <span>🎯</span> What ATS Systems Look For
-                </h4>
-                <p className="text-slate-300 leading-relaxed">
-                  {selectedReasonSuggestion.detailedReason || selectedReasonSuggestion.reason}
-                </p>
-              </div>
-
-              {selectedReasonSuggestion.recruiterImpact && (
-                <div className="p-3.5 rounded-xl bg-[#0f172a] border border-slate-800 space-y-1.5">
-                  <h4 className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
-                    <span>👥</span> Recruiter & Hiring Impact
-                  </h4>
-                  <p className="text-slate-400 leading-relaxed">
-                    {selectedReasonSuggestion.recruiterImpact}
-                  </p>
-                </div>
-              )}
-
-              {selectedReasonSuggestion.proTip && (
-                <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-1.5">
-                  <h4 className="font-bold text-purple-300 flex items-center gap-1.5 text-xs">
-                    <span>💡</span> ATS Best Practice & Pro Tip
-                  </h4>
-                  <p className="text-purple-200 leading-relaxed">
-                    {selectedReasonSuggestion.proTip}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setSelectedReasonSuggestion(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-              {!selectedReasonSuggestion.passing && selectedReasonSuggestion.navigateTo && (
+                {/* Close Button at upper-right */}
                 <button
                   type="button"
-                  onClick={() => {
-                    const nav = selectedReasonSuggestion.navigateTo;
-                    setSelectedReasonSuggestion(null);
-                    setSearchParams({ tab: 'editor' });
-                    if (nav === 'personal-info') setIsEditingPersonalInfo(true);
-                    else if (nav === 'summary') setIsEditingSummary(true);
-                    else if (nav === 'experience') {
-                      if (resumeData && resumeData.experience.length > 0) handleStartEditExperience(resumeData.experience[0].id);
-                      else handleAddNewExperience();
-                    } else if (nav === 'education') {
-                      if (resumeData && resumeData.education.length > 0) handleStartEditEducation(resumeData.education[0].id);
-                      else handleAddNewEducation();
-                    } else if (nav === 'projects') {
-                      if (resumeData && resumeData.projects.length > 0) handleStartEditProject(resumeData.projects[0].id);
-                      else handleAddNewProject();
-                    } else if (nav === 'skills') handleStartEditSkills();
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                  onClick={() => setSelectedReasonSuggestion(null)}
+                  aria-label="Close dialog"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white bg-[#191f32] hover:bg-[#252c44] border border-slate-700/60 transition-all cursor-pointer shrink-0"
                 >
-                  <span>Fix This Section</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
-              )}
+              </div>
+
+              {/* Content Cards */}
+              <div className="space-y-3.5 text-xs relative z-10">
+                {/* Card 1: What ATS Systems Look For */}
+                <div className="p-4 sm:p-4.5 rounded-2xl bg-[#121626] border border-slate-800/80 space-y-1.5 shadow-xs">
+                  <h4 className="font-bold text-indigo-300 flex items-center gap-2 text-xs">
+                    <span className="text-sm">🎯</span> <span>What ATS Systems Look For</span>
+                  </h4>
+                  <p className="text-slate-300 leading-relaxed text-xs font-normal">
+                    {reasonDetails.whatAtsLooksFor}
+                  </p>
+                </div>
+
+                {/* Card 2: Recruiter & Hiring Impact */}
+                <div className="p-4 sm:p-4.5 rounded-2xl bg-[#121626] border border-slate-800/80 space-y-1.5 shadow-xs">
+                  <h4 className="font-bold text-purple-300 flex items-center gap-2 text-xs">
+                    <span className="text-sm">👥</span> <span>Recruiter & Hiring Impact</span>
+                  </h4>
+                  <p className="text-slate-300 leading-relaxed text-xs font-normal">
+                    {reasonDetails.recruiterImpact}
+                  </p>
+                </div>
+
+                {/* Card 3: ATS Best Practice & Pro Tip (restrained violet-tinted background matching Image 2) */}
+                <div className="p-4 sm:p-4.5 rounded-2xl bg-[#1b1535]/80 border border-purple-500/35 space-y-1.5 shadow-[inset_0_1px_1px_rgba(168,85,247,0.15)]">
+                  <h4 className="font-bold text-amber-300 flex items-center gap-2 text-xs">
+                    <span className="text-sm">💡</span> <span>ATS Best Practice & Pro Tip</span>
+                  </h4>
+                  <p className="text-purple-100 leading-relaxed text-xs font-normal">
+                    {reasonDetails.proTip}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800/80 relative z-10">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReasonSuggestion(null)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-[#191f32] hover:bg-[#232b45] border border-slate-700/60 transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+                {!selectedReasonSuggestion.passing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sugg = selectedReasonSuggestion;
+                      setSelectedReasonSuggestion(null);
+                      handleFixAction(sugg);
+                    }}
+                    className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#6e46e5] to-[#7f54fe] hover:from-[#7c54f4] hover:to-[#8c62ff] shadow-lg shadow-purple-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Fix This Section</span>
+                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+
 
       {/* ─── CUSTOM SCROLLBAR & PRINT CSS STYLES ──────────────────── */}
       <style>{`

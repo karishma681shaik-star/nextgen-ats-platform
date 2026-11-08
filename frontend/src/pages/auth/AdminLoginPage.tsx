@@ -105,7 +105,7 @@ export const AdminLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-center relative py-12 px-4 sm:px-6 lg:px-8 selection:bg-emerald-500 selection:text-white overflow-x-hidden">
       <BackgroundEffects mode="auth" role="admin" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 space-y-6">

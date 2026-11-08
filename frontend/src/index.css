@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -110,6 +112,33 @@
   100% { border-color: rgba(99,102,241,0.3); box-shadow: 0 0 0 rgba(99,102,241,0); }
 }
 
+@keyframes borderShineSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lightSweepHorizontal {
+  0% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(350%);
+    opacity: 0;
+  }
+}
+
+
 @layer base {
   :root {
     --bg-primary: #030712;
@@ -123,8 +152,11 @@
   body {
     background-color: var(--bg-primary);
     color: #f8fafc;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
 
@@ -339,6 +371,112 @@
     z-index: 10;
   }
 
+  /* ============================================================
+     IMAGE 1 SIGNATURE PURPLE TOP BORDER SHINE
+     Matches the crisp, intense specular luminous top edge from Image 1
+     ============================================================ */
+  .card-border-shine-image1 {
+    position: relative;
+    border-radius: 1rem;
+    border: 1px solid rgba(168, 85, 247, 0.32);
+    background: 
+      radial-gradient(ellipse 70% 80px at 50% 0%, rgba(147, 51, 234, 0.18) 0%, transparent 70%),
+      linear-gradient(180deg, #101428 0%, #060914 100%);
+    box-shadow: 
+      0 0 25px rgba(147, 51, 234, 0.14),
+      0 14px 40px -10px rgba(0, 0, 0, 0.85);
+  }
+
+  .card-border-shine-image1::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 4%;
+    right: 4%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(147, 51, 234, 0.35) 10%,
+      rgba(192, 132, 252, 0.9) 30%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(192, 132, 252, 0.9) 70%,
+      rgba(147, 51, 234, 0.35) 90%,
+      transparent 100%
+    );
+    box-shadow: 
+      0 0 8px 1px rgba(255, 255, 255, 0.9),
+      0 0 16px 2px rgba(192, 132, 252, 0.75),
+      0 0 28px 4px rgba(147, 51, 234, 0.45);
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 25;
+  }
+
+  .card-border-shine-image1::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.12) 0%, transparent 100%);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .input-border-shine-image1 {
+    position: relative;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(168, 85, 247, 0.28);
+    background: linear-gradient(180deg, #101428 0%, #0a0d1d 100%);
+    box-shadow: 
+      0 0 18px rgba(147, 51, 234, 0.12),
+      0 6px 20px -6px rgba(0, 0, 0, 0.7);
+  }
+
+  .input-border-shine-image1::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 6%;
+    right: 6%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(147, 51, 234, 0.35) 15%,
+      rgba(192, 132, 252, 0.9) 35%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(192, 132, 252, 0.9) 65%,
+      rgba(147, 51, 234, 0.35) 85%,
+      transparent 100%
+    );
+    box-shadow: 
+      0 0 6px 1px rgba(255, 255, 255, 0.9),
+      0 0 14px 2px rgba(192, 132, 252, 0.7),
+      0 0 24px 3px rgba(147, 51, 234, 0.4);
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 25;
+  }
+
+  .input-border-shine-image1::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.10) 0%, transparent 100%);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .card-upper-edge-luminous {
       transition: none !important;
@@ -540,6 +678,37 @@
     line-height: 0.85;
     letter-spacing: -0.02em;
   }
+
+  /* ── Ultra-Premium Border Shine & Card Glow System ── */
+  .animate-border-spin {
+    animation: borderShineSpin 10s linear infinite;
+  }
+
+  .animate-light-sweep {
+    animation: lightSweepHorizontal 6s ease-in-out infinite;
+  }
+
+  .ultra-border-shine {
+    position: relative;
+    border-radius: 1rem;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(168, 85, 247, 0.35) 30%, rgba(99, 102, 241, 0.2) 65%, rgba(255, 255, 255, 0.08) 100%);
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 20px 50px -10px rgba(0, 0, 0, 0.75),
+      0 0 40px -10px rgba(124, 58, 237, 0.28);
+  }
+
+  .specular-rim-glow {
+    position: absolute;
+    inset-x: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 30%, rgba(216, 180, 254, 0.9) 50%, rgba(129, 140, 248, 0.6) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
 
   /* ── SHORTLISTED Stamp ── */
   .stamp-animation {
@@ -794,6 +963,86 @@
 
 .animate-star-twinkle {
   animation: starTwinkle 2.5s ease-in-out infinite;
+}
+
+/* ─── CONTINUOUS CORNER STAR TWINKLE EFFECT (ALL PAGES) ─── */
+.corner-star-grid {
+  background-image: radial-gradient(circle, rgba(165, 180, 252, 0.42) 1.75px, transparent 1.75px);
+  background-size: 14px 14px;
+}
+
+@keyframes cornerStarBlink {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(0.85);
+    box-shadow: 0 0 0px transparent;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.6);
+    box-shadow: 0 0 8px 2px rgba(192, 132, 252, 0.95), 0 0 16px 4px rgba(129, 140, 248, 0.75);
+  }
+}
+
+@keyframes cornerStarPulseSlow {
+  0%, 100% {
+    opacity: 0.18;
+    transform: scale(0.8);
+    box-shadow: 0 0 0px transparent;
+  }
+  30% {
+    opacity: 0.9;
+    transform: scale(1.4);
+    box-shadow: 0 0 6px 1px rgba(168, 85, 247, 0.9);
+  }
+  60% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1.65);
+    box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.95), 0 0 18px 5px rgba(192, 132, 252, 0.85);
+  }
+}
+
+@keyframes cornerStarShimmer {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(0.88);
+    box-shadow: 0 0 0px transparent;
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.5);
+    box-shadow: 0 0 8px 2px rgba(103, 232, 249, 0.95), 0 0 15px 4px rgba(129, 140, 248, 0.75);
+  }
+}
+
+@keyframes cornerStarFlare {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.4) rotate(90deg);
+  }
+}
+
+/* ─── RESUME NAME UNDERLINE ON CURSOR HOVER ─── */
+.resume-name-target {
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease-in-out;
+}
+
+.resume-name-target:hover,
+.group-resume-name:hover .resume-name-target {
+  text-decoration: underline !important;
+  text-underline-offset: 5px !important;
+  text-decoration-thickness: 1.5px !important;
+  text-decoration-color: #ffffff !important;
 }
 
 @keyframes confettiFlutter {
@@ -1249,18 +1498,18 @@
   position: relative;
   background: linear-gradient(
     90deg,
-    rgba(30, 41, 75, 0.45) 0%,
-    rgba(18, 25, 52, 0.35) 60%,
-    rgba(15, 23, 42, 0.20) 100%
+    rgba(124, 58, 237, 0.22) 0%,
+    rgba(99, 102, 241, 0.16) 45%,
+    rgba(15, 23, 42, 0.35) 100%
   ) !important;
-  border: 1px solid rgba(129, 140, 248, 0.22) !important;
+  border: 1px solid rgba(168, 85, 247, 0.38) !important;
   box-shadow: 
-    0 4px 16px -2px rgba(0, 0, 0, 0.60),
-    0 0 14px -3px rgba(99, 102, 241, 0.15),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
-    inset 0 0 12px 0 rgba(99, 102, 241, 0.06) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+    0 4px 20px -2px rgba(0, 0, 0, 0.70),
+    0 0 20px -2px rgba(124, 58, 237, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 16px 0 rgba(147, 51, 234, 0.12) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -1268,17 +1517,19 @@
   content: '';
   position: absolute;
   top: -1px;
-  left: 12px;
-  right: 12px;
-  height: 1px;
+  left: 10px;
+  right: 10px;
+  height: 1.5px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(165, 180, 252, 0.5) 30%,
-    rgba(255, 255, 255, 0.7) 50%,
-    rgba(129, 140, 248, 0.5) 70%,
+    rgba(192, 132, 252, 0.7) 25%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(129, 140, 248, 0.7) 75%,
     transparent 100%
   );
+  box-shadow: 0 0 8px rgba(232, 121, 249, 0.6);
+  border-radius: 9999px;
   pointer-events: none;
   z-index: 10;
 }
@@ -1286,16 +1537,16 @@
 .sidebar-nav-active-shine:hover {
   background: linear-gradient(
     90deg,
-    rgba(30, 41, 75, 0.60) 0%,
-    rgba(18, 25, 52, 0.45) 60%,
-    rgba(15, 23, 42, 0.30) 100%
+    rgba(124, 58, 237, 0.28) 0%,
+    rgba(99, 102, 241, 0.20) 45%,
+    rgba(15, 23, 42, 0.45) 100%
   ) !important;
-  border-color: rgba(165, 180, 252, 0.35) !important;
+  border-color: rgba(192, 132, 252, 0.55) !important;
   box-shadow: 
-    0 6px 20px -2px rgba(0, 0, 0, 0.70),
-    0 0 18px -2px rgba(99, 102, 241, 0.20),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
-    inset 0 0 14px 0 rgba(99, 102, 241, 0.10) !important;
+    0 6px 24px -2px rgba(0, 0, 0, 0.75),
+    0 0 26px -2px rgba(168, 85, 247, 0.38),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 18px 0 rgba(147, 51, 234, 0.18) !important;
 }
 
 .sidebar-icon-glow {
@@ -2284,6 +2535,216 @@
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.3) !important;
   transform: translateY(-2px);
 }
+
+/* ============================================================
+   RESUME EDITOR — ILLUMINATED EDITING SECTION CARD
+   (Pixel-Perfect Match to User Reference Screenshot 1)
+   ============================================================ */
+
+@keyframes illuminatedTopShimmer {
+  0%   { transform: translateX(-120%); }
+  45%  { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
+}
+
+.illuminated-card-glow {
+  position: relative;
+  border-radius: 1.25rem; /* 20px */
+  background: #0c101d;
+  border: 1px solid #23293e;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  transition: all 0.25s ease-out;
+  overflow: hidden;
+}
+
+.illuminated-card-glow:hover {
+  border-color: #353d5a;
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.6);
+}
+
+.illuminated-card-glow:focus-within {
+  border-color: #4a5578;
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 14px 35px -5px rgba(0, 0, 0, 0.7);
+}
+
+/* Subtle upper-edge specular reflection line matching Image 2 */
+.illuminated-card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.12) 15%, 
+    rgba(255, 255, 255, 0.75) 50%, 
+    rgba(255, 255, 255, 0.12) 85%, 
+    transparent 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Very subtle blue-violet edge illumination behind the upper edge */
+.illuminated-card-glow::after {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 65%;
+  height: 48px;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.02) 65%, transparent 100%);
+  filter: blur(12px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.illuminated-input {
+  background-color: rgba(9, 13, 24, 0.92);
+  border: 1px solid rgba(51, 65, 85, 0.85);
+  border-radius: 0.75rem; /* 12px */
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.illuminated-input:hover {
+  border-color: rgba(100, 116, 139, 0.9);
+}
+
+.illuminated-input:focus {
+  outline: none;
+  border-color: rgba(147, 51, 234, 0.8);
+  box-shadow: 0 0 0 1px rgba(147, 51, 234, 0.35), 0 0 14px rgba(147, 51, 234, 0.2);
+}
+
+/* ============================================================
+   ATS SCORE — PREMIUM GLASS-ILLUMINATED CARDS (Image Reference)
+   ============================================================ */
+
+.ats-glass-card {
+  position: relative;
+  background-color: #0c101d;
+  border-radius: 1rem; /* 16px (rounded-2xl) */
+  border: 1px solid #23293e;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.8),
+    0 0 24px -6px rgba(112, 77, 247, 0.12);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Subtle white shining reflection along the TOP EDGE, transitioning to soft violet */
+.ats-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.15) 12%,
+    rgba(192, 132, 252, 0.55) 28%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(192, 132, 252, 0.55) 72%,
+    rgba(168, 85, 247, 0.15) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 24px rgba(168, 85, 247, 0.35);
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity 0.28s ease, height 0.28s ease, box-shadow 0.28s ease, background 0.28s ease;
+}
+
+/* Soft violet ambient illumination around the upper corners and top edge */
+.ats-glass-card::after {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 52px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(147, 51, 234, 0.16) 0%,
+    rgba(99, 102, 241, 0.05) 55%,
+    transparent 100%
+  );
+  filter: blur(14px);
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.28s ease, width 0.28s ease, height 0.28s ease, background 0.28s ease;
+}
+
+/* Readiness Rating Card: Slightly deeper upper-edge radiance matching screenshot */
+.ats-glass-card--readiness::after {
+  width: 82%;
+  height: 64px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(147, 51, 234, 0.24) 0%,
+    rgba(99, 102, 241, 0.08) 55%,
+    transparent 85%
+  );
+  filter: blur(16px);
+}
+
+/* Hover Animation: Smooth elevation, increased top illumination, gentle violet reflection */
+@media (hover: hover) {
+  .ats-glass-card:hover {
+    transform: translateY(-2px);
+    border-color: #384161;
+    background-color: #0e1325;
+    box-shadow: 
+      0 16px 36px -10px rgba(0, 0, 0, 0.88),
+      0 0 32px -4px rgba(139, 92, 246, 0.22);
+  }
+
+  .ats-glass-card:hover::before {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(168, 85, 247, 0.3) 10%,
+      rgba(216, 180, 254, 0.8) 25%,
+      #ffffff 50%,
+      rgba(216, 180, 254, 0.8) 75%,
+      rgba(168, 85, 247, 0.3) 90%,
+      transparent 100%
+    );
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.8), 0 0 30px rgba(168, 85, 247, 0.5);
+  }
+
+  .ats-glass-card:hover::after {
+    width: 82%;
+    height: 62px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(168, 85, 247, 0.25) 0%,
+      rgba(99, 102, 241, 0.08) 55%,
+      transparent 100%
+    );
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ats-glass-card {
+    transition: none !important;
+    transform: none !important;
+  }
+  .ats-glass-card:hover {
+    transform: none !important;
+  }
+}
+
 
 
 

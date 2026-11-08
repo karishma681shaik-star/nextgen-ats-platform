@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { CandidateProfile, Resume, ATSAnalysis, Application, Job, ProfileReadinessData } from '../../types';
+import { CandidateProfile, Resume, ATSAnalysis, Application, Job, ProfileReadinessData, ResumeAtsAnalysis, ResumeRecommendation } from '../../types';
 import { mapJobDtoToJob, jobApi } from './jobApi';
 import { storage } from '../mock/storage';
 
@@ -151,6 +151,22 @@ export const candidateApi = {
 
   async createBlankResume(): Promise<Resume> {
     return apiClient<Resume>('/resumes/blank', {
+      method: 'POST',
+    });
+  },
+
+  async getResumeRecommendations(resumeId: string): Promise<ResumeAtsAnalysis> {
+    return apiClient<ResumeAtsAnalysis>(`/resumes/${resumeId}/recommendations`);
+  },
+
+  async dismissRecommendation(resumeId: string, recommendationId: string): Promise<ResumeAtsAnalysis> {
+    return apiClient<ResumeAtsAnalysis>(`/resumes/${resumeId}/recommendations/${recommendationId}/dismiss`, {
+      method: 'POST',
+    });
+  },
+
+  async restoreRecommendation(resumeId: string, recommendationId: string): Promise<ResumeAtsAnalysis> {
+    return apiClient<ResumeAtsAnalysis>(`/resumes/${resumeId}/recommendations/${recommendationId}/restore`, {
       method: 'POST',
     });
   },

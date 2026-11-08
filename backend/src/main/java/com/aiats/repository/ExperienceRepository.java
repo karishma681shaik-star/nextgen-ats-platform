@@ -10,5 +10,6 @@ import java.util.UUID;
 @Repository
 public interface ExperienceRepository extends JpaRepository<Experience, UUID> {
     List<Experience> findByCandidateProfileId(UUID candidateProfileId);
+
     void deleteByCandidateProfileId(UUID candidateProfileId);
 }
